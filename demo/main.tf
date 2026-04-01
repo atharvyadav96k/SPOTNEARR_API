@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket  = "terraform-state-603675804308"
+    bucket  = "terraform-state-603675804309"
     prefix  = "cloud-functions/demo"
   }
 
@@ -14,6 +14,10 @@ terraform {
       version = "~> 3.0"
     }
   }
+}
+
+variable "bucket_name" {
+  type = string
 }
 
 variable "project_id" {
