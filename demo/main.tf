@@ -25,16 +25,16 @@ data "archive_file" "source" {
 }
 
 resource "google_storage_bucket" "source_bucket" {
-  name     = "${var.project_id}-gcf-source"
-  location = var.region
-  force_destroy = true
+  name                        = "${var.project_id}-function-${random_id.bucket_suffix.hex}"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = true
 }
 
-resource "google_storage_bucket" "source_bucket" {
-  name          = "${var.project_id}-function-${random_id.bucket_suffix.hex}"
-  location      = var.region
-  force_destroy = true
-  uniform_bucket_level_access = true 
+resource "google_storage_bucket_object" "source_archive" {
+  name   = "source-${filesha256("source.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "source.zip"
 }
 
 resource "google_cloudfunctions2_function" "helloworld" {
