@@ -3,67 +3,45 @@ terraform {
     bucket  = "terraform-state-603675804309"
     prefix  = "cloud-functions/demo"
   }
-
   required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
+    google = { source = "hashicorp/google" }
+    archive = { source = "hashicorp/archive" }
   }
 }
 
-variable "bucket_name" {
-  type = string
-}
-
-variable "project_id" {
-  type = string
-}
-
-variable "project_number" {
-  type = string
-}
-
-variable "region" {
-  type = string
-}
-
-variable "service_account" {
-  type = string
-}
+variable "project_id" { type = string }
+variable "region" { type = string }
+variable "service_account" { type = string }
 
 provider "google" {
   project = var.project_id
   region  = var.region
 }
-resource "random_id" "bucket_suffix" {
-  byte_length = 4
+
+data "archive_file" "source" {
+  type        = "zip"
+  source_dir  = "${path.module}/function"
+  output_path = "${path.module}/source.zip"
 }
 
 resource "google_storage_bucket" "source_bucket" {
-  name                        = "${var.project_id}-function-${random_id.bucket_suffix.hex}"
-  location                    = var.region
-  uniform_bucket_level_access = true
-  force_destroy               = true
+  name     = "${var.project_id}-gcf-source"
+  location = var.region
+  force_destroy = true
 }
 
 resource "google_storage_bucket_object" "source_archive" {
-  name   = "source-${filesha256("source.zip")}.zip"
+  name   = "source-${data.archive_file.source.output_md5}.zip"
   bucket = google_storage_bucket.source_bucket.name
-  source = "source.zip"
+  source = data.archive_file.source.output_path
 }
 
-
-resource "google_cloudfunctions2_function" "HelloWorld" {
+resource "google_cloudfunctions2_function" "helloworld" {
   name     = "HelloWorld"
   location = var.region
 
   build_config {
-    runtime     = "go122"
+    runtime     = "go122" 
     entry_point = "HelloWorld"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
@@ -77,7 +55,6 @@ resource "google_cloudfunctions2_function" "HelloWorld" {
   service_config {
     max_instance_count    = 1
     available_memory      = "256M"
-    timeout_seconds       = 60
     service_account_email = var.service_account
     ingress_settings      = "ALLOW_ALL"
   }
@@ -85,11 +62,11 @@ resource "google_cloudfunctions2_function" "HelloWorld" {
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
-  service  = google_cloudfunctions2_function.HelloWorld.name
+  service  = google_cloudfunctions2_function.helloworld.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "function_url" {
-  value = google_cloudfunctions2_function.HelloWorld.service_config[0].uri
+  value = google_cloudfunctions2_function.helloworld.service_config[0].uri
 }
