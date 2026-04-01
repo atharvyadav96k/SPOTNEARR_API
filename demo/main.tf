@@ -58,13 +58,13 @@ resource "google_storage_bucket_object" "source_archive" {
 }
 
 
-resource "google_cloudfunctions2_function" "demo" {
-  name     = "demo"
+resource "google_cloudfunctions2_function" "HelloWorld" {
+  name     = "HelloWorld"
   location = var.region
 
   build_config {
     runtime     = "go121"
-    entry_point = "Demo"
+    entry_point = "HelloWorld"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -85,11 +85,11 @@ resource "google_cloudfunctions2_function" "demo" {
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
-  service  = google_cloudfunctions2_function.demo.name
+  service  = google_cloudfunctions2_function.HelloWorld.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "function_url" {
-  value = google_cloudfunctions2_function.demo.service_config[0].uri
+  value = google_cloudfunctions2_function.HelloWorld.service_config[0].uri
 }
