@@ -63,7 +63,7 @@ resource "google_cloudfunctions2_function" "HelloWorld" {
   location = var.region
 
   build_config {
-    runtime     = "go121"
+    runtime     = "go122"
     entry_point = "HelloWorld"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
