@@ -30,10 +30,11 @@ resource "google_storage_bucket" "source_bucket" {
   force_destroy = true
 }
 
-resource "google_storage_bucket_object" "source_archive" {
-  name   = "source-${data.archive_file.source.output_md5}.zip"
-  bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.source.output_path
+resource "google_storage_bucket" "source_bucket" {
+  name          = "${var.project_id}-function-${random_id.bucket_suffix.hex}"
+  location      = var.region
+  force_destroy = true
+  uniform_bucket_level_access = true 
 }
 
 resource "google_cloudfunctions2_function" "helloworld" {
