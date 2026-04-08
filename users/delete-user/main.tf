@@ -28,11 +28,6 @@ variable "region" {
   type = string
 }
 
-variable "function_suffix" {
-  type    = string
-  default = ""
-}
-
 variable "service_account" {
   type = string
 }
@@ -60,7 +55,7 @@ resource "google_storage_bucket_object" "source_archive" {
 }
 
 resource "google_cloudfunctions2_function" "delete_user" {
-  name = "delete-user${var.function_suffix}"
+  name = "delete-user"
   location = var.region
 
   build_config {
@@ -75,7 +70,7 @@ resource "google_cloudfunctions2_function" "delete_user" {
     }
   }
 
-  service_config {
+  service_config { 
     max_instance_count    = 1
     available_memory      = "256M"
     timeout_seconds       = 60
