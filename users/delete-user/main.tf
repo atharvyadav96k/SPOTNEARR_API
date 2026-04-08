@@ -1,7 +1,7 @@
 terraform {
   backend "gcs" {
     bucket  = "terraform-state-603675804309"
-    prefix  = "cloud-functions/DeleteUser"
+    prefix  = "cloud-functions/delete-users"
   }
 
   required_providers {
@@ -36,6 +36,7 @@ provider "google" {
   project = var.project_id
   region  = var.region
 }
+
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
@@ -53,14 +54,13 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-
-resource "google_cloudfunctions2_function" "DeleteUser" {
-  name     = "DeleteUser"
+resource "google_cloudfunctions2_function" "delete_user" {
+  name     = "delete-users" 
   location = var.region
 
   build_config {
-    runtime     = "go122"
-    entry_point = "DeleteUser"
+    runtime         = "go122"
+    entry_point     = "DeleteUser" 
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -81,11 +81,11 @@ resource "google_cloudfunctions2_function" "DeleteUser" {
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
-  service  = google_cloudfunctions2_function.DeleteUser.name
+  service  = google_cloudfunctions2_function.delete_user.name  
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "function_url" {
-  value = google_cloudfunctions2_function.DeleteUser.service_config[0].uri
+  value = google_cloudfunctions2_function.create_users.service_config[0].uri
 }
