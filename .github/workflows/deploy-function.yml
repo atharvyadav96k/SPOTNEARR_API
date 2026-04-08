@@ -24,10 +24,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    permissions:
-      id-token: write
-      contents: read
-
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}

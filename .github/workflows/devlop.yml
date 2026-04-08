@@ -39,6 +39,9 @@ jobs:
   deploy-demo:
     needs: detect-changes
     if: needs.detect-changes.outputs.demo == 'true'
+    permissions:          
+      id-token: write
+      contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: demo
@@ -47,6 +50,9 @@ jobs:
   deploy-create-users:
     needs: detect-changes
     if: needs.detect-changes.outputs.create-users == 'true'
+    permissions:       
+      id-token: write
+      contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: users/create-users
@@ -55,6 +61,9 @@ jobs:
   deploy-delete-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.delete-user == 'true'
+    permissions:      
+      id-token: write
+      contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: users/delete-user
@@ -63,6 +72,9 @@ jobs:
   deploy-update-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.update-user == 'true'
+    permissions:          
+      id-token: write
+      contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: users/update-user
