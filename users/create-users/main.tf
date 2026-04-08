@@ -20,6 +20,11 @@ variable "project_id" {
   type = string
 }
 
+variable "function_suffix" {
+  type    = string
+  default = ""
+}
+
 variable "project_number" {
   type = string
 }
@@ -55,7 +60,7 @@ resource "google_storage_bucket_object" "source_archive" {
 }
 
 resource "google_cloudfunctions2_function" "create_users" {
-  name     = "create-users" 
+  name = "create-users${var.function_suffix}"
   location = var.region
 
   build_config {

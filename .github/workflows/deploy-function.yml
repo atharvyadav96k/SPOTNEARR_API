@@ -6,9 +6,13 @@ on:
       working-directory:
         required: true
         type: string
-      gcp_region:                 
+      gcp_region:
         required: true
         type: string
+      function_suffix:        # ✅ NEW INPUT
+        required: true
+        type: string
+
     secrets:
       GCP_PROJECT_ID:
         required: true
@@ -20,7 +24,6 @@ on:
         required: true
       GCP_BUCKET_NAME:
         required: true
-                             
 
 jobs:
   deploy:
@@ -34,8 +37,9 @@ jobs:
       TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
       TF_VAR_project_number: ${{ secrets.GCP_PROJECT_NUMBER }}
       TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
-      TF_VAR_region: ${{ inputs.gcp_region }}    # ✅ Read from input
+      TF_VAR_region: ${{ inputs.gcp_region }}
       TF_VAR_bucket_name: ${{ secrets.GCP_BUCKET_NAME }}
+      TF_VAR_function_suffix: ${{ inputs.function_suffix }}   # ✅ PASS TO TERRAFORM
 
     steps:
       - uses: actions/checkout@v4

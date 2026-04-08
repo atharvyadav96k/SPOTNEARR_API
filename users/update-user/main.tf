@@ -32,6 +32,11 @@ variable "service_account" {
   type = string
 }
 
+variable "function_suffix" {
+  type    = string
+  default = ""
+}
+
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -55,7 +60,7 @@ resource "google_storage_bucket_object" "source_archive" {
 }
 
 resource "google_cloudfunctions2_function" "update_user" {
-  name     = "update-users" 
+  name = "update-user${var.function_suffix}"
   location = var.region
 
   build_config {
