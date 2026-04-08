@@ -36,6 +36,7 @@ provider "google" {
   project = var.project_id
   region  = var.region
 }
+
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
@@ -53,14 +54,13 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-
 resource "google_cloudfunctions2_function" "CreateUsers" {
   name     = "CreateUsers"
   location = var.region
 
   build_config {
-    runtime     = "go122"
-    entry_point = "CreateUsers"
+    runtime         = "go122"
+    entry_point     = "CreateUsers"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -79,11 +79,12 @@ resource "google_cloudfunctions2_function" "CreateUsers" {
   }
 }
 
-resource "google_cloud_run_service_iam_member" "public_access" {
-  location = var.region
-  service  = google_cloudfunctions2_function.CreateUsers.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
+resource "google_cloudfunctions2_function_iam_member" "public_access" {
+  project        = var.project_id
+  location       = var.region
+  cloud_function = google_cloudfunctions2_function.CreateUsers.name
+  role           = "roles/cloudfunctions.invoker" 
+  member         = "allUsers"
 }
 
 output "function_url" {
