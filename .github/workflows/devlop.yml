@@ -9,31 +9,16 @@ on:
       - 'users/create-users/**'
       - 'users/delete-user/**'
       - 'users/update-user/**'
-      - '.github/workflows/**'   # ✅ Also trigger when workflow itself changes
-
   workflow_dispatch:
-    inputs:
-      force_deploy:
-        description: 'Force deploy specific function (or "all")'
-        required: false
-        default: ''
-        type: choice
-        options:
-          - ''
-          - all
-          - demo
-          - create-users
-          - delete-user
-          - update-user
 
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      demo: ${{ steps.set-outputs.outputs.demo }}
-      create-users: ${{ steps.set-outputs.outputs.create-users }}
-      delete-user: ${{ steps.set-outputs.outputs.delete-user }}
-      update-user: ${{ steps.set-outputs.outputs.update-user }}
+      demo: ${{ steps.filter.outputs.demo }}
+      create-users: ${{ steps.filter.outputs.create-users }}
+      delete-user: ${{ steps.filter.outputs.delete-user }}
+      update-user: ${{ steps.filter.outputs.update-user }}
 
     steps:
       - uses: actions/checkout@v4
@@ -51,39 +36,10 @@ jobs:
             update-user:
               - 'users/update-user/**'
 
-      - id: set-outputs
-        run: |
-          FORCE="${{ github.event.inputs.force_deploy }}"
-
-          deploy_demo="${{ steps.filter.outputs.demo }}"
-          deploy_create="${{ steps.filter.outputs.create-users }}"
-          deploy_delete="${{ steps.filter.outputs.delete-user }}"
-          deploy_update="${{ steps.filter.outputs.update-user }}"
-
-          if [ "$FORCE" = "all" ]; then
-            deploy_demo=true
-            deploy_create=true
-            deploy_delete=true
-            deploy_update=true
-          elif [ "$FORCE" = "demo" ]; then
-            deploy_demo=true
-          elif [ "$FORCE" = "create-users" ]; then
-            deploy_create=true
-          elif [ "$FORCE" = "delete-user" ]; then
-            deploy_delete=true
-          elif [ "$FORCE" = "update-user" ]; then
-            deploy_update=true
-          fi
-
-          echo "demo=$deploy_demo" >> $GITHUB_OUTPUT
-          echo "create-users=$deploy_create" >> $GITHUB_OUTPUT
-          echo "delete-user=$deploy_delete" >> $GITHUB_OUTPUT
-          echo "update-user=$deploy_update" >> $GITHUB_OUTPUT
-
   deploy-demo:
     needs: detect-changes
     if: needs.detect-changes.outputs.demo == 'true'
-    permissions:
+    permissions:          
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
@@ -94,7 +50,7 @@ jobs:
   deploy-create-users:
     needs: detect-changes
     if: needs.detect-changes.outputs.create-users == 'true'
-    permissions:
+    permissions:       
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
@@ -105,7 +61,7 @@ jobs:
   deploy-delete-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.delete-user == 'true'
-    permissions:
+    permissions:      
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
@@ -116,7 +72,7 @@ jobs:
   deploy-update-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.update-user == 'true'
-    permissions:
+    permissions:          
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
