@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop   # ✅ Added develop branch
     paths:
       - 'demo/**'
       - 'users/create-users/**'
@@ -47,7 +46,6 @@ jobs:
     with:
       working-directory: demo
       gcp_region: ${{ vars.GCP_REGION }}
-      function_suffix: ${{ github.ref_name == 'develop' && '-dev' || '' }}   # ✅ MAGIC LINE
     secrets: inherit
 
   deploy-create-users:
@@ -60,7 +58,6 @@ jobs:
     with:
       working-directory: users/create-users
       gcp_region: ${{ vars.GCP_REGION }}
-      function_suffix: ${{ github.ref_name == 'develop' && '-dev' || '' }}
     secrets: inherit
 
   deploy-delete-user:
@@ -73,7 +70,6 @@ jobs:
     with:
       working-directory: users/delete-user
       gcp_region: ${{ vars.GCP_REGION }}
-      function_suffix: ${{ github.ref_name == 'develop' && '-dev' || '' }}
     secrets: inherit
 
   deploy-update-user:
@@ -86,5 +82,4 @@ jobs:
     with:
       working-directory: users/update-user
       gcp_region: ${{ vars.GCP_REGION }}
-      function_suffix: ${{ github.ref_name == 'develop' && '-dev' || '' }}
     secrets: inherit
