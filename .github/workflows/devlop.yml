@@ -39,43 +39,47 @@ jobs:
   deploy-demo:
     needs: detect-changes
     if: needs.detect-changes.outputs.demo == 'true'
-    permissions:          
+    permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: demo
+      gcp_region: ${{ vars.GCP_REGION }} 
     secrets: inherit
 
   deploy-create-users:
     needs: detect-changes
     if: needs.detect-changes.outputs.create-users == 'true'
-    permissions:       
+    permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: users/create-users
+      gcp_region: ${{ vars.GCP_REGION }} 
     secrets: inherit
 
   deploy-delete-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.delete-user == 'true'
-    permissions:      
+    permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: users/delete-user
+      gcp_region: ${{ vars.GCP_REGION }}  
     secrets: inherit
 
   deploy-update-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.update-user == 'true'
-    permissions:          
+    permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       working-directory: users/update-user
+      gcp_region: ${{ vars.GCP_REGION }}   
     secrets: inherit
