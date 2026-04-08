@@ -1,19 +1,24 @@
-name: Multiple Go functions deploy
+name: Multiple Go Functions Deploy
 
 on:
   push:
     branches:
-      - main  
+      - main
     paths:
       - 'demo/**'
+      - 'users/create-users/**'
+      - 'users/delete-user/**'
+      - 'users/update-user/**'
   workflow_dispatch:
 
 jobs:
-
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
       demo: ${{ steps.filter.outputs.demo }}
+      create-users: ${{ steps.filter.outputs.create-users }}
+      delete-user: ${{ steps.filter.outputs.delete-user }}
+      update-user: ${{ steps.filter.outputs.update-user }}
 
     steps:
       - uses: actions/checkout@v4
@@ -24,43 +29,41 @@ jobs:
           filters: |
             demo:
               - 'demo/**'
+            create-users:
+              - 'users/create-users/**'
+            delete-user:
+              - 'users/delete-user/**'
+            update-user:
+              - 'users/update-user/**'
 
   deploy-demo:
     needs: detect-changes
     if: needs.detect-changes.outputs.demo == 'true'
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: demo
+    secrets: inherit
 
-    permissions:
-      id-token: write
-      contents: read
+  deploy-create-users:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.create-users == 'true'
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: users/create-users
+    secrets: inherit
 
-    defaults:
-      run:
-        working-directory: demo
+  deploy-delete-user:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.delete-user == 'true'
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: users/delete-user
+    secrets: inherit
 
-    env:
-      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-      TF_VAR_project_number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
-      TF_VAR_region : ${{ vars.GCP_REGION }}
-      TF_VAR_bucket_name : ${{ secrets.GCP_BUCKET_NAME }}
-      
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Authenticate to GCP (OIDC)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{secrets.GCP_WIF_PROVIDER}}
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
-        
-      - uses: hashicorp/setup-terraform@v3
-
-      - name: Create Source Zip
-        run: |
-          cd function
-          zip -r ../source.zip .
-
-      - run: terraform init
-      - run: terraform plan -input=false
-      - run: terraform apply -auto-approve -input=false
+  deploy-update-user:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.update-user == 'true'
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: users/update-user
+    secrets: inherit
