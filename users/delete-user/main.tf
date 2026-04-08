@@ -75,7 +75,7 @@ resource "google_cloudfunctions2_function" "delete_user" {
     }
   }
 
-  service_config {
+  service_config { 
     max_instance_count    = 1
     available_memory      = "256M"
     timeout_seconds       = 60
