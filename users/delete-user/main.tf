@@ -87,5 +87,5 @@ resource "google_cloud_run_service_iam_member" "public_access" {
 }
 
 output "function_url" {
-  value = google_cloudfunctions2_function.DeleteUser.service_config[0].uri
+  value = google_cloudfunctions2_function.delete_user.service_config[0].uri
 }
