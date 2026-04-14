@@ -1,5 +1,9 @@
 package applayer
 
-func Init() {
-	// initialize the application layer, such as database connection, cache connection, etc.
+import "github.com/atharvyadav96k/SPOTNEARR_SHARED/app"
+
+func Init() *application {
+	app := app.Init()
+	app.InitEnvironmentVariables()
+	return &application{app}
 }
