@@ -1,7 +1,7 @@
 terraform {
   backend "gcs" {
     bucket  = "terraform-state-603675804309"
-    prefix  = "cloud-functions/update-users"
+    prefix  = "cloud-functions/register"
   }
 
   required_providers {
@@ -36,7 +36,6 @@ provider "google" {
   project = var.project_id
   region  = var.region
 }
-
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
@@ -54,13 +53,14 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-resource "google_cloudfunctions2_function" "update_user" {
-  name = "update-user$"
+
+resource "google_cloudfunctions2_function" "register" {
+  name     = "register"
   location = var.region
 
   build_config {
-    runtime         = "go122"
-    entry_point     = "UpdateUser" 
+    runtime     = "go122"
+    entry_point = "Register"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -81,11 +81,11 @@ resource "google_cloudfunctions2_function" "update_user" {
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
-  service  = google_cloudfunctions2_function.update_user.name  
+  service  = google_cloudfunctions2_function.register.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "function_url" {
-  value = google_cloudfunctions2_function.update_user.service_config[0].uri
-} 
+  value = google_cloudfunctions2_function.register.service_config[0].uri
+}

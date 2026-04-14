@@ -5,20 +5,15 @@ on:
     branches:
       - main
     paths:
-      - 'demo/**'
-      - 'users/create-users/**'
-      - 'users/delete-user/**'
-      - 'users/update-user/**'
+      - 'register/**'
+ 
   workflow_dispatch:
 
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      demo: ${{ steps.filter.outputs.demo }}
-      create-users: ${{ steps.filter.outputs.create-users }}
-      delete-user: ${{ steps.filter.outputs.delete-user }}
-      update-user: ${{ steps.filter.outputs.update-user }}
+      register: ${{ steps.filter.outputs.register }}
 
     steps:
       - uses: actions/checkout@v4
@@ -27,59 +22,16 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            demo:
-              - 'demo/**'
-            create-users:
-              - 'users/create-users/**'
-            delete-user:
-              - 'users/delete-user/**'
-            update-user:
-              - 'users/update-user/**'
-
-  deploy-demo:
+            register:
+              - 'register/**'
+  deploy-register:
     needs: detect-changes
-    if: needs.detect-changes.outputs.demo == 'true'
+    if: needs.detect-changes.outputs.register == 'true'
     permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
-      working-directory: demo
-      gcp_region: ${{ vars.GCP_REGION }}
-    secrets: inherit
-
-  deploy-create-users:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.create-users == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      working-directory: users/create-users
-      gcp_region: ${{ vars.GCP_REGION }}
-    secrets: inherit
-
-  deploy-delete-user:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.delete-user == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      working-directory: users/delete-user
-      gcp_region: ${{ vars.GCP_REGION }}
-    secrets: inherit
-
-  deploy-update-user:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.update-user == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      working-directory: users/update-user
+      working-directory: register
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
