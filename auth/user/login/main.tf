@@ -1,8 +1,3 @@
-variable "function_name" {
-  type    = string
-  default = "user-login"
-}
-
 terraform {
   backend "gcs" {
     bucket = "terraform-state-603675804309"
@@ -32,6 +27,11 @@ variable "project_number" {
 
 variable "region" {
   type = string
+}
+
+variable "function_name" {
+  type    = string
+  default = "user-login"
 }
 
 variable "service_account" {
