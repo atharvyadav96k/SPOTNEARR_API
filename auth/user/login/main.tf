@@ -56,7 +56,7 @@ resource "google_storage_bucket" "source_bucket" {
 }
 
 resource "google_storage_bucket_object" "source_archive" {
-  name   = "${function_name.values}-${filesha256("source.zip")}.zip"
+  name   = "${var.function_name}-${filesha256("source.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
   source = "source.zip"
 }
