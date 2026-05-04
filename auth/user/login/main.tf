@@ -9,6 +9,7 @@ terraform {
     prefix = "cloud-functions/${function_name.value}"
   }
 
+
   required_providers {
     google = {
       source  = "hashicorp/google"
