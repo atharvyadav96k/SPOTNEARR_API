@@ -1,7 +1,12 @@
+variable "function_name" {
+  type    = string
+  default = "business-register"
+}
+
 terraform {
   backend "gcs" {
-    bucket  = "terraform-state-603675804309"
-    prefix  = "cloud-functions/register"
+    bucket = "terraform-state-603675804309"
+    prefix = "cloud-functions/${function_name.value}"
   }
 
   required_providers {
@@ -36,31 +41,32 @@ provider "google" {
   project = var.project_id
   region  = var.region
 }
+
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
 resource "google_storage_bucket" "source_bucket" {
-  name                        = "${var.project_id}-function-${random_id.bucket_suffix.hex}"
+  # Updated to use the variable and fixed the empty interpolation
+  name                        = "${var.function_name}-${var.project_id}-source-${random_id.bucket_suffix.hex}"
   location                    = var.region
   uniform_bucket_level_access = true
   force_destroy               = true
 }
 
 resource "google_storage_bucket_object" "source_archive" {
-  name   = "source-${filesha256("source.zip")}.zip"
+  name   = "${function_name.values}-${filesha256("source.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
   source = "source.zip"
 }
 
-
 resource "google_cloudfunctions2_function" "register" {
-  name     = "register"
+  name     = var.function_name
   location = var.region
 
   build_config {
-    runtime     = "go122"
-    entry_point = "Register"
+    runtime         = "go122"
+    entry_point     = "BusinessRegister"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -81,6 +87,7 @@ resource "google_cloudfunctions2_function" "register" {
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
+  # This automatically tracks the name used in the function resource
   service  = google_cloudfunctions2_function.register.name
   role     = "roles/run.invoker"
   member   = "allUsers"
