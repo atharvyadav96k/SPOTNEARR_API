@@ -22,16 +22,17 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            register:
-              - 'register/**'
-  deploy-register:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.register == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      working-directory: register
-      gcp_region: ${{ vars.GCP_REGION }}
-    secrets: inherit
+            # register:
+            #   - 'register/**'
+              
+  # deploy-register:
+  #   needs: detect-changes
+  #   if: needs.detect-changes.outputs.register == 'true'
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   uses: ./.github/workflows/deploy-function.yml
+  #   with:
+  #     working-directory: register
+  #     gcp_region: ${{ vars.GCP_REGION }}
+  #   secrets: inherit
