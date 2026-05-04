@@ -31,9 +31,9 @@ jobs:
             business-login:
               - 'auth/business/login/**'
             user-login:
-              - auth/user/login/**'
+              - 'auth/user/login/**'      
             user-register:
-              - auth/user/register/**'
+              - 'auth/user/register/**'   
 
   business-register:
     needs: detect-changes
@@ -61,7 +61,7 @@ jobs:
 
   user-login:
     needs: detect-changes
-    if: needs.detect-changes.outputs.business-login == 'true'
+    if: needs.detect-changes.outputs.user-login == 'true'
     permissions:
       id-token: write
       contents: read
@@ -73,7 +73,7 @@ jobs:
 
   user-register:
     needs: detect-changes
-    if: needs.detect-changes.outputs.business-login == 'true'
+    if: needs.detect-changes.outputs.user-register == 'true'
     permissions:
       id-token: write
       contents: read
