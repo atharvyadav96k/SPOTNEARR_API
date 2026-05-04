@@ -6,7 +6,7 @@ variable "function_name" {
 terraform {
   backend "gcs" {
     bucket = "terraform-state-603675804309"
-    prefix = "cloud-functions/${function_name.value}"
+    prefix = "cloud-functions/user-login"
   }
 
   required_providers {
