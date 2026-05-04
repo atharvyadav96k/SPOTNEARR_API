@@ -5,9 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'register/**'
- 
-  workflow_dispatch:
+      - 'auth/business/register/**'
+      - 'auth/business/login/**'
+      - 'auth/user/login/**'
+      - 'auth/user/register/**'
 
 jobs:
   detect-changes:
