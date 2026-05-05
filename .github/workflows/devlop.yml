@@ -21,9 +21,13 @@ jobs:
       business-login: ${{ steps.filter.outputs.business-login }}
       user-login: ${{ steps.filter.outputs.user-login }}
       user-register: ${{ steps.filter.outputs.user-register }}
+
       bridge-service-follow: ${{ steps.filter.outputs.bridge-service-follow }}
       bridge-service-like: ${{ steps.filter.outputs.bridge-service-follow }}
       bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-follow }}
+
+      business-categories-add: ${{ steps.filter.outputs.business-categories-add }}
+      business-categories-get: ${{ steps.filter.outputs.business-categories-get }}
 
     steps:
       - uses: actions/checkout@v4
@@ -40,12 +44,18 @@ jobs:
               - 'auth/user/login/**'      
             user-register:
               - 'auth/user/register/**'  
+
             bridge-service-follow:
               - 'bridge-service/follow/**'
             bridge-service-like:
               - 'bridge-service/like/**'
             bridge-service-push-notification:
               - 'bridge-service/push_notification'
+
+            business-categories-add:
+              - 'business/categories/add_categories/**'
+            business-categories-get:
+              - 'business/categories/get_categories/**'
 
   business-register:
     needs: detect-changes
@@ -131,4 +141,27 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
+  business-categories-add:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-categories-add
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: business/categories/add_categories
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-categories-get:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-categories-get
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: business/categories/get_categories
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
   
