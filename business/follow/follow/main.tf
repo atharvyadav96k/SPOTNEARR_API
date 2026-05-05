@@ -72,6 +72,7 @@ resource "google_pubsub_topic" "topic" {
   }
 }
 
+
 resource "google_cloudfunctions2_function" "function" {
   name     = var.function_name
   location = var.region

@@ -289,7 +289,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
-      function-name: follow
+      function-name: business-follow
       working-directory: business/follow/follow
       gcp_region: ${{ vars.GCP_REGION }}
       tf_vars: >-
@@ -306,7 +306,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
-      function-name: follow
+      function-name: user-follow
       working-directory: users/follow/follow
       gcp_region: ${{ vars.GCP_REGION }}
       tf_vars: >-
