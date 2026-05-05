@@ -13,6 +13,6 @@ func init() {
 }
 
 func follow(ctx context.Context, e event.Event) error {
-	log.Printf("received follow event: %+v", e)
+	log.Printf("Business Follow function triggered with event: %s", e.String())
 	return nil
 }
