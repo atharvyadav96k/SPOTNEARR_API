@@ -1,4 +1,4 @@
-package user_likes
+package likes
 
 import (
 	"context"
@@ -9,10 +9,10 @@ import (
 )
 
 func init() {
-	functions.CloudEvent("DisLike", disLike)
+	functions.CloudEvent("Like", like)
 }
 
-func disLike(ctx context.Context, e event.Event) error {
+func like(ctx context.Context, e event.Event) error {
 	fmt.Println("Event: ", e)
 	return nil
 }

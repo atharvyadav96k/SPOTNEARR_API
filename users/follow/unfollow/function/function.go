@@ -1,17 +1,18 @@
 package follow
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
+	"fmt"
+
+	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/cloudevents/sdk-go/v2/event"
 )
 
-func Unfollow(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+func init() {
+	functions.CloudEvent("Unfollow", unfollow)
+}
 
-	response := map[string]string{
-		"message": "Login successful",
-	}
-
-	json.NewEncoder(w).Encode(response)
+func unfollow(ctx context.Context, e event.Event) error {
+	fmt.Println("Event: ", e)
+	return nil
 }

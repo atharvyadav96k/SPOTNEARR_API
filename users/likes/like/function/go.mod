@@ -1,4 +1,4 @@
-module github.com/atharvyadav96k/SPOTNEARR_API/business/follow
+module github.com/atharvyadav96k/SPOTNEARR_API/business/likes
 
 go 1.25.5
 

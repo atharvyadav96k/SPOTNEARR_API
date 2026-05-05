@@ -1,17 +1,18 @@
 package follow
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
+	"log"
+
+	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/cloudevents/sdk-go/v2/event"
 )
 
-func Follow(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+func init() {
+	functions.CloudEvent("Follow", follow)
+}
 
-	response := map[string]string{
-		"message": "Login successful",
-	}
-
-	json.NewEncoder(w).Encode(response)
+func follow(ctx context.Context, e event.Event) error {
+	log.Printf("received follow event: %+v", e)
+	return nil
 }

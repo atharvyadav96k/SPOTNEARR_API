@@ -1,4 +1,4 @@
-package user_likes
+package likes
 
 import (
 	"context"
