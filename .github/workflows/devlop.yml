@@ -67,6 +67,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
+
       working-directory: auth/business/register
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
@@ -151,6 +152,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
+      function-name: add_categories
       working-directory: business/categories/add_categories
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
