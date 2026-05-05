@@ -68,7 +68,7 @@ jobs:
 
 
             bridge-service-follow:
-              - 'bridge-service/filter-follow/**'
+              - 'bridge-service/filter-follows/**'
             bridge-service-like:
               - 'bridge-service/filter-likes/**'
             bridge-service-push-notification:
