@@ -13,6 +13,6 @@ func init() {
 }
 
 func follow(ctx context.Context, e event.Event) error {
-	fmt.Printf("User Follow function triggered with event: %s\n", e.String())
+	fmt.Printf("User Follow function triggered with event")
 	return nil
 }
