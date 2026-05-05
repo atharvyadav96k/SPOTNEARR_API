@@ -60,13 +60,13 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-resource "google_cloudfunctions2_function" "register" {
+resource "google_cloudfunctions2_function" "bs-follow" {
   name     = var.function_name
   location = var.region
 
   build_config {
     runtime         = "go122"
-    entry_point     = "UserRegister"
+    entry_point     = "FollowAction"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -88,11 +88,11 @@ resource "google_cloudfunctions2_function" "register" {
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
   # This automatically tracks the name used in the function resource
-  service  = google_cloudfunctions2_function.register.name
+  service  = google_cloudfunctions2_function.bs-follow.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "function_url" {
-  value = google_cloudfunctions2_function.register.service_config[0].uri
+  value = google_cloudfunctions2_function.bs-follow.service_config[0].uri
 }
