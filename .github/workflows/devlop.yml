@@ -107,7 +107,7 @@ jobs:
 
   bridge-service-follow:
     needs: detect-changes
-    if: needs.detect-changes.outputs.bridge-service-follow
+    if: needs.detect-changes.outputs.bridge-service-follow == 'true'
     permissions:
       id-token: write
       contents: read
@@ -119,7 +119,7 @@ jobs:
 
   bridge-service-like:
     needs: detect-changes
-    if: needs.detect-changes.outputs.bridge-service-like
+    if: needs.detect-changes.outputs.bridge-service-like == 'true'
     permissions:
       id-token: write
       contents: read
@@ -131,7 +131,7 @@ jobs:
 
   bridge-service-push-notification:
     needs: detect-changes
-    if: needs.detect-changes.outputs.bridge-service-push-notification
+    if: needs.detect-changes.outputs.bridge-service-push-notification == 'true'
     permissions:
       id-token: write
       contents: read
@@ -143,7 +143,7 @@ jobs:
 
   business-categories-add:
     needs: detect-changes
-    if: needs.detect-changes.outputs.business-categories-add
+    if: needs.detect-changes.outputs.business-categories-add == 'true'
     permissions:
       id-token: write
       contents: read
@@ -155,7 +155,7 @@ jobs:
 
   business-categories-get:
     needs: detect-changes
-    if: needs.detect-changes.outputs.business-categories-get
+    if: needs.detect-changes.outputs.business-categories-get == 'true'
     permissions:
       id-token: write
       contents: read
