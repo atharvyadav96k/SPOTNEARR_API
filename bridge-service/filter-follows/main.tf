@@ -86,6 +86,7 @@ resource "google_cloudfunctions2_function" "bs-follow" {
   }
 }
 
+
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
   # This automatically tracks the name used in the function resource

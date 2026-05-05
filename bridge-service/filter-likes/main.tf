@@ -46,6 +46,7 @@ resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
+
 resource "google_storage_bucket" "source_bucket" {
   # Updated to use the variable and fixed the empty interpolation
   name                        = "${var.function_name}-${var.project_id}-source-${random_id.bucket_suffix.hex}"
