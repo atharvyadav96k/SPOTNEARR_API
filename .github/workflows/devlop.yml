@@ -177,7 +177,7 @@ jobs:
       function-name: push_notification
       working-directory: bridge-service/push_notification
       gcp_region: ${{ vars.GCP_REGION }}
-      tf_vars: ->
+      tf_vars: >-
         '-var="topic=${{ vars.GCP_TOPIC_PUSH_NOTIFICATION }}"'
     secrets: inherit
 
