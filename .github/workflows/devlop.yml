@@ -307,7 +307,7 @@ jobs:
     uses: ./.github/workflows/deploy-function.yml
     with:
       function-name: follow
-      working-directory: user/follow/follow
+      working-directory: users/follow/follow
       gcp_region: ${{ vars.GCP_REGION }}
       tf_vars: >-
         -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
