@@ -9,6 +9,9 @@ on:
       - 'auth/business/login/**'
       - 'auth/user/login/**'
       - 'auth/user/register/**'
+      - 'bridge-service/follow/**'
+      - 'bridge-service/like/**'
+      - 'bridge-service/push_notification/**'
 
 jobs:
   detect-changes:
@@ -18,6 +21,9 @@ jobs:
       business-login: ${{ steps.filter.outputs.business-login }}
       user-login: ${{ steps.filter.outputs.user-login }}
       user-register: ${{ steps.filter.outputs.user-register }}
+      bridge-service-follow: ${{ steps.filter.outputs.bridge-service-follow }}
+      bridge-service-like: ${{ steps.filter.outputs.bridge-service-follow }}
+      bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-follow }}
 
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +39,13 @@ jobs:
             user-login:
               - 'auth/user/login/**'      
             user-register:
-              - 'auth/user/register/**'   
+              - 'auth/user/register/**'  
+            bridge-service-follow:
+              - 'bridge-service/follow/**'
+            bridge-service-like:
+              - 'bridge-service/like/**'
+            bridge-service-push-notification:
+              - 'bridge-service/push_notification'
 
   business-register:
     needs: detect-changes
@@ -82,3 +94,41 @@ jobs:
       working-directory: auth/user/register
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
+
+  bridge-service-follow:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.bridge-service-follow
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: bridge-service/follow
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  bridge-service-like:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.bridge-service-like
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: bridge-service/like
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  bridge-service-push-notification:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.bridge-service-push-notification
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      working-directory: bridge-service/push_notification
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  
