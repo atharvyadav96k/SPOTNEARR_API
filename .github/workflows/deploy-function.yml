@@ -3,6 +3,8 @@ name: Deploy Go Function (Reusable)
 on:
   workflow_call:
     inputs:
+      function-name:
+        type: string
       working-directory:
         required: true
         type: string
@@ -31,6 +33,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
     env:
+      TF_VAR_function_name: ${{ inputs.function-name }}
       TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
       TF_VAR_project_number: ${{ secrets.GCP_PROJECT_NUMBER }}
       TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}

@@ -163,6 +163,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
+      function-name: get_categories
       working-directory: business/categories/get_categories
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
