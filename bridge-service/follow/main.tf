@@ -1,6 +1,6 @@
 variable "function_name" {
   type    = string
-  default = "bridge-service-follow"
+  default = "bs-follow"
 }
 
 terraform {
