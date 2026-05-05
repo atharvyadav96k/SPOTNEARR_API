@@ -22,7 +22,7 @@ variable "bucket_name" {
   type = string
 }
 
-variable "topic_name" {
+variable "topic" {
   type = string
 }
 
@@ -46,6 +46,10 @@ provider "google" {
   region  = var.region
 }
 
+data "google_pubsub_topic" "topic" {
+  name = var.topic
+}
+
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
@@ -61,15 +65,6 @@ resource "google_storage_bucket_object" "source_archive" {
   name   = "${var.function_name}-${filesha256("source.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
   source = "source.zip"
-}
-
-resource "google_pubsub_topic" "topic" {
-  name = var.topic_name
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = all
-  }
 }
 
 resource "google_cloudfunctions2_function" "function" {
@@ -98,14 +93,14 @@ resource "google_cloudfunctions2_function" "function" {
   event_trigger {
     trigger_region        = var.region
     event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic          = google_pubsub_topic.topic.id
+    pubsub_topic          = data.google_pubsub_topic.topic.id
     retry_policy          = "RETRY_POLICY_RETRY"
     service_account_email = var.service_account
   }
 }
 
 output "topic_id" {
-  value = google_pubsub_topic.topic.id
+  value = data.google_pubsub_topic.topic.id
 }
 
 output "function_name" {

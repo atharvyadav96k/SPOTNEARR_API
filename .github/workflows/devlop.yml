@@ -29,8 +29,12 @@ on:
       - 'business/follow/unfollow/**'
       - 'business/follow/get_followers/**'
 
+      - 'business/likes/like/**'
+
       # ---------- User Functions ---------
       - 'users/follow/follow/**'
+
+      - 'users/likes/like/**'
 
 jobs:
   detect-changes:
@@ -58,8 +62,12 @@ jobs:
 
       business-follow: ${{ steps.filter.outputs.business-follow }}
 
+      business-like: ${{ steps.filter.outputs.business-like }}
+
       # --------- User Functions ---------
       users-follow: ${{ steps.filter.outputs.users-follow }}
+
+      users-like: ${{ steps.filter.outputs.users-like }}
       
     steps:
       - uses: actions/checkout@v4
@@ -104,10 +112,16 @@ jobs:
             business-follow:
               - 'business/follow/follow/**'
 
+            business-like:
+              - 'business/likes/like/**'
+
 
 
             users-follow:
               - 'users/follow/follow/**'
+
+            users-like:
+              - 'users/likes/like/**'
 
   business-register:
     needs: detect-changes
@@ -296,6 +310,22 @@ jobs:
         -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
     secrets: inherit
 
+
+  business-like:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-like == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business-like
+      working-directory: business/likes/like
+      gcp_region: ${{ vars.GCP_REGION }}
+      tf_vars: >-
+        -var="topic=${{ vars.GCP_TOPIC_LIKE }}"
+    secrets: inherit
+
 # --------------------- User ------------------
 
   user-follow:
@@ -311,4 +341,19 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
       tf_vars: >-
         -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
+    secrets: inherit
+
+  user-like:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-like == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user-like
+      working-directory: users/likes/like
+      gcp_region: ${{ vars.GCP_REGION }}
+      tf_vars: >-
+        -var="topic=${{ vars.GCP_TOPIC_LIKE }}"
     secrets: inherit
