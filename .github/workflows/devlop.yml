@@ -38,7 +38,7 @@ jobs:
       # --------- Bridge Service Functions ---------
       bridge-service-follow: ${{ steps.filter.outputs.bridge-service-follow }}
       bridge-service-like: ${{ steps.filter.outputs.bridge-service-like }}
-      bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-follow }}
+      bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-push-notification }}
       
       # --------- Business Functions ---------
       business-categories-add: ${{ steps.filter.outputs.business-categories-add }}
