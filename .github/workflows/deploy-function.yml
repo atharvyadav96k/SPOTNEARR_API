@@ -5,6 +5,7 @@ on:
     inputs:
       function-name:
         type: string
+        required: true
       working-directory:
         required: true
         type: string
@@ -56,6 +57,15 @@ jobs:
           cd function
           zip -r ../source.zip .
 
-      - run: terraform init
-      - run: terraform plan -input=false
-      - run: terraform apply -auto-approve -input=false
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -input=false \
+            -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
+            -backend-config="prefix=cloud-functions/${{ inputs.function-name }}"
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false

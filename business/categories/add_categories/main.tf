@@ -17,7 +17,6 @@ variable "region" {
 variable "service_account" {
   type = string
 }
-
 variable "bucket_name" {
   type = string
 }

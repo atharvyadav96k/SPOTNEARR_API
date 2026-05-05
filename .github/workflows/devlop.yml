@@ -25,7 +25,7 @@ jobs:
       user-register: ${{ steps.filter.outputs.user-register }}
 
       bridge-service-follow: ${{ steps.filter.outputs.bridge-service-follow }}
-      bridge-service-like: ${{ steps.filter.outputs.bridge-service-follow }}
+      bridge-service-like: ${{ steps.filter.outputs.bridge-service-like }}
       bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-follow }}
 
       business-categories-add: ${{ steps.filter.outputs.business-categories-add }}
@@ -52,7 +52,7 @@ jobs:
             bridge-service-like:
               - 'bridge-service/like/**'
             bridge-service-push-notification:
-              - 'bridge-service/push_notification/**I'
+              - 'bridge-service/push_notification/**'
 
             business-categories-add:
               - 'business/categories/add_categories/**'
