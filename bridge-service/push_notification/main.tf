@@ -63,6 +63,7 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
+
 resource "google_pubsub_topic" "topic" {
   name = var.topic
 
