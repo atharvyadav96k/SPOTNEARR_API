@@ -29,6 +29,9 @@ on:
       - 'business/follow/unfollow/**'
       - 'business/follow/get_followers/**'
 
+      # ---------- User Functions ---------
+      - 'user/follow/follow/**'
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -54,6 +57,9 @@ jobs:
       business-plans-set-active: ${{ steps.filter.outputs.business-plans-set-active }}
 
       business-follow: ${{ steps.filter.outputs.business-follow }}
+
+      # --------- User Functions ---------
+      user-follow: ${{ steps.filter.outputs.user-follow }}
       
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +103,11 @@ jobs:
 
             business-follow:
               - 'business/follow/follow/**'
+
+
+
+            user-follow:
+              - 'user/follow/follow/**'
 
   business-register:
     needs: detect-changes
@@ -280,6 +291,23 @@ jobs:
     with:
       function-name: follow
       working-directory: business/follow/follow
+      gcp_region: ${{ vars.GCP_REGION }}
+      tf_vars: >-
+        -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
+    secrets: inherit
+
+# --------------------- User ------------------
+
+  user-follow:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-follow == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: follow
+      working-directory: user/follow/follow
       gcp_region: ${{ vars.GCP_REGION }}
       tf_vars: >-
         -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
