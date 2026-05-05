@@ -68,7 +68,7 @@ jobs:
             -backend-config="prefix=cloud-functions/${{ inputs.function-name }}"
 
       - name: Terraform Plan
-        run: terraform plan -input=false
+        run: terraform plan -input=false ${{ inputs.tf_vars }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false ${{ inputs.tf_vars }}
