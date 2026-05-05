@@ -30,7 +30,7 @@ on:
       - 'business/follow/get_followers/**'
 
       # ---------- User Functions ---------
-      - 'user/follow/follow/**'
+      - 'users/follow/follow/**'
 
 jobs:
   detect-changes:
@@ -59,7 +59,7 @@ jobs:
       business-follow: ${{ steps.filter.outputs.business-follow }}
 
       # --------- User Functions ---------
-      user-follow: ${{ steps.filter.outputs.user-follow }}
+      users-follow: ${{ steps.filter.outputs.users-follow }}
       
     steps:
       - uses: actions/checkout@v4
@@ -106,8 +106,8 @@ jobs:
 
 
 
-            user-follow:
-              - 'user/follow/follow/**'
+            users-follow:
+              - 'users/follow/follow/**'
 
   business-register:
     needs: detect-changes
@@ -300,7 +300,7 @@ jobs:
 
   user-follow:
     needs: detect-changes
-    if: needs.detect-changes.outputs.user-follow == 'true'
+    if: needs.detect-changes.outputs.users-follow == 'true'
     permissions:
       id-token: write
       contents: read
