@@ -22,7 +22,7 @@ variable "bucket_name" {
   type = string
 }
 
-variable "topic_name" {
+variable "topic" {
   type = string
 }
 
@@ -64,7 +64,7 @@ resource "google_storage_bucket_object" "source_archive" {
 }
 
 resource "google_pubsub_topic" "topic" {
-  name = var.topic_name
+  name = var.topic
 
   lifecycle {
     prevent_destroy = true
