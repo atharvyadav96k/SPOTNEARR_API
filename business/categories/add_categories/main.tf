@@ -76,6 +76,7 @@ resource "google_cloudfunctions2_function" "add_categories" {
     }
   }
 
+
   service_config {
     max_instance_count    = 1
     available_memory      = "256M"

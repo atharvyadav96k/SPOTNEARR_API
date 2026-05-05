@@ -12,6 +12,8 @@ on:
       - 'bridge-service/follow/**'
       - 'bridge-service/like/**'
       - 'bridge-service/push_notification/**'
+      - 'business/categories/add_categories/**'
+      - 'business/categories/get_categories/**'
 
 jobs:
   detect-changes:
