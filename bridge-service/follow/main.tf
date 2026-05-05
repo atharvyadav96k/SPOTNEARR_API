@@ -60,6 +60,7 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
+
 resource "google_cloudfunctions2_function" "bs-follow" {
   name     = var.function_name
   location = var.region
