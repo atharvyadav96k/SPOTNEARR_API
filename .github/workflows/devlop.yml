@@ -50,7 +50,7 @@ jobs:
             bridge-service-like:
               - 'bridge-service/like/**'
             bridge-service-push-notification:
-              - 'bridge-service/push_notification'
+              - 'bridge-service/push_notification/**I'
 
             business-categories-add:
               - 'business/categories/add_categories/**'
