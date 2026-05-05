@@ -11,6 +11,10 @@ on:
       gcp_region:
         required: true
         type: string
+      tf_vars:
+        type: string
+        required: false
+        default: ''
 
     secrets:
       GCP_PROJECT_ID:
@@ -67,4 +71,4 @@ jobs:
         run: terraform plan -input=false
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false ${{ inputs.tf_vars }}

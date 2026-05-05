@@ -1,17 +1,18 @@
 package login_function
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
+	"fmt"
+
+	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/cloudevents/sdk-go/v2/event"
 )
 
-func PushNotification(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+func init() {
+	functions.CloudEvent("PushNotification", pushNotification)
+}
 
-	response := map[string]string{
-		"message": "Notification sent successfully",
-	}
-
-	json.NewEncoder(w).Encode(response)
+func pushNotification(ctx context.Context, e event.Event) error {
+	fmt.Println("Event: ", e)
+	return nil
 }

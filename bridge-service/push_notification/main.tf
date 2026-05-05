@@ -1,24 +1,5 @@
 variable "function_name" {
-  type    = string
-  default = "bs-push-notification"
-}
-
-terraform {
-  backend "gcs" {
-    bucket = "terraform-state-603675804309"
-    prefix = "cloud-functions/bridge-service-push-notification"
-  }
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
+  type = string
 }
 
 variable "project_id" {
@@ -37,6 +18,29 @@ variable "service_account" {
   type = string
 }
 
+variable "bucket_name" {
+  type = string
+}
+
+variable "topic_name" {
+  type = string
+}
+
+terraform {
+  backend "gcs" {}
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -47,7 +51,6 @@ resource "random_id" "bucket_suffix" {
 }
 
 resource "google_storage_bucket" "source_bucket" {
-  # Updated to use the variable and fixed the empty interpolation
   name                        = "${var.function_name}-${var.project_id}-source-${random_id.bucket_suffix.hex}"
   location                    = var.region
   uniform_bucket_level_access = true
@@ -60,7 +63,16 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-resource "google_cloudfunctions2_function" "bs-push-notification" {
+resource "google_pubsub_topic" "topic" {
+  name = var.topic_name
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = all
+  }
+}
+
+resource "google_cloudfunctions2_function" "function" {
   name     = var.function_name
   location = var.region
 
@@ -81,18 +93,21 @@ resource "google_cloudfunctions2_function" "bs-push-notification" {
     available_memory      = "256M"
     timeout_seconds       = 60
     service_account_email = var.service_account
-    ingress_settings      = "ALLOW_ALL"
+  }
+
+  event_trigger {
+    trigger_region        = var.region
+    event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic          = google_pubsub_topic.topic.id
+    retry_policy          = "RETRY_POLICY_RETRY"
+    service_account_email = var.service_account
   }
 }
 
-resource "google_cloud_run_service_iam_member" "public_access" {
-  location = var.region
-  # This automatically tracks the name used in the function resource
-  service  = google_cloudfunctions2_function.bs-push-notification.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
+output "topic_id" {
+  value = google_pubsub_topic.topic.id
 }
 
-output "function_url" {
-  value = google_cloudfunctions2_function.bs-push-notification.service_config[0].uri
+output "function_name" {
+  value = google_cloudfunctions2_function.function.name
 }
