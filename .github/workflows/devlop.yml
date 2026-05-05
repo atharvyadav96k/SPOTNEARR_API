@@ -5,32 +5,50 @@ on:
     branches:
       - main
     paths:
+      # ----------- Auth Functions ---------
       - 'auth/business/register/**'
       - 'auth/business/login/**'
       - 'auth/user/login/**'
       - 'auth/user/register/**'
+
+      # ----------- Bridge Service Functions ---------
       - 'bridge-service/follow/**'
       - 'bridge-service/like/**'
       - 'bridge-service/push_notification/**'
+
+      # ----------- Business Functions ---------
       - 'business/categories/add_categories/**'
       - 'business/categories/get_categories/**'
+
+      - 'business/plans/add_plans/**'
+      - 'business/plans/get_active_plan/**'
+      - 'business/plans/get_business_plans/**'
+      - 'business/plans/set_business_active_plan/**'
 
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
+      # ---------- Auth Functions ---------
       business-register: ${{ steps.filter.outputs.business-register }}
       business-login: ${{ steps.filter.outputs.business-login }}
       user-login: ${{ steps.filter.outputs.user-login }}
       user-register: ${{ steps.filter.outputs.user-register }}
 
+      # --------- Bridge Service Functions ---------
       bridge-service-follow: ${{ steps.filter.outputs.bridge-service-follow }}
       bridge-service-like: ${{ steps.filter.outputs.bridge-service-like }}
       bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-follow }}
-
+      
+      # --------- Business Functions ---------
       business-categories-add: ${{ steps.filter.outputs.business-categories-add }}
       business-categories-get: ${{ steps.filter.outputs.business-categories-get }}
 
+      business-plans-add: ${{ steps.filter.outputs.business-plans-add }}
+      business-plans-get-active: ${{ steps.filter.outputs.business-plans-get-active }}
+      business-plans-get-business: ${{ steps.filter.outputs.business-plans-get-business }}
+      business-plans-set-active: ${{ steps.filter.outputs.business-plans-set-active }}
+      
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +56,7 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
+          
             business-register:
               - 'auth/business/register/**'
             business-login:
@@ -47,6 +66,7 @@ jobs:
             user-register:
               - 'auth/user/register/**'  
 
+
             bridge-service-follow:
               - 'bridge-service/follow/**'
             bridge-service-like:
@@ -54,10 +74,20 @@ jobs:
             bridge-service-push-notification:
               - 'bridge-service/push_notification/**'
 
+
             business-categories-add:
               - 'business/categories/add_categories/**'
             business-categories-get:
               - 'business/categories/get_categories/**'
+
+            business-plans-add:
+              - 'business/plans/add_plans/**'
+            business-plans-get-active:
+              - 'business/plans/get_active_plan/**'
+            business-plans-get-business:
+              - 'business/plans/get_business_plans/**'
+            business-plans-set-active:
+              - 'business/plans/set_business_active_plan/**'
 
   business-register:
     needs: detect-changes
@@ -84,6 +114,7 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
+# --------------------- Auth ------------------
   user-login:
     needs: detect-changes
     if: needs.detect-changes.outputs.user-login == 'true'
@@ -108,6 +139,7 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
+# --------------------- Bridge Service ------------------
   bridge-service-follow:
     needs: detect-changes
     if: needs.detect-changes.outputs.bridge-service-follow == 'true'
@@ -144,6 +176,8 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
+
+# --------------------- Business ------------------
   business-categories-add:
     needs: detect-changes
     if: needs.detect-changes.outputs.business-categories-add == 'true'
@@ -170,3 +204,54 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
   
+  business-plans-add:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-plans-add == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: add_plans
+      working-directory: business/plans/add_plans
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-plans-get-active:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-plans-get-active == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_active_plan
+      working-directory: business/plans/get_active_plan
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-plans-get-business:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-plans-get-business == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_business_plans
+      working-directory: business/plans/get_business_plans
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-plans-set-active:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-plans-set-active == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: set_business_active_plan
+      working-directory: business/plans/set_business_active_plan
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
