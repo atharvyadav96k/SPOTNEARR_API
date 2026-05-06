@@ -31,7 +31,8 @@ on:
       - 'users/follows/unfollow-business/**'
       - 'users/follows/get-following-businesses/**'
       
-      - 'users/likes/like/**'
+      - 'users/likes/business-like/**'
+      - 'users/likes/business-dislike/**'
 
 jobs:
   detect-changes:
@@ -60,7 +61,8 @@ jobs:
       users-unfollow: ${{ steps.filter.outputs.users-unfollow }}
       users-get-following-businesses: ${{ steps.filter.outputs.users-get-following-businesses }}
 
-      users-like: ${{ steps.filter.outputs.users-like }}
+      users-business-like: ${{ steps.filter.outputs.users-business-like }}
+      users-business-dislike: ${{ steps.filter.outputs.users-business-dislike }}
       
     steps:
       - uses: actions/checkout@v4
@@ -106,8 +108,10 @@ jobs:
             users-get-following-businesses:
               - 'users/follows/get-following-businesses/**'
 
-            users-like:
-              - 'users/likes/like/**'
+            users-business-like:
+              - 'users/likes/business-like/**'
+            users-business-dislike:
+              - 'users/likes/business-dislike/**'
 
   business-register:
     needs: detect-changes
@@ -295,17 +299,28 @@ jobs:
       working-directory: users/follows/get-following-businesses
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
-  user-like:
+  user-business-like:
     needs: detect-changes
-    if: needs.detect-changes.outputs.users-like == 'true'
+    if: needs.detect-changes.outputs.users-business-like == 'true'
     permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
       function-name: user-like
-      working-directory: users/likes/like
+      working-directory: users/likes/business-like
       gcp_region: ${{ vars.GCP_REGION }}
-      tf_vars: >-
-        -var="topic=${{ vars.GCP_TOPIC_LIKE }}"
+    secrets: inherit
+
+  user-business-dislike:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-business-dislike == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user-dislike
+      working-directory: users/likes/business-dislike
+      gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
