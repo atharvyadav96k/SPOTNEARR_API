@@ -64,6 +64,7 @@ resource "google_cloudfunctions2_function" "function" {
   name     = var.function_name
   location = var.region
 
+
   build_config {
     runtime         = "go122"
     entry_point     = "FollowBusiness"
