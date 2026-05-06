@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func FollowGetBusiness(w http.ResponseWriter, r *http.Request) {
+func GetFollowedBusiness(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

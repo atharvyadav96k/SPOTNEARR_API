@@ -25,15 +25,12 @@ on:
       - 'business/plans/get_business_plans/**'
       - 'business/plans/set_business_active_plan/**'
 
-      - 'business/follow/follow/**'
-      - 'business/follow/unfollow/**'
-      - 'business/follow/get_followers/**'
-
-      - 'business/likes/like/**'
 
       # ---------- User Functions ---------
-      - 'users/follow/follow/**'
-
+      - 'users/follows/follow-business/**'
+      - 'users/follows/unfollow-business/**'
+      - 'users/follows/get-following-businesses/**'
+      
       - 'users/likes/like/**'
 
 jobs:
@@ -47,8 +44,6 @@ jobs:
       user-register: ${{ steps.filter.outputs.user-register }}
 
       # --------- Bridge Service Functions ---------
-      bridge-service-follow: ${{ steps.filter.outputs.bridge-service-follow }}
-      bridge-service-like: ${{ steps.filter.outputs.bridge-service-like }}
       bridge-service-push-notification: ${{ steps.filter.outputs.bridge-service-push-notification }}
       
       # --------- Business Functions ---------
@@ -60,12 +55,10 @@ jobs:
       business-plans-get-business: ${{ steps.filter.outputs.business-plans-get-business }}
       business-plans-set-active: ${{ steps.filter.outputs.business-plans-set-active }}
 
-      business-follow: ${{ steps.filter.outputs.business-follow }}
-
-      business-like: ${{ steps.filter.outputs.business-like }}
-
       # --------- User Functions ---------
       users-follow: ${{ steps.filter.outputs.users-follow }}
+      users-unfollow: ${{ steps.filter.outputs.users-unfollow }}
+      users-get-following-businesses: ${{ steps.filter.outputs.users-get-following-businesses }}
 
       users-like: ${{ steps.filter.outputs.users-like }}
       
@@ -87,10 +80,6 @@ jobs:
               - 'auth/user/register/**'  
 
 
-            bridge-service-follow:
-              - 'bridge-service/filter-follows/**'
-            bridge-service-like:
-              - 'bridge-service/filter-likes/**'
             bridge-service-push-notification:
               - 'bridge-service/push_notification/**'
 
@@ -109,16 +98,13 @@ jobs:
             business-plans-set-active:
               - 'business/plans/set_business_active_plan/**'
 
-            business-follow:
-              - 'business/follow/follow/**'
-
-            business-like:
-              - 'business/likes/like/**'
-
-
 
             users-follow:
-              - 'users/follow/follow/**'
+              - 'users/follows/follow-business/**'
+            users-unfollow:
+              - 'users/follows/unfollow-business/**'
+            users-get-following-businesses:
+              - 'users/follows/get-following-businesses/**'
 
             users-like:
               - 'users/likes/like/**'
@@ -174,32 +160,6 @@ jobs:
     secrets: inherit
 
 # --------------------- Bridge Service ------------------
-  bridge-service-follow:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.bridge-service-follow == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      function-name: webhook_follow
-      working-directory: bridge-service/filter-follows
-      gcp_region: ${{ vars.GCP_REGION }}
-    secrets: inherit
-
-  bridge-service-like:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.bridge-service-like == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      function-name: webhook_like
-      working-directory: bridge-service/filter-likes
-      gcp_region: ${{ vars.GCP_REGION }}
-    secrets: inherit
-
   bridge-service-push-notification:
     needs: detect-changes
     if: needs.detect-changes.outputs.bridge-service-push-notification == 'true'
@@ -295,37 +255,6 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
-  business-follow:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.business-follow == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      function-name: business-follow
-      working-directory: business/follow/follow
-      gcp_region: ${{ vars.GCP_REGION }}
-      tf_vars: >-
-        -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
-    secrets: inherit
-
-
-  business-like:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.business-like == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/deploy-function.yml
-    with:
-      function-name: business-like
-      working-directory: business/likes/like
-      gcp_region: ${{ vars.GCP_REGION }}
-      tf_vars: >-
-        -var="topic=${{ vars.GCP_TOPIC_LIKE }}"
-    secrets: inherit
-
 # --------------------- User ------------------
 
   user-follow:
@@ -339,10 +268,33 @@ jobs:
       function-name: user-follow
       working-directory: users/follow/follow
       gcp_region: ${{ vars.GCP_REGION }}
-      tf_vars: >-
-        -var="topic=${{ vars.GCP_TOPIC_FOLLOW }}"
     secrets: inherit
 
+  user-unfollow:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-unfollow == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user-unfollow
+      working-directory: users/follows/unfollow-business
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  user-get-following-businesses:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-get-following-businesses == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user-get-following-businesses
+      working-directory: users/follows/get-following-businesses
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
   user-like:
     needs: detect-changes
     if: needs.detect-changes.outputs.users-like == 'true'
