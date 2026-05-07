@@ -270,7 +270,7 @@ jobs:
     uses: ./.github/workflows/deploy-function.yml
     with:
       function-name: user-follow
-      working-directory: users/follow/follow-businesses
+      working-directory: users/follows/follow-business
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
