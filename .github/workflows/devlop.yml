@@ -283,7 +283,7 @@ jobs:
     uses: ./.github/workflows/deploy-function.yml
     with:
       function-name: user-unfollow
-      working-directory: users/follows/unfollow-businesses
+      working-directory: users/follows/unfollow-business
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
   
