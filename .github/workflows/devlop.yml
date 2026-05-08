@@ -34,6 +34,12 @@ on:
       - 'users/likes/business-like/**'
       - 'users/likes/business-dislike/**'
 
+
+      # spotlight 
+      - 'users/spotlights/followed_business_spotlights/**'
+      - 'users/spotlights/get_liked_spotlights/**'
+      - 'users/spotlights/get_spotlight_by_location/**'
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -63,6 +69,11 @@ jobs:
 
       users-business-like: ${{ steps.filter.outputs.users-business-like }}
       users-business-dislike: ${{ steps.filter.outputs.users-business-dislike }}
+
+      # ---------- Spotlight Functions ---------
+      users-followed-business-spotlights: ${{ steps.filter.outputs.users-followed-business-spotlights }}
+      users-get-liked-spotlights: ${{ steps.filter.outputs.users-get-liked-spotlights }}
+      users-get-spotlight-by-location: ${{ steps.filter.outputs.users-get-spotlight-by-location }}
       
     steps:
       - uses: actions/checkout@v4
@@ -322,5 +333,46 @@ jobs:
     with:
       function-name: user-dislike
       working-directory: users/likes/business-dislike
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# --------------------- Spotlight ------------------
+
+  users-followed-business-spotlights:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-followed-business-spotlights == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_followed_business_spotlights
+      working-directory: users/spotlights/followed_business_spotlights
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  users-get-liked-spotlights:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-get-liked-spotlights == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_liked_spotlights
+      working-directory: users/spotlights/get_liked_spotlights
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  users-get-spotlight-by-location:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-get-spotlight-by-location == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_spotlight_by_location
+      working-directory: users/spotlights/get_spotlight_by_location
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
