@@ -25,6 +25,11 @@ on:
       - 'business/plans/get_business_plans/**'
       - 'business/plans/set_business_active_plan/**'
 
+      - 'business/spotlights/create_spotlight/**'
+      - 'business/spotlights/get_spotlights/**'
+      - 'business/spotlights/update_spotlight/**'
+      - 'business/spotlights/delete_spotlight/**'
+
 
       # ---------- User Functions ---------
       - 'users/follows/follow-business/**'
@@ -61,6 +66,11 @@ jobs:
       business-plans-get-active: ${{ steps.filter.outputs.business-plans-get-active }}
       business-plans-get-business: ${{ steps.filter.outputs.business-plans-get-business }}
       business-plans-set-active: ${{ steps.filter.outputs.business-plans-set-active }}
+
+      business-spotlights-create: ${{ steps.filter.outputs.business-spotlights-create }}
+      business-spotlights-get: ${{ steps.filter.outputs.business-spotlights-get }}
+      business-spotlights-update: ${{ steps.filter.outputs.business-spotlights-update }}
+      business-spotlights-delete: ${{ steps.filter.outputs.business-spotlights-delete }}  
 
       # --------- User Functions ---------
       users-follow: ${{ steps.filter.outputs.users-follow }}
@@ -111,6 +121,14 @@ jobs:
             business-plans-set-active:
               - 'business/plans/set_business_active_plan/**'
 
+            business-spotlights-create:
+              - 'business/spotlights/create_spotlight/**'
+            business-spotlights-get:
+              - 'business/spotlights/get_spotlights/**'
+            business-spotlights-update:
+              - 'business/spotlights/update_spotlight/**'
+            business-spotlights-delete:
+              - 'business/spotlights/delete_spotlight/**'
 
             users-follow:
               - 'users/follows/follow-business/**'
@@ -277,6 +295,61 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
+  business-spotlights-create:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-spotlights-create == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: create_spotlight
+      working-directory: business/spotlights/create_spotlight
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-spotlights-get:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-spotlights-get == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_spotlights
+      working-directory: business/spotlights/get_spotlights
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-spotlights-update:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-spotlights-update == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: update_spotlight
+      working-directory: business/spotlights/update_spotlight
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-spotlights-delete:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-spotlights-delete == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: delete_spotlight
+      working-directory: business/spotlights/delete_spotlight
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+   
+  
+
 # --------------------- User ------------------
 
   user-follow:
@@ -353,7 +426,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
-      function-name: get_followed_business_spotlights
+      function-name: get_followed_spotlights
       working-directory: users/spotlights/followed_business_spotlights
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

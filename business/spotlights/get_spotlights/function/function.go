@@ -5,12 +5,12 @@ import (
 	"net/http"
 )
 
-func GetSpotLights(w http.ResponseWriter, r *http.Request) {
+func Function(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	response := map[string]string{
-		"message": "Login successful",
+		"message": "Spotlight retrieved successfully",
 	}
 	json.NewEncoder(w).Encode(response)
 }
