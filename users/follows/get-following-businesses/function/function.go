@@ -10,7 +10,7 @@ func Function(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	response := map[string]string{
-		"message": "Followed Businesses retrieval successful",
+		"message": "Followed Businesses retrieval successfully",
 	}
 
 	json.NewEncoder(w).Encode(response)
