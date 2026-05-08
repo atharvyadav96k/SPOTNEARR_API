@@ -30,6 +30,12 @@ on:
       - 'business/spotlights/update_spotlight/**'
       - 'business/spotlights/delete_spotlight/**'
 
+      - 'business/products/new_products/**'
+      - 'business/products/get_products/**'
+      - 'business/products/update_products/**'
+      - 'business/products/delete_products/**'
+      - 'business/products/get_business_products/** '
+
 
       # ---------- User Functions ---------
       - 'users/follows/follow-business/**'

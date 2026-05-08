@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	functions.CloudEvent("PushNotification", pushNotification)
+	functions.CloudEvent("Function", pushNotification)
 }
 
 func pushNotification(ctx context.Context, e event.Event) error {

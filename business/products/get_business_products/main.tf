@@ -18,11 +18,8 @@ variable "service_account" {
   type = string
 }
 
-variable "bucket_name" {
-  type = string
-}
 
-variable "topic" {
+variable "bucket_name" {
   type = string
 }
 
@@ -63,16 +60,6 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-
-resource "google_pubsub_topic" "topic" {
-  name = var.topic
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = all
-  }
-}
-
 resource "google_cloudfunctions2_function" "function" {
   name     = var.function_name
   location = var.region
@@ -94,21 +81,18 @@ resource "google_cloudfunctions2_function" "function" {
     available_memory      = "256M"
     timeout_seconds       = 60
     service_account_email = var.service_account
-  }
-
-  event_trigger {
-    trigger_region        = var.region
-    event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic          = google_pubsub_topic.topic.id
-    retry_policy          = "RETRY_POLICY_RETRY"
-    service_account_email = var.service_account
+    ingress_settings      = "ALLOW_ALL"
   }
 }
 
-output "topic_id" {
-  value = google_pubsub_topic.topic.id
+resource "google_cloud_run_service_iam_member" "public_access" {
+  location = var.region
+  service  = google_cloudfunctions2_function.function.service_config[0].service
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+  depends_on = [google_cloudfunctions2_function.function]
 }
 
-output "function_name" {
-  value = google_cloudfunctions2_function.function.name
+output "function_url" {
+  value = google_cloudfunctions2_function.function.service_config[0].uri
 }
