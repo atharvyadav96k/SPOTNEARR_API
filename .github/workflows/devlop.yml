@@ -78,6 +78,12 @@ jobs:
       business-spotlights-update: ${{ steps.filter.outputs.business-spotlights-update }}
       business-spotlights-delete: ${{ steps.filter.outputs.business-spotlights-delete }}  
 
+      business-products-new: ${{ steps.filter.outputs.business-products-new }}
+      business-products-get: ${{ steps.filter.outputs.business-products-get }}
+      business-products-update: ${{ steps.filter.outputs.business-products-update }}
+      business-products-delete: ${{ steps.filter.outputs.business-products-delete }}
+      business-products-get-business: ${{ steps.filter.outputs.business-products-get-business }}
+
       # --------- User Functions ---------
       users-follow: ${{ steps.filter.outputs.users-follow }}
       users-unfollow: ${{ steps.filter.outputs.users-unfollow }}
@@ -135,6 +141,18 @@ jobs:
               - 'business/spotlights/update_spotlight/**'
             business-spotlights-delete:
               - 'business/spotlights/delete_spotlight/**'
+
+            business-products-new:
+              - 'business/products/new_products/**'
+            business-products-get:
+              - 'business/products/get_products/**'
+            business-products-update:
+              - 'business/products/update_products/**'
+            business-products-delete:
+              - 'business/products/delete_products/**'
+            business-products-get-business:
+              - 'business/products/get_business_products/**'
+            
 
             users-follow:
               - 'users/follows/follow-business/**'
@@ -354,6 +372,70 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
    
+  business-products-new:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-products-new == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: new_products
+      working-directory: business/products/new_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-products-get:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-products-get == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_products
+      working-directory: business/products/get_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-products-update:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-products-update == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: update_products
+      working-directory: business/products/update_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-products-delete:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-products-delete == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: delete_products
+      working-directory: business/products/delete_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-products-get-business:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-products-get-business == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_business_products
+      working-directory: business/products/get_business_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
   
 
 # --------------------- User ------------------
