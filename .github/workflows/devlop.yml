@@ -35,7 +35,7 @@ on:
       - 'users/likes/business-dislike/**'
 
 
-      # spotlight 
+      # --------- Spotlight Functions ---------
       - 'users/spotlights/followed_business_spotlights/**'
       - 'users/spotlights/get_liked_spotlights/**'
       - 'users/spotlights/get_spotlight_by_location/**'
@@ -123,6 +123,13 @@ jobs:
               - 'users/likes/business-like/**'
             users-business-dislike:
               - 'users/likes/business-dislike/**'
+
+            users-followed-business-spotlights:
+              - 'users/spotlights/followed_business_spotlights/**'
+            users-get-liked-spotlights:
+              - 'users/spotlights/get_liked_spotlights/**'
+            users-get-spotlight-by-location:
+              - 'users/spotlights/get_spotlight_by_location/**'
 
   business-register:
     needs: detect-changes
