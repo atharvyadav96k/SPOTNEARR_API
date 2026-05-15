@@ -85,7 +85,6 @@ resource "google_cloudfunctions2_function" "function" {
   }
 }
 
-
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
   service  = google_cloudfunctions2_function.function.service_config[0].service
