@@ -66,7 +66,7 @@ resource "google_cloudfunctions2_function" "function" {
 
   build_config {
     runtime         = "go122"
-    entry_point     = "AddPlans"
+    entry_point     = "Function"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -84,6 +84,7 @@ resource "google_cloudfunctions2_function" "function" {
     ingress_settings      = "ALLOW_ALL"
   }
 }
+
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
