@@ -34,7 +34,9 @@ on:
       - 'business/products/get_products/**'
       - 'business/products/update_products/**'
       - 'business/products/delete_products/**'
-      - 'business/products/get_business_products/** '
+      - 'business/products/get_business_products/**'
+      - 'business/transactions/complete_order/**'
+      - 'business/transactions/create_order/**'
 
 
       # ---------- User Functions ---------
