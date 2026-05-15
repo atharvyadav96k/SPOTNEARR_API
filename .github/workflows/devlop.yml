@@ -86,6 +86,9 @@ jobs:
       business-products-delete: ${{ steps.filter.outputs.business-products-delete }}
       business-products-get-business: ${{ steps.filter.outputs.business-products-get-business }}
 
+      business-transactions-complete-order: ${{ steps.filter.outputs.business-transactions-complete-order }}
+      business-transactions-create_order: ${{ steps.filter.outputs.business-transactions-create_order }}
+
       # --------- User Functions ---------
       users-follow: ${{ steps.filter.outputs.users-follow }}
       users-unfollow: ${{ steps.filter.outputs.users-unfollow }}
@@ -154,6 +157,11 @@ jobs:
               - 'business/products/delete_products/**'
             business-products-get-business:
               - 'business/products/get_business_products/**'
+
+            business-transactions-complete-order:
+              - 'business/transactions/complete_order/**'
+            business-transactions-create_order:
+              - 'business/transactions/create_order/**'
             
 
             users-follow:
@@ -439,6 +447,31 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
   
+  business-transactions-complete-order:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-transactions-complete-order == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: complete_order
+      working-directory: business/transactions/complete_order
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-transactions-create_order:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-transactions-create_order == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: create_order
+      working-directory: business/transactions/create_order
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
 
 # --------------------- User ------------------
 
