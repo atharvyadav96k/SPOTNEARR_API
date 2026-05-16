@@ -100,6 +100,7 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   depends_on = [google_cloudfunctions2_function.function]
 }
 
+
 output "function_url" {
   value = google_cloudfunctions2_function.function.service_config[0].uri
 }

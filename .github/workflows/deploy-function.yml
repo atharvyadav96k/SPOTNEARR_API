@@ -43,7 +43,7 @@ jobs:
       TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
       TF_VAR_region: ${{ inputs.gcp_region }}
       TF_VAR_bucket_name: ${{ secrets.GCP_BUCKET_NAME }}
-      TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
 
     steps:
       - uses: actions/checkout@v4
