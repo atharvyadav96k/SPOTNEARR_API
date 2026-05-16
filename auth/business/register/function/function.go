@@ -1,15 +1,26 @@
 package auth
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/business_register/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
 func BusinessRegister(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	response := map[string]string{
-		"message": "Registration successful",
+
+	business, err := utils.ParseBody[models.Business](r)
+	if err != nil {
+		utils.BadRequest(w, err.Error())
+		return
 	}
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	business, err = app.RegisterBusiness(*business)
+	if err != nil {
+		utils.BadRequest(w, err.Error())
+		return
+	}
+	utils.Created(w, "business registered successfully", business)
+
 }

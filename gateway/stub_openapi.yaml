@@ -1,0 +1,19 @@
+swagger: '2.0'
+info:
+  title: Spotnearr Mobile API
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+paths:
+  /ping:
+    get:
+      summary: Gateway health check
+      operationId: ping
+      x-google-backend:
+        address: https://mock-backend-service-v1.com
+        protocol: h2
+      responses:
+        200:
+          description: Success
