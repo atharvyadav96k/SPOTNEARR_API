@@ -8,7 +8,7 @@ import (
 	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
-func BusinessRegister(w http.ResponseWriter, r *http.Request) {
+func Function(w http.ResponseWriter, r *http.Request) {
 
 	business, err := utils.ParseBody[models.Business](r)
 	if err != nil {
