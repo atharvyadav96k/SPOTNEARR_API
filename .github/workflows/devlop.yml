@@ -230,6 +230,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/deploy-function.yml
     with:
+      function-name: user-register
       working-directory: auth/user/register
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
