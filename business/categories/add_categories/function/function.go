@@ -1,17 +1,24 @@
 package categories
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/business_add_categories/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
-func AddCategories(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Login successful",
+func Function(w http.ResponseWriter, r *http.Request) {
+	businessCategory, err := utils.ParseBody[models.BusinessCategory](r)
+	if err != nil {
+		utils.BadRequest(w, err.Error())
+		return
 	}
-
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	businessCategory, err = app.CreateBusinessCategory(*businessCategory)
+	if err != nil {
+		utils.BadRequest(w, err.Error())
+		return
+	}
+	utils.Created(w, "business categories created successfully", businessCategory)
 }

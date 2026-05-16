@@ -18,8 +18,11 @@ variable "service_account" {
   type = string
 }
 
-
 variable "bucket_name" {
+  type = string
+}
+
+variable "database_url" {
   type = string
 }
 
@@ -66,7 +69,7 @@ resource "google_cloudfunctions2_function" "function" {
 
   build_config {
     runtime         = "go122"
-    entry_point     = "AddCategories"
+    entry_point     = "Function"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -82,6 +85,10 @@ resource "google_cloudfunctions2_function" "function" {
     timeout_seconds       = 60
     service_account_email = var.service_account
     ingress_settings      = "ALLOW_ALL"
+
+    environment_variables = {
+      DATABASE_URL = var.database_url
+    }
   }
 }
 
@@ -92,6 +99,7 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   member   = "allUsers"
   depends_on = [google_cloudfunctions2_function.function]
 }
+
 
 output "function_url" {
   value = google_cloudfunctions2_function.function.service_config[0].uri
