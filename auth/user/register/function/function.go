@@ -3,10 +3,9 @@ package auth
 import (
 	"net/http"
 
-	"register/applayer"
-
 	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
 	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
+	"github.com/atharvyadav96k/spotnearr-gcp/auth/user/register/applayer"
 )
 
 func Function(

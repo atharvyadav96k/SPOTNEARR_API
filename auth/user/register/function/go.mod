@@ -1,4 +1,4 @@
-module register
+module github.com/atharvyadav96k/spotnearr-gcp/auth/user/register
 
 go 1.25.5
 
