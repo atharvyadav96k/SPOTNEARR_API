@@ -1,17 +1,18 @@
 package categories
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/business_get_categories/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
-func GetCategories(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Categories successful",
+func Function(w http.ResponseWriter, r *http.Request) {
+	app := applayer.Init()
+	categories, err := app.GetBusinessCategories()
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
 	}
-
-	json.NewEncoder(w).Encode(response)
+	utils.OK(w, "business categories loaded successfully", categories)
 }
