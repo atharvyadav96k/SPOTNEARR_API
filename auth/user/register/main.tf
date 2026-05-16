@@ -18,7 +18,6 @@ variable "service_account" {
   type = string
 }
 
-
 variable "bucket_name" {
   type = string
 }
@@ -66,7 +65,7 @@ resource "google_cloudfunctions2_function" "function" {
 
   build_config {
     runtime         = "go122"
-    entry_point     = "AddCategories"
+    entry_point     = "Function"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
