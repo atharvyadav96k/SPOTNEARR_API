@@ -35,6 +35,11 @@ on:
       - 'business/products/update_products/**'
       - 'business/products/delete_products/**'
       - 'business/products/get_business_products/**'
+
+      - 'business/location/create_location/**'
+      - 'business/location/get_location/**'
+      - 'business/location/update_location/**'
+      - 'business/location/delete_location/**'
       
       - 'business/transactions/complete_order/**'
       - 'business/transactions/create_order/**'
@@ -89,6 +94,11 @@ jobs:
 
       business-transactions-complete-order: ${{ steps.filter.outputs.business-transactions-complete-order }}
       business-transactions-create_order: ${{ steps.filter.outputs.business-transactions-create_order }}
+
+      business-location-create_location: ${{ steps.filter.outputs.business-location-create_location }}
+      business-location-get_location: ${{ steps.filter.outputs.business-location-get_location }}
+      business-location-update_location: ${{ steps.filter.outputs.business-location-update_location }}
+      business-location-delete_location: ${{ steps.filter.outputs.business-location-delete_location }}
 
       # --------- User Functions ---------
       users-follow: ${{ steps.filter.outputs.users-follow }}
@@ -163,7 +173,16 @@ jobs:
               - 'business/transactions/complete_order/**'
             business-transactions-create_order:
               - 'business/transactions/create_order/**'
-            
+
+            business-location-create_location:
+              - 'business/location/create_location/**'
+            business-location-get_location:
+              - 'business/location/get_location/**'
+            business-location-update_location:
+              - 'business/location/update_location/**'
+            business-location-delete_location:
+              - 'business/location/delete_location/**'
+
 
             users-follow:
               - 'users/follows/follow-business/**'
@@ -473,6 +492,58 @@ jobs:
     with:
       function-name: create_order
       working-directory: business/transactions/create_order
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-location-create_location:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-location-create_location == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: create_location
+      working-directory: business/location/create_location
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-location-get_location:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-location-get_location == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_location
+      working-directory: business/location/get_location
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-location-update_location:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-location-update_location == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: update_location
+      working-directory: business/location/update_location
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-location-delete_location:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-location-delete_location == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: delete_location
+      working-directory: business/location/delete_location
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
 
