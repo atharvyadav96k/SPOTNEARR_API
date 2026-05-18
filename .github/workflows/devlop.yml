@@ -36,6 +36,11 @@ on:
       - 'business/products/delete_products/**'
       - 'business/products/get_business_products/**'
 
+      - 'business/inventory/create/**'
+      - 'business/inventory/delete/**'
+      - 'business/inventory/get/**'
+      - 'business/inventory/get_by_business/**'
+
       - 'business/location/create_location/**'
       - 'business/location/get_location/**'
       - 'business/location/update_location/**'
@@ -91,6 +96,12 @@ jobs:
       business-products-update: ${{ steps.filter.outputs.business-products-update }}
       business-products-delete: ${{ steps.filter.outputs.business-products-delete }}
       business-products-get-business: ${{ steps.filter.outputs.business-products-get-business }}
+
+      business-inventory-create: ${{steps.filter.outputs.business-inventory-create }}
+      business-inventory-update: ${{steps.filter.outputs.business-inventory-create }}
+      business-inventory-delete: ${{steps.filter.outputs.business-inventory-create }}
+      business-inventory-get: ${{steps.filter.outputs.business-inventory-create }}
+      business-inventory-get-by-business: ${{steps.filter.outputs.business-inventory-create }}
 
       business-transactions-complete-order: ${{ steps.filter.outputs.business-transactions-complete-order }}
       business-transactions-create_order: ${{ steps.filter.outputs.business-transactions-create_order }}
@@ -168,6 +179,15 @@ jobs:
               - 'business/products/delete_products/**'
             business-products-get-business:
               - 'business/products/get_business_products/**'
+
+            business-inventory-create:
+              - 'business/inventory/create'
+            business-inventory-update:
+              - 'business/inventory/update'
+            business-inventory-get:
+              - 'business/inventory/get'
+            business-inventory-get-by-business:
+              - 'business/inventory/get_by_business'
 
             business-transactions-complete-order:
               - 'business/transactions/complete_order/**'
@@ -466,6 +486,71 @@ jobs:
     with:
       function-name: get_business_products
       working-directory: business/products/get_business_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-inventory-create:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-inventory-create == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: create_inventory
+      working-directory: business/inventory/create
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-inventory-get:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-inventory-get == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_inventory
+      working-directory: business/inventory/get
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-inventory-update:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-inventory-update == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: update_inventory
+      working-directory: business/inventory/update
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  
+  business-inventory-delete:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-inventory-delete == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: delete_inventory
+      working-directory: business/inventory/delete
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  business-inventory-get-business:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.business-inventory-get-by-business == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_business_inventory
+      working-directory: business/inventory/get_by_business
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
   
