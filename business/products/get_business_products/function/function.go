@@ -1,17 +1,24 @@
 package products_operation
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/products/get_business_prouducts/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Products retrieved successfully",
+	business, err := utils.ParseBody[models.Business](r)
+	if err != nil {
+		utils.BadRequest(w, err.Error())
+		return
 	}
-
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	products, err := app.GetProductsByBusinessID(business.ID)
+	if err != nil {
+		utils.BadRequest(w, err.Error())
+		return
+	}
+	utils.OK(w, "products fetched successfully", products)
 }
