@@ -181,13 +181,13 @@ jobs:
               - 'business/products/get_business_products/**'
 
             business-inventory-create:
-              - 'business/inventory/create'
+              - 'business/inventory/create/**'
             business-inventory-update:
-              - 'business/inventory/update'
+              - 'business/inventory/update/**'
             business-inventory-get:
-              - 'business/inventory/get'
+              - 'business/inventory/get/**'
             business-inventory-get-by-business:
-              - 'business/inventory/get_by_business'
+              - 'business/inventory/get_by_business/**'
 
             business-transactions-complete-order:
               - 'business/transactions/complete_order/**'
