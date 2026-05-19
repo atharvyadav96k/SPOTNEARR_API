@@ -1,17 +1,22 @@
 package spotlight_operation
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/business/spotlight_create/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Spotlight created successfully",
+	spotlight, err := utils.ParseBody[models.Spotlight](r)
+	if err != nil {
+		utils.BadRequest(w, err)
 	}
-
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	spotlight, err = app.CreateSpotlight(*spotlight)
+	if err != nil {
+		utils.BadRequest(w, err)
+	}
+	utils.Created(w, "spotlight created successfully", spotlight)
 }

@@ -1,4 +1,4 @@
-module github.com/atharvyadav96k/SPOTNEARR_API/business/get_spotlights
+module github.com/atharvyadav96k/SPOTNEARR_API/spotlight/delete
 
 go 1.25.5
 

@@ -1,17 +1,24 @@
 package spotlight_operation
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/spotlight/delete/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Spotlight deleted successfully",
+	spotlight, err := utils.ParseBody[models.Spotlight](r)
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
 	}
-
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	err = app.DeleteSpotlight(spotlight.ID)
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
+	}
+	utils.OK(w, "deleted successfully", nil)
 }
