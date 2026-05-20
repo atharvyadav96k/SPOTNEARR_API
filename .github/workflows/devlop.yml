@@ -129,10 +129,10 @@ jobs:
       users-get-liked-spotlights: ${{ steps.filter.outputs.users-get-liked-spotlights }}
       users-get-spotlight-by-location: ${{ steps.filter.outputs.users-get-spotlight-by-location }}
 
-      users-comment-create: ${{ steps.filter.outputs.user-comment-create }}
-      users-comment-update: ${{ steps.filter.outputs.user-comment-update }}
-      users-comment-delete: ${{ steps.filter.outputs.user-comment-delete }}
-      users-comment-get-by-spotlight: ${{ steps.filter.outputs.user-comment-get-by-spotlight }}
+      users-comment-create: ${{ steps.filter.outputs.users-comment-create }}
+      users-comment-update: ${{ steps.filter.outputs.users-comment-update }}
+      users-comment-delete: ${{ steps.filter.outputs.users-comment-delete }}
+      users-comment-get-by-spotlight: ${{ steps.filter.outputs.users-comment-get-by-spotlight }}
       
     steps:
       - uses: actions/checkout@v4
@@ -235,13 +235,10 @@ jobs:
 
             users-comment-create:
               - 'users/spotlights/comments/create/**'
-            
             users-comments-update:
               - 'users/spotlights/comments/update/**'
-
             users-comments-delete:
               - 'users/spotlights/comments/delete/**'
-            
             users-comments-get-by-spotlight:
               - 'users/spotlights/comments/get_by_spotlight'
 
