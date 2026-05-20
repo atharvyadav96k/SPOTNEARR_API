@@ -11,17 +11,27 @@ jobs:
       unfollow:               ${{ steps.filter.outputs.unfollow }}
       get-following:          ${{ steps.filter.outputs.get-following }}
 
+      follow-user:            ${{ steps.filter.outputs.follow-user }}
+      unfollow-user:          ${{ steps.filter.outputs.unfollow-user }}
+      get-followers:          ${{ steps.filter.outputs.get-followers }}
+      get-following-users:    ${{ steps.filter.outputs.get-following-users }}
+
       like:                   ${{ steps.filter.outputs.like }}
       dislike:                ${{ steps.filter.outputs.dislike }}
 
       followed-spotlights:    ${{ steps.filter.outputs.followed-spotlights }}
       liked-spotlights:       ${{ steps.filter.outputs.liked-spotlights }}
       spotlight-by-location:  ${{ steps.filter.outputs.spotlight-by-location }}
+      get-saved-spotlights:   ${{ steps.filter.outputs.get-saved-spotlights }}
 
       comment-create:         ${{ steps.filter.outputs.comment-create }}
       comment-update:         ${{ steps.filter.outputs.comment-update }}
       comment-delete:         ${{ steps.filter.outputs.comment-delete }}
       comment-get-by-spotlight: ${{ steps.filter.outputs.comment-get-by-spotlight }}
+
+      save-product:           ${{ steps.filter.outputs.save-product }}
+      unsave-product:         ${{ steps.filter.outputs.unsave-product }}
+      get-saved-products:     ${{ steps.filter.outputs.get-saved-products }}
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +47,15 @@ jobs:
             get-following:
               - 'users/follows/get-following-businesses/**'
 
+            follow-user:
+              - 'users/follows/follow-user/**'
+            unfollow-user:
+              - 'users/follows/unfollow-user/**'
+            get-followers:
+              - 'users/follows/get-followers/**'
+            get-following-users:
+              - 'users/follows/get-following-users/**'
+
             like:
               - 'users/likes/business-like/**'
             dislike:
@@ -48,6 +67,8 @@ jobs:
               - 'users/spotlights/get_liked_spotlights/**'
             spotlight-by-location:
               - 'users/spotlights/get_spotlight_by_location/**'
+            get-saved-spotlights:
+              - 'users/spotlights/get-saved/**'
 
             comment-create:
               - 'users/spotlights/comments/create/**'
@@ -57,6 +78,13 @@ jobs:
               - 'users/spotlights/comments/delete/**'
             comment-get-by-spotlight:
               - 'users/spotlights/comments/get_by_spotlight/**'
+
+            save-product:
+              - 'users/products/save/**'
+            unsave-product:
+              - 'users/products/unsave/**'
+            get-saved-products:
+              - 'users/products/get-saved/**'
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -222,5 +250,112 @@ jobs:
     with:
       function-name: get_spotlight_comments
       working-directory: users/spotlights/comments/get_by_spotlight
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Follow User ──────────────────────────────────────────
+  follow-user:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.follow-user == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: follow_user
+      working-directory: users/follows/follow-user
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  unfollow-user:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.unfollow-user == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: unfollow_user
+      working-directory: users/follows/unfollow-user
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  get-followers:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-followers == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_user_followers
+      working-directory: users/follows/get-followers
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  get-following-users:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-following-users == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_user_following
+      working-directory: users/follows/get-following-users
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Saved Products ───────────────────────────────────────
+  save-product:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.save-product == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: save_product
+      working-directory: users/products/save
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  unsave-product:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.unsave-product == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: unsave_product
+      working-directory: users/products/unsave
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  get-saved-products:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-saved-products == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_saved_products
+      working-directory: users/products/get-saved
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Saved Spotlights ─────────────────────────────────────
+  get-saved-spotlights:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-saved-spotlights == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_saved_spotlights
+      working-directory: users/spotlights/get-saved
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
