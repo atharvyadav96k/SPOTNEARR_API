@@ -1,4 +1,4 @@
-module github.com/atharvyadav96k/SPOTNEARR_API/user/unfollow
+module github.com/atharvyadav96k/SPOTNEARR_API/user/get-liked-products
 
 go 1.25.5
 

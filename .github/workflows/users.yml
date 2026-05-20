@@ -33,6 +33,10 @@ jobs:
       unsave-product:         ${{ steps.filter.outputs.unsave-product }}
       get-saved-products:     ${{ steps.filter.outputs.get-saved-products }}
 
+      product-like:           ${{ steps.filter.outputs.product-like }}
+      product-unlike:         ${{ steps.filter.outputs.product-unlike }}
+      get-liked-products:     ${{ steps.filter.outputs.get-liked-products }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -85,6 +89,13 @@ jobs:
               - 'users/products/unsave/**'
             get-saved-products:
               - 'users/products/get-saved/**'
+
+            product-like:
+              - 'users/likes/product-like/**'
+            product-unlike:
+              - 'users/likes/product-unlike/**'
+            get-liked-products:
+              - 'users/likes/get-liked-products/**'
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -357,5 +368,45 @@ jobs:
     with:
       function-name: get_saved_spotlights
       working-directory: users/spotlights/get-saved
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── Product Likes ─────────────────────────────────────────────
+  product-like:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.product-like == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_like_product
+      working-directory: users/likes/product-like
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  product-unlike:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.product-unlike == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_unlike_product
+      working-directory: users/likes/product-unlike
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  get-liked-products:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-liked-products == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_liked_products
+      working-directory: users/likes/get-liked-products
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
