@@ -1,0 +1,53 @@
+name: Deploy Cloud Functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'auth/**'
+      - 'business/**'
+      - 'users/**'
+      - 'bridge-service/**'
+
+jobs:
+  detect-domains:
+    runs-on: ubuntu-latest
+    outputs:
+      business: ${{ steps.changes.outputs.business }}
+      users: ${{ steps.changes.outputs.users }}
+      auth: ${{ steps.changes.outputs.auth }}
+      bridge: ${{ steps.changes.outputs.bridge }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            business:
+              - 'business/**'
+            users:
+              - 'users/**'
+            auth:
+              - 'auth/**'
+            bridge:
+              - 'bridge-service/**'
+
+  business:
+    needs: detect-domains
+    if: needs.detect-domains.outputs.business == 'true'
+    uses: ./.github/workflows/business.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets: inherit
+
+  users:
+    needs: detect-domains
+    if: needs.detect-domains.outputs.users == 'true'
+    uses: ./.github/workflows/users.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets: inherit
