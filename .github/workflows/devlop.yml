@@ -64,6 +64,11 @@ on:
       - 'users/spotlights/get_liked_spotlights/**'
       - 'users/spotlights/get_spotlight_by_location/**'
 
+      - 'users/spotlights/comments/create/**'
+      - 'users/spotlights/comments/update/**'
+      - 'users/spotlights/comments/delete/**'
+      - 'users/spotlights/comments/get_by_spotlight/**'
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -123,6 +128,11 @@ jobs:
       users-followed-business-spotlights: ${{ steps.filter.outputs.users-followed-business-spotlights }}
       users-get-liked-spotlights: ${{ steps.filter.outputs.users-get-liked-spotlights }}
       users-get-spotlight-by-location: ${{ steps.filter.outputs.users-get-spotlight-by-location }}
+
+      users-comment-create: ${{ steps.filter.outputs.user-comment-create }}
+      users-comment-update: ${{ steps.filter.outputs.user-comment-update }}
+      users-comment-delete: ${{ steps.filter.outputs.user-comment-delete }}
+      users-comment-get-by-spotlight: ${{ steps.filter.outputs.user-comment-get-by-spotlight }}
       
     steps:
       - uses: actions/checkout@v4
@@ -222,6 +232,18 @@ jobs:
               - 'users/spotlights/get_liked_spotlights/**'
             users-get-spotlight-by-location:
               - 'users/spotlights/get_spotlight_by_location/**'
+
+            users-comment-create:
+              - 'users/spotlights/comments/create/**'
+            
+            users-comments-update:
+              - 'users/spotlights/comments/update/**'
+
+            users-comments-delete:
+              - 'users/spotlights/comments/delete/**'
+            
+            users-comments-get-by-spotlight:
+              - 'users/spotlights/comments/get_by_spotlight'
 
   business-register:
     needs: detect-changes
@@ -736,5 +758,56 @@ jobs:
     with:
       function-name: get_spotlight_by_location
       working-directory: users/spotlights/get_spotlight_by_location
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  users-comments-create:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-comment-create == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: create_spotlight_comment
+      working-directory: users/spotlights/comments/create
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+  users-comments-update:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-comment-update == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: update_spotlight_comment
+      working-directory: users/spotlights/comments/update
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+      
+  users-comments-delete:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-comment-delete == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: delete_spotlight_comment
+      working-directory: users/spotlights/comments/delete
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  users-comments-get-by-spotlight:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.users-comment-get-by-spotlight == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_spotlight_comments
+      working-directory: users/spotlights/comments/get_by_spotlight
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
