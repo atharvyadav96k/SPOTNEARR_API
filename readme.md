@@ -939,6 +939,94 @@ Mark an accepted claim as completed after the user picks up the product.
 
 ---
 
+## User — Liked Businesses
+
+### GET `/users/likes/get-liked-businesses`
+Get all businesses a user has liked.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `user_id` | uuid | yes |
+
+**Response 200** → `[]LikedBusinessResponse`
+
+```json
+{ "business_id": "uuid", "created_at": "datetime" }
+```
+
+---
+
+## User — Offers
+
+### GET `/users/offers/get-offers-by-business`
+Get active, non-expired offers for a specific business.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `business_id` | uuid | yes |
+
+**Response 200** → `[]OfferResponse`
+
+---
+
+## User — Reviews
+
+### POST `/users/reviews/add-review`
+Submit a review for a business. One review per user per business (unique constraint).
+
+**Body**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `business_id` | uuid | yes | |
+| `user_id` | uuid | yes | |
+| `rating` | int | yes | 1–5 |
+| `comment` | string | no | |
+
+**Response 201** → `ReviewResponse`
+
+---
+
+### GET `/users/reviews/get-reviews`
+Get all reviews for a business, newest first.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `business_id` | uuid | yes |
+
+**Response 200** → `[]ReviewResponse`
+
+---
+
+## User — Notifications
+
+### GET `/users/notifications/get-notifications`
+Get all notifications for a user, newest first.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `user_id` | uuid | yes |
+
+**Response 200** → `[]NotificationResponse`
+
+---
+
+### PUT `/users/notifications/mark-read`
+Mark notifications as read. If `id` is provided, marks that specific notification; otherwise marks all unread notifications for the user.
+
+**Body**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `user_id` | uuid | yes | |
+| `id` | uuid | no | omit to mark all as read |
+
+**Response 200** → `null`
+
+---
+
 ## Business — Claims
 
 ### GET `/business/claims/get-incoming-claims`
@@ -970,6 +1058,64 @@ Accept a pending claim. No stock change (already reserved on creation).
 
 ### PUT `/business/claims/reject-claim`
 Reject a pending claim. Restores the reserved stock.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | uuid | yes |
+| `business_id` | uuid | yes |
+
+**Response 200** → `null`
+
+---
+
+## Business — Offers
+
+### POST `/business/offers/create_offer`
+Create a discount offer for the business.
+
+**Body**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `business_id` | uuid | yes | |
+| `title` | string | yes | |
+| `description` | string | no | |
+| `discount_type` | string | yes | `percentage` \| `flat` |
+| `discount_value` | int64 | yes | must be > 0 |
+| `min_order_value` | int64 | no | default 0 |
+| `coupon_code` | string | no | |
+| `banner_url` | string | no | |
+| `is_active` | bool | no | default true |
+| `starts_at` | datetime | yes | ISO 8601 |
+| `expires_at` | datetime | yes | ISO 8601 |
+
+**Response 201** → `OfferResponse`
+
+---
+
+### GET `/business/offers/get_business_offers`
+List all offers for a business (active and inactive).
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `business_id` | uuid | yes |
+
+**Response 200** → `[]OfferResponse`
+
+---
+
+### PUT `/business/offers/update_offer`
+Update an existing offer. Validates all required fields. `id` and `business_id` are used to scope the update.
+
+**Body** — same fields as create; `id` required.
+
+**Response 200** → `OfferResponse`
+
+---
+
+### DELETE `/business/offers/delete_offer`
+Delete an offer.
 
 **Body**
 | Field | Type | Required |
@@ -1137,4 +1283,102 @@ Send a push notification to a user device.
   "claimed_at": "datetime",
   "updated_at": "datetime"
 }
+```
+
+### `ReviewResponse`
+```json
+{
+  "id": "uuid",
+  "business_id": "uuid",
+  "user_id": "uuid",
+  "rating": 5,
+  "comment": "string or null",
+  "is_verified": false,
+  "created_at": "datetime"
+}
+```
+
+### `NotificationResponse`
+```json
+{
+  "id": "uuid",
+  "type": "spotlight_posted|offer_live|new_product|review",
+  "title": "string",
+  "body": "string or null",
+  "ref_id": "uuid or null",
+  "ref_type": "spotlight|offer|product or null",
+  "is_read": false,
+  "created_at": "datetime"
+}
+```
+
+---
+
+## Database Migrations
+
+Run these SQL statements in order to set up all required tables.
+
+```sql
+-- Offers
+CREATE TABLE offers (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id    UUID NOT NULL REFERENCES businesses(id),
+    title          TEXT NOT NULL,
+    description    TEXT,
+    discount_type  TEXT NOT NULL,
+    discount_value BIGINT NOT NULL,
+    min_order_value BIGINT NOT NULL DEFAULT 0,
+    coupon_code    TEXT,
+    banner_url     TEXT,
+    is_active      BOOLEAN NOT NULL DEFAULT true,
+    starts_at      TIMESTAMPTZ NOT NULL,
+    expires_at     TIMESTAMPTZ NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX ON offers(business_id);
+
+-- Business Reviews (one review per user per business)
+CREATE TABLE business_reviews (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id),
+    user_id     UUID NOT NULL REFERENCES users(id),
+    rating      INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment     TEXT,
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (business_id, user_id)
+);
+CREATE INDEX ON business_reviews(business_id);
+
+-- Notifications
+CREATE TABLE notifications (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL REFERENCES users(id),
+    type       TEXT NOT NULL,
+    title      TEXT NOT NULL,
+    body       TEXT,
+    ref_id     UUID,
+    ref_type   TEXT,
+    is_read    BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX ON notifications(user_id);
+CREATE INDEX ON notifications(is_read);
+
+-- Product Claims (add if not already present from previous migration)
+CREATE TABLE IF NOT EXISTS product_claims (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id      UUID NOT NULL REFERENCES users(id),
+    business_id  UUID NOT NULL REFERENCES businesses(id),
+    inventory_id UUID NOT NULL REFERENCES product_inventory(id),
+    quantity     INT NOT NULL DEFAULT 1,
+    status       TEXT NOT NULL DEFAULT 'pending',
+    note         TEXT,
+    claimed_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ON product_claims(user_id);
+CREATE INDEX IF NOT EXISTS ON product_claims(business_id);
+CREATE INDEX IF NOT EXISTS ON product_claims(status);
 ```

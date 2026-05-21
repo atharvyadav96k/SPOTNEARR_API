@@ -47,6 +47,13 @@ jobs:
       cancel-claim:           ${{ steps.filter.outputs.cancel-claim }}
       mark-received:          ${{ steps.filter.outputs.mark-received }}
 
+      get-liked-businesses:   ${{ steps.filter.outputs.get-liked-businesses }}
+      offers-by-business:     ${{ steps.filter.outputs.offers-by-business }}
+      add-review:             ${{ steps.filter.outputs.add-review }}
+      get-reviews:            ${{ steps.filter.outputs.get-reviews }}
+      get-notifications:      ${{ steps.filter.outputs.get-notifications }}
+      mark-notification-read: ${{ steps.filter.outputs.mark-notification-read }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -124,6 +131,19 @@ jobs:
               - 'users/claims/cancel-claim/**'
             mark-received:
               - 'users/claims/mark-received/**'
+
+            get-liked-businesses:
+              - 'users/likes/get-liked-businesses/**'
+            offers-by-business:
+              - 'users/offers/get-offers-by-business/**'
+            add-review:
+              - 'users/reviews/add-review/**'
+            get-reviews:
+              - 'users/reviews/get-reviews/**'
+            get-notifications:
+              - 'users/notifications/get-notifications/**'
+            mark-notification-read:
+              - 'users/notifications/mark-read/**'
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -543,5 +563,87 @@ jobs:
     with:
       function-name: user_mark_received
       working-directory: users/claims/mark-received
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Likes (Businesses) ───────────────────────────────────
+  get-liked-businesses:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-liked-businesses == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_get_liked_businesses
+      working-directory: users/likes/get-liked-businesses
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Offers ───────────────────────────────────────────────
+  offers-by-business:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.offers-by-business == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_get_offers_by_business
+      working-directory: users/offers/get-offers-by-business
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Reviews ──────────────────────────────────────────────
+  add-review:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.add-review == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_add_review
+      working-directory: users/reviews/add-review
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  get-reviews:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-reviews == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_get_reviews
+      working-directory: users/reviews/get-reviews
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Notifications ────────────────────────────────────────
+  get-notifications:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-notifications == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_get_notifications
+      working-directory: users/notifications/get-notifications
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  mark-notification-read:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.mark-notification-read == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_mark_notification_read
+      working-directory: users/notifications/mark-read
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

@@ -48,6 +48,11 @@ jobs:
       accept-claim:          ${{ steps.filter.outputs.accept-claim }}
       reject-claim:          ${{ steps.filter.outputs.reject-claim }}
 
+      offers-create:         ${{ steps.filter.outputs.offers-create }}
+      offers-get:            ${{ steps.filter.outputs.offers-get }}
+      offers-update:         ${{ steps.filter.outputs.offers-update }}
+      offers-delete:         ${{ steps.filter.outputs.offers-delete }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -127,6 +132,15 @@ jobs:
               - 'business/claims/accept-claim/**'
             reject-claim:
               - 'business/claims/reject-claim/**'
+
+            offers-create:
+              - 'business/offers/create_offer/**'
+            offers-get:
+              - 'business/offers/get_business_offers/**'
+            offers-update:
+              - 'business/offers/update_offer/**'
+            offers-delete:
+              - 'business/offers/delete_offer/**'
 
   categories-add:
     needs: detect-changes
@@ -549,5 +563,58 @@ jobs:
     with:
       function-name: business_reject_claim
       working-directory: business/claims/reject-claim
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── Business Offers ───────────────────────────────────────────
+  offers-create:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.offers-create == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_create_offer
+      working-directory: business/offers/create_offer
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  offers-get:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.offers-get == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_get_offers
+      working-directory: business/offers/get_business_offers
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  offers-update:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.offers-update == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_update_offer
+      working-directory: business/offers/update_offer
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  offers-delete:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.offers-delete == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_delete_offer
+      working-directory: business/offers/delete_offer
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

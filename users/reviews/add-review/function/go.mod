@@ -1,8 +1,8 @@
-module github.com/atharvyadav96k/SPOTNEARR_API/products/get_business_prouducts
+module github.com/atharvyadav96k/SPOTNEARR_API/users/add_review
 
 go 1.25.5
 
-require github.com/atharvyadav96k/spotnearr-gcp v0.0.18
+require github.com/atharvyadav96k/spotnearr-gcp v0.0.19
 
 require (
 	github.com/google/uuid v1.6.0 // indirect
