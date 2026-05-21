@@ -37,6 +37,11 @@ jobs:
       product-unlike:         ${{ steps.filter.outputs.product-unlike }}
       get-liked-products:     ${{ steps.filter.outputs.get-liked-products }}
 
+      user-profile-info:      ${{ steps.filter.outputs.user-profile-info }}
+      user-delete-image:      ${{ steps.filter.outputs.user-delete-image }}
+      nearby-products:        ${{ steps.filter.outputs.nearby-products }}
+      search-products:        ${{ steps.filter.outputs.search-products }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -96,6 +101,15 @@ jobs:
               - 'users/likes/product-unlike/**'
             get-liked-products:
               - 'users/likes/get-liked-products/**'
+
+            user-profile-info:
+              - 'users/profile/profile-info/**'
+            user-delete-image:
+              - 'users/profile/profile-image/delete-profile-image/**'
+            nearby-products:
+              - 'users/products/near_by_products/**'
+            search-products:
+              - 'users/products/search_proudcts/**'
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -408,5 +422,59 @@ jobs:
     with:
       function-name: get_liked_products
       working-directory: users/likes/get-liked-products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Profile ──────────────────────────────────────────────
+  user-profile-info:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-profile-info == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_profile_info
+      working-directory: users/profile/profile-info
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  user-delete-image:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-delete-image == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_delete_profile_image
+      working-directory: users/profile/profile-image/delete-profile-image
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Products ─────────────────────────────────────────────
+  nearby-products:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.nearby-products == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: get_nearby_products
+      working-directory: users/products/near_by_products
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  search-products:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.search-products == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: search_products
+      working-directory: users/products/search_proudcts
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

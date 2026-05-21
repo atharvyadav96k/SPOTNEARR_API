@@ -40,6 +40,10 @@ jobs:
       location-update:       ${{ steps.filter.outputs.location-update }}
       location-delete:       ${{ steps.filter.outputs.location-delete }}
 
+      profile-info:          ${{ steps.filter.outputs.profile-info }}
+      profile-delete-image:  ${{ steps.filter.outputs.profile-delete-image }}
+      profile-set-image:     ${{ steps.filter.outputs.profile-set-image }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -105,6 +109,13 @@ jobs:
               - 'business/location/update_location/**'
             location-delete:
               - 'business/location/delete_location/**'
+
+            profile-info:
+              - 'business/profile/profile-info/**'
+            profile-delete-image:
+              - 'business/profile/profile-image/delete-profile-image/**'
+            profile-set-image:
+              - 'business/profile/profile-image/set-profile-image-in-db/**'
 
   categories-add:
     needs: detect-changes
@@ -447,5 +458,45 @@ jobs:
     with:
       function-name: delete_location
       working-directory: business/location/delete_location
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── Profile ───────────────────────────────────────────────────
+  profile-info:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.profile-info == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_profile_info
+      working-directory: business/profile/profile-info
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  profile-delete-image:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.profile-delete-image == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_delete_profile_image
+      working-directory: business/profile/profile-image/delete-profile-image
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  profile-set-image:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.profile-set-image == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_set_profile_image
+      working-directory: business/profile/profile-image/set-profile-image-in-db
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
