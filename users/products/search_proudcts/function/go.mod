@@ -1,4 +1,4 @@
-module github.com/atharvyadav96k/SPOTNEARR_API/user/like
+module github.com/atharvyadav96k/SPOTNEARR_API/users/search_products
 
 go 1.25.5
 

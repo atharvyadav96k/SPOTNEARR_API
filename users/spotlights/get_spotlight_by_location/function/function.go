@@ -1,17 +1,24 @@
 package spotlights
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/user/spotlight_get_by_location/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Spotlight retrieved successfully",
+	body, err := utils.ParseBody[models.BusinessLocation](r)
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
 	}
-
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	spotlights, err := app.GetSpotlightsByLocation(body.Latitude, body.Longitude)
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
+	}
+	utils.OK(w, "spotlights fetched successfully", models.MapSlice(spotlights))
 }

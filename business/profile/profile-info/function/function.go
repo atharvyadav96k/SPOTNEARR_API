@@ -1,17 +1,24 @@
 package business
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/business/profile/applayer"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
+	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
 func BusinessProfile(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]string{
-		"message": "Business Profile successful",
+	body, err := utils.ParseBody[models.Business](r)
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
 	}
-
-	json.NewEncoder(w).Encode(response)
+	app := applayer.Init()
+	business, err := app.GetBusinessByOwnerID(body.OwnerID)
+	if err != nil {
+		utils.BadRequest(w, err)
+		return
+	}
+	utils.OK(w, "business profile fetched successfully", business.ToResponse())
 }
