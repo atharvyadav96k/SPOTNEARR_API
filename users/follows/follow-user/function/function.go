@@ -9,9 +9,9 @@ import (
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	body, err := utils.ParseBody[models.UserFollowUser](r)
+	body, err := utils.ParseAndValidate[models.UserFollowUser](r)
 	if err != nil {
-		utils.BadRequest(w, err)
+		utils.ValidationError(w, err)
 		return
 	}
 	app := applayer.Init()

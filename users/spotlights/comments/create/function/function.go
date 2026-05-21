@@ -9,9 +9,9 @@ import (
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	comments, err := utils.ParseBody[models.SpotlightComment](r)
+	comments, err := utils.ParseAndValidate[models.SpotlightComment](r)
 	if err != nil {
-		utils.BadRequest(w, err)
+		utils.ValidationError(w, err)
 		return
 	}
 	app := applayer.Init()

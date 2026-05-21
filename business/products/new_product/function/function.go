@@ -9,16 +9,16 @@ import (
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	product, err := utils.ParseBody[models.Product](r)
+	product, err := utils.ParseAndValidate[models.Product](r)
 	if err != nil {
-		utils.BadRequest(w, err.Error())
+		utils.ValidationError(w, err)
 		return
 	}
 	app := applayer.Init()
 	product, err = app.CreateProduct(*product)
 	if err != nil {
-		utils.BadRequest(w, err.Error())
+		utils.BadRequest(w, err)
 		return
 	}
-	utils.Created(w, "product created successfully", product)
+	utils.Created(w, "product created successfully", product.ToResponse())
 }

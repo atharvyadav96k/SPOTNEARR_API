@@ -9,14 +9,16 @@ import (
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	spotlight, err := utils.ParseBody[models.Spotlight](r)
+	spotlight, err := utils.ParseAndValidate[models.Spotlight](r)
 	if err != nil {
-		utils.BadRequest(w, err)
+		utils.ValidationError(w, err)
+		return
 	}
 	app := applayer.Init()
 	spotlight, err = app.CreateSpotlight(*spotlight)
 	if err != nil {
 		utils.BadRequest(w, err)
+		return
 	}
-	utils.Created(w, "spotlight created successfully", spotlight)
+	utils.Created(w, "spotlight created successfully", spotlight.ToResponse())
 }

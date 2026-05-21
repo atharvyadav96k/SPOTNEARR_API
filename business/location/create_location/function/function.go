@@ -9,16 +9,16 @@ import (
 )
 
 func Function(w http.ResponseWriter, r *http.Request) {
-	businessLocation, err := utils.ParseBody[models.BusinessLocation](r)
+	businessLocation, err := utils.ParseAndValidate[models.BusinessLocation](r)
 	if err != nil {
-		utils.BadRequest(w, err.Error())
+		utils.ValidationError(w, err)
 		return
 	}
 	app := applayer.Init()
 	businessLocation, err = app.CreateBusinessLocation(*businessLocation)
 	if err != nil {
-		utils.BadRequest(w, err.Error())
+		utils.BadRequest(w, err)
 		return
 	}
-	utils.Created(w, "business location created successfully", businessLocation)
+	utils.Created(w, "business location created successfully", businessLocation.ToResponse())
 }
