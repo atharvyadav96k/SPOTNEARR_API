@@ -38,6 +38,15 @@ jobs:
             integration-test:
               - 'integration-test/**'
 
+  auth:
+    needs: detect-domains
+    if: needs.detect-domains.outputs.auth == 'true'
+    uses: ./.github/workflows/auth.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets: inherit
+
   business:
     needs: detect-domains
     if: needs.detect-domains.outputs.business == 'true'

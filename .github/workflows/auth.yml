@@ -1,0 +1,81 @@
+name: Deploy Auth Functions
+
+on:
+  workflow_call:
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      user-register:   ${{ steps.filter.outputs.user-register }}
+      user-login:      ${{ steps.filter.outputs.user-login }}
+      biz-register:    ${{ steps.filter.outputs.biz-register }}
+      biz-login:       ${{ steps.filter.outputs.biz-login }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            user-register:
+              - 'auth/user/register/**'
+            user-login:
+              - 'auth/user/login/**'
+            biz-register:
+              - 'auth/business/register/**'
+            biz-login:
+              - 'auth/business/login/**'
+
+  user-register:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-register == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_register
+      working-directory: auth/user/register
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  user-login:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-login == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_login
+      working-directory: auth/user/login
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  biz-register:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.biz-register == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_register
+      working-directory: auth/business/register
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  biz-login:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.biz-login == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_login
+      working-directory: auth/business/login
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit

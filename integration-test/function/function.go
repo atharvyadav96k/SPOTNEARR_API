@@ -84,16 +84,22 @@ func str(env *envelope, field string) string {
 // ─── RUNNER ───────────────────────────────────────────────────────────────────
 func run(name, fnURL string, fn func() error) {
 	if fnURL == "" {
-		suite = append(suite, result{name: name, skipped: true})
-		fmt.Fprintf(out, "  [SKIP] %-60s SKIPPED\n", name)
+		suite = append(suite, result{name: name, skipped: true, detail: "url not configured"})
+		fmt.Fprintf(out, "  [SKIP] %-60s no url\n", name)
 		return
 	}
 	start := time.Now()
 	err := fn()
 	d := time.Since(start)
 	if err != nil {
-		suite = append(suite, result{name: name, passed: false, duration: d, detail: err.Error()})
-		fmt.Fprintf(out, "  [FAIL] %-60s %dms\n    => %s\n", name, d.Milliseconds(), err.Error())
+		msg := err.Error()
+		if strings.HasPrefix(msg, "skipped — ") {
+			suite = append(suite, result{name: name, skipped: true, detail: strings.TrimPrefix(msg, "skipped — ")})
+			fmt.Fprintf(out, "  [SKIP] %-60s %s\n", name, strings.TrimPrefix(msg, "skipped — "))
+		} else {
+			suite = append(suite, result{name: name, passed: false, duration: d, detail: msg})
+			fmt.Fprintf(out, "  [FAIL] %-60s %dms\n    => %s\n", name, d.Milliseconds(), msg)
+		}
 	} else {
 		suite = append(suite, result{name: name, passed: true, duration: d})
 		fmt.Fprintf(out, "  [PASS] %-60s %dms\n", name, d.Milliseconds())

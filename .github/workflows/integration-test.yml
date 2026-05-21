@@ -27,9 +27,7 @@ jobs:
           terraform_wrapper: false   # clean stdout needed for output parsing
 
       # Read every deployed function's URL straight from its GCS TF state.
-      # Function names come from the function-name: fields in business.yml / users.yml.
-      # Auth functions have no CI workflow yet — set FN_USER_REGISTER / FN_USER_LOGIN /
-      # FN_BIZ_REGISTER in repo Settings → Variables as a one-time manual step.
+      # Function names come from the function-name: fields in auth.yml / business.yml / users.yml.
       - name: Collect function URLs from TF state
         id: urls
         env:
@@ -80,10 +78,10 @@ jobs:
             echo "fn_mark_notification_read=$(get_url user_mark_notification_read)"
             echo "fn_user_profile_info=$(get_url user_profile_info)"
 
-            # ── Auth — no workflow; set these three in repo Settings → Variables
-            echo "fn_user_register=${{ vars.FN_USER_REGISTER }}"
-            echo "fn_user_login=${{ vars.FN_USER_LOGIN }}"
-            echo "fn_biz_register=${{ vars.FN_BIZ_REGISTER }}"
+            # ── Auth (names from auth.yml function-name: fields) ─────────────
+            echo "fn_user_register=$(get_url user_register)"
+            echo "fn_user_login=$(get_url user_login)"
+            echo "fn_biz_register=$(get_url business_register)"
 
             echo "product_category_id=${{ vars.PRODUCT_CATEGORY_ID }}"
           } >> "$GITHUB_OUTPUT"
