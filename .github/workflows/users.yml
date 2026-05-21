@@ -42,6 +42,11 @@ jobs:
       nearby-products:        ${{ steps.filter.outputs.nearby-products }}
       search-products:        ${{ steps.filter.outputs.search-products }}
 
+      claim-product:          ${{ steps.filter.outputs.claim-product }}
+      get-my-claims:          ${{ steps.filter.outputs.get-my-claims }}
+      cancel-claim:           ${{ steps.filter.outputs.cancel-claim }}
+      mark-received:          ${{ steps.filter.outputs.mark-received }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -110,6 +115,15 @@ jobs:
               - 'users/products/near_by_products/**'
             search-products:
               - 'users/products/search_proudcts/**'
+
+            claim-product:
+              - 'users/claims/claim-product/**'
+            get-my-claims:
+              - 'users/claims/get-my-claims/**'
+            cancel-claim:
+              - 'users/claims/cancel-claim/**'
+            mark-received:
+              - 'users/claims/mark-received/**'
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -476,5 +490,58 @@ jobs:
     with:
       function-name: search_products
       working-directory: users/products/search_proudcts
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── User Claims ───────────────────────────────────────────────
+  claim-product:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.claim-product == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_claim_product
+      working-directory: users/claims/claim-product
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  get-my-claims:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-my-claims == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_get_my_claims
+      working-directory: users/claims/get-my-claims
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  cancel-claim:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.cancel-claim == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_cancel_claim
+      working-directory: users/claims/cancel-claim
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  mark-received:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.mark-received == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: user_mark_received
+      working-directory: users/claims/mark-received
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

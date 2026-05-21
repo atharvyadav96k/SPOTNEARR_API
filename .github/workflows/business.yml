@@ -44,6 +44,10 @@ jobs:
       profile-delete-image:  ${{ steps.filter.outputs.profile-delete-image }}
       profile-set-image:     ${{ steps.filter.outputs.profile-set-image }}
 
+      get-incoming-claims:   ${{ steps.filter.outputs.get-incoming-claims }}
+      accept-claim:          ${{ steps.filter.outputs.accept-claim }}
+      reject-claim:          ${{ steps.filter.outputs.reject-claim }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -116,6 +120,13 @@ jobs:
               - 'business/profile/profile-image/delete-profile-image/**'
             profile-set-image:
               - 'business/profile/profile-image/set-profile-image-in-db/**'
+
+            get-incoming-claims:
+              - 'business/claims/get-incoming-claims/**'
+            accept-claim:
+              - 'business/claims/accept-claim/**'
+            reject-claim:
+              - 'business/claims/reject-claim/**'
 
   categories-add:
     needs: detect-changes
@@ -498,5 +509,45 @@ jobs:
     with:
       function-name: business_set_profile_image
       working-directory: business/profile/profile-image/set-profile-image-in-db
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+# ─── Business Claims ───────────────────────────────────────────
+  get-incoming-claims:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.get-incoming-claims == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_get_incoming_claims
+      working-directory: business/claims/get-incoming-claims
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  accept-claim:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.accept-claim == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_accept_claim
+      working-directory: business/claims/accept-claim
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
+  reject-claim:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.reject-claim == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: business_reject_claim
+      working-directory: business/claims/reject-claim
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

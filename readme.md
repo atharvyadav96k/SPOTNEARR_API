@@ -879,6 +879,108 @@ Get all comments for a spotlight.
 
 ---
 
+## User — Claims
+
+### POST `/users/claims/claim-product`
+Reserve a product from a specific inventory entry. Stock is decremented immediately. Returns HTTP 409 if out of stock.
+
+**Body**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `user_id` | uuid | yes | |
+| `business_id` | uuid | yes | |
+| `inventory_id` | uuid | yes | ties the claim to a specific location + price |
+| `quantity` | int | yes | must be > 0 |
+| `note` | string | no | optional message to the business |
+
+**Response 201** → `ProductClaimResponse`
+
+---
+
+### GET `/users/claims/get-my-claims`
+List all claims made by a user.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `user_id` | uuid | yes |
+
+**Response 200** → `[]ProductClaimResponse`
+
+---
+
+### PUT `/users/claims/cancel-claim`
+Cancel a pending claim. Restores the reserved stock.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | uuid | yes |
+| `user_id` | uuid | yes |
+
+**Response 200** → `null`
+
+> Returns 403 if `user_id` doesn't match the claim owner. Returns 400 if claim is not `pending`.
+
+---
+
+### PUT `/users/claims/mark-received`
+Mark an accepted claim as completed after the user picks up the product.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | uuid | yes |
+| `user_id` | uuid | yes |
+
+**Response 200** → `null`
+
+> Returns 400 if the claim is not in `accepted` status.
+
+---
+
+## Business — Claims
+
+### GET `/business/claims/get-incoming-claims`
+List all product claims received by a business.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `business_id` | uuid | yes |
+
+**Response 200** → `[]ProductClaimResponse`
+
+---
+
+### PUT `/business/claims/accept-claim`
+Accept a pending claim. No stock change (already reserved on creation).
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | uuid | yes |
+| `business_id` | uuid | yes |
+
+**Response 200** → `null`
+
+> Returns 403 if `business_id` doesn't match the claim. Returns 400 if claim is not `pending`.
+
+---
+
+### PUT `/business/claims/reject-claim`
+Reject a pending claim. Restores the reserved stock.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | uuid | yes |
+| `business_id` | uuid | yes |
+
+**Response 200** → `null`
+
+---
+
 ## Bridge Service
 
 ### POST `/bridge-service/image-upload/upload-signed-url`
@@ -1019,5 +1121,20 @@ Send a push notification to a user device.
   "starts_at": "datetime",
   "expires_at": "datetime",
   "created_at": "datetime"
+}
+```
+
+### `ProductClaimResponse`
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "business_id": "uuid",
+  "inventory_id": "uuid",
+  "quantity": 1,
+  "status": "pending|accepted|rejected|completed|cancelled",
+  "note": "string or null",
+  "claimed_at": "datetime",
+  "updated_at": "datetime"
 }
 ```
