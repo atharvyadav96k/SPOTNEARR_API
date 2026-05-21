@@ -20,5 +20,5 @@ func Function(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, err)
 		return
 	}
-	utils.Created(w, "spotlight comment created successfully", comments)
+	utils.OK(w, "spotlight comments fetched successfully", models.MapSlice(comments))
 }

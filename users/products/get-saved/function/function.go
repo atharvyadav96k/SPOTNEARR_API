@@ -20,5 +20,5 @@ func Function(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, err)
 		return
 	}
-	utils.Created(w, "saved products retrieved successfully", saved)
+	utils.OK(w, "saved products retrieved successfully", models.MapSlice(saved))
 }

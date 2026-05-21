@@ -20,5 +20,5 @@ func Function(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, err)
 		return
 	}
-	utils.Created(w, "following retrieved successfully", following)
+	utils.OK(w, "following retrieved successfully", models.MapSlice(following))
 }

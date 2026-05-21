@@ -20,5 +20,5 @@ func Function(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, err)
 		return
 	}
-	utils.OK(w, "liked products fetched successfully", liked)
+	utils.OK(w, "liked products fetched successfully", models.MapSlice(liked))
 }

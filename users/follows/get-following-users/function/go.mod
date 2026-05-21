@@ -2,7 +2,7 @@ module github.com/atharvyadav96k/SPOTNEARR_API/user/get-following-users
 
 go 1.25.5
 
-require github.com/atharvyadav96k/spotnearr-gcp v0.0.12
+require github.com/atharvyadav96k/spotnearr-gcp v0.0.15
 
 require (
 	github.com/google/uuid v1.6.0 // indirect
