@@ -8,7 +8,7 @@ import (
 	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
 )
 
-func BusinessLogin(w http.ResponseWriter, r *http.Request) {
+func Function(w http.ResponseWriter, r *http.Request) {
 	body, err := utils.ParseBody[models.User](r)
 	if err != nil {
 		utils.BadRequest(w, err)
