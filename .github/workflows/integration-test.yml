@@ -1,0 +1,120 @@
+name: Deploy & Run Integration Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'   # daily at 02:00 UTC
+
+jobs:
+  deploy-and-run:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TF_VAR_function_name:              integration_test
+      TF_VAR_project_id:                 ${{ secrets.GCP_PROJECT_ID }}
+      TF_VAR_project_number:             ${{ secrets.GCP_PROJECT_NUMBER }}
+      TF_VAR_service_account:            ${{ secrets.GCP_SA_EMAIL }}
+      TF_VAR_region:                     ${{ vars.GCP_REGION }}
+      TF_VAR_bucket_name:                ${{ secrets.GCP_BUCKET_NAME }}
+      # ── Function URLs (set these in repo Settings → Variables) ────────────
+      TF_VAR_fn_user_register:           ${{ vars.FN_USER_REGISTER }}
+      TF_VAR_fn_user_login:              ${{ vars.FN_USER_LOGIN }}
+      TF_VAR_fn_biz_register:            ${{ vars.FN_BIZ_REGISTER }}
+      TF_VAR_fn_add_categories:          ${{ vars.FN_ADD_CATEGORIES }}
+      TF_VAR_fn_get_categories:          ${{ vars.FN_GET_CATEGORIES }}
+      TF_VAR_fn_create_location:         ${{ vars.FN_CREATE_LOCATION }}
+      TF_VAR_fn_new_product:             ${{ vars.FN_NEW_PRODUCT }}
+      TF_VAR_fn_create_inventory:        ${{ vars.FN_CREATE_INVENTORY }}
+      TF_VAR_fn_get_business_products:   ${{ vars.FN_GET_BUSINESS_PRODUCTS }}
+      TF_VAR_fn_get_business_inventory:  ${{ vars.FN_GET_BUSINESS_INVENTORY }}
+      TF_VAR_fn_create_spotlight:        ${{ vars.FN_CREATE_SPOTLIGHT }}
+      TF_VAR_fn_create_offer:            ${{ vars.FN_CREATE_OFFER }}
+      TF_VAR_fn_get_business_offers:     ${{ vars.FN_GET_BUSINESS_OFFERS }}
+      TF_VAR_fn_update_offer:            ${{ vars.FN_UPDATE_OFFER }}
+      TF_VAR_fn_delete_offer:            ${{ vars.FN_DELETE_OFFER }}
+      TF_VAR_fn_nearby_products:         ${{ vars.FN_NEARBY_PRODUCTS }}
+      TF_VAR_fn_search_products:         ${{ vars.FN_SEARCH_PRODUCTS }}
+      TF_VAR_fn_spotlight_by_location:   ${{ vars.FN_SPOTLIGHT_BY_LOCATION }}
+      TF_VAR_fn_get_offers_by_business:  ${{ vars.FN_GET_OFFERS_BY_BUSINESS }}
+      TF_VAR_fn_like_business:           ${{ vars.FN_LIKE_BUSINESS }}
+      TF_VAR_fn_dislike_business:        ${{ vars.FN_DISLIKE_BUSINESS }}
+      TF_VAR_fn_get_liked_businesses:    ${{ vars.FN_GET_LIKED_BUSINESSES }}
+      TF_VAR_fn_follow_business:         ${{ vars.FN_FOLLOW_BUSINESS }}
+      TF_VAR_fn_get_following_businesses: ${{ vars.FN_GET_FOLLOWING_BUSINESSES }}
+      TF_VAR_fn_followed_spotlights:     ${{ vars.FN_FOLLOWED_SPOTLIGHTS }}
+      TF_VAR_fn_claim_product:           ${{ vars.FN_CLAIM_PRODUCT }}
+      TF_VAR_fn_get_my_claims:           ${{ vars.FN_GET_MY_CLAIMS }}
+      TF_VAR_fn_cancel_claim:            ${{ vars.FN_CANCEL_CLAIM }}
+      TF_VAR_fn_get_incoming_claims:     ${{ vars.FN_GET_INCOMING_CLAIMS }}
+      TF_VAR_fn_accept_claim:            ${{ vars.FN_ACCEPT_CLAIM }}
+      TF_VAR_fn_reject_claim:            ${{ vars.FN_REJECT_CLAIM }}
+      TF_VAR_fn_mark_received:           ${{ vars.FN_MARK_RECEIVED }}
+      TF_VAR_fn_add_review:              ${{ vars.FN_ADD_REVIEW }}
+      TF_VAR_fn_get_reviews:             ${{ vars.FN_GET_REVIEWS }}
+      TF_VAR_fn_get_notifications:       ${{ vars.FN_GET_NOTIFICATIONS }}
+      TF_VAR_fn_mark_notification_read:  ${{ vars.FN_MARK_NOTIFICATION_READ }}
+      TF_VAR_fn_user_profile_info:       ${{ vars.FN_USER_PROFILE_INFO }}
+      TF_VAR_fn_biz_profile_info:        ${{ vars.FN_BIZ_PROFILE_INFO }}
+      TF_VAR_product_category_id:        ${{ vars.PRODUCT_CATEGORY_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Create source zip
+        working-directory: integration-test
+        run: |
+          cd function
+          zip -r ../source.zip .
+
+      - name: Terraform Init
+        working-directory: integration-test
+        run: |
+          terraform init \
+            -input=false \
+            -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
+            -backend-config="prefix=cloud-functions/integration_test"
+
+      - name: Terraform Plan
+        working-directory: integration-test
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        working-directory: integration-test
+        run: terraform apply -auto-approve -input=false
+
+      - name: Get function URL
+        id: fn-url
+        working-directory: integration-test
+        run: echo "url=$(terraform output -raw function_url)" >> $GITHUB_OUTPUT
+
+      - name: Run integration tests
+        run: |
+          URL="${{ steps.fn-url.outputs.url }}"
+          echo "Integration test endpoint: $URL"
+          echo ""
+          echo "─────────────────────────────────────────────────────"
+          HTTP_CODE=$(curl -s -o /tmp/test_output.txt -w "%{http_code}" \
+            --max-time 360 \
+            --retry 2 --retry-delay 5 \
+            "$URL")
+          echo ""
+          cat /tmp/test_output.txt
+          echo ""
+          echo "─────────────────────────────────────────────────────"
+          echo "HTTP status: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Integration tests FAILED (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "Integration tests PASSED"
