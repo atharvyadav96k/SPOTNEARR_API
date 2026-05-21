@@ -22,6 +22,10 @@ variable "bucket_name" {
   type = string
 }
 
+
+variable "database_url" {
+  type = string
+}
 terraform {
   backend "gcs" {}
 
@@ -81,6 +85,10 @@ resource "google_cloudfunctions2_function" "function" {
     timeout_seconds       = 60
     service_account_email = var.service_account
     ingress_settings      = "ALLOW_ALL"
+
+    environment_variables = {
+      DATABASE_URL = var.database_url
+    }
   }
 }
 
