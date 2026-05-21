@@ -22,7 +22,6 @@ variable "bucket_name" {
   type = string
 }
 
-# ─── Function URL variables (all optional — empty string = test skipped) ──────
 variable "fn_user_register"          { type = string; default = "" }
 variable "fn_user_login"             { type = string; default = "" }
 variable "fn_biz_register"           { type = string; default = "" }

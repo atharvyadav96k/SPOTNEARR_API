@@ -1,6 +1,7 @@
 name: Deploy & Run Integration Tests
 
 on:
+  workflow_call:
   workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'   # daily at 02:00 UTC
@@ -12,54 +13,6 @@ jobs:
       id-token: write
       contents: read
 
-    env:
-      TF_VAR_function_name:              integration_test
-      TF_VAR_project_id:                 ${{ secrets.GCP_PROJECT_ID }}
-      TF_VAR_project_number:             ${{ secrets.GCP_PROJECT_NUMBER }}
-      TF_VAR_service_account:            ${{ secrets.GCP_SA_EMAIL }}
-      TF_VAR_region:                     ${{ vars.GCP_REGION }}
-      TF_VAR_bucket_name:                ${{ secrets.GCP_BUCKET_NAME }}
-      # ── Function URLs (set these in repo Settings → Variables) ────────────
-      TF_VAR_fn_user_register:           ${{ vars.FN_USER_REGISTER }}
-      TF_VAR_fn_user_login:              ${{ vars.FN_USER_LOGIN }}
-      TF_VAR_fn_biz_register:            ${{ vars.FN_BIZ_REGISTER }}
-      TF_VAR_fn_add_categories:          ${{ vars.FN_ADD_CATEGORIES }}
-      TF_VAR_fn_get_categories:          ${{ vars.FN_GET_CATEGORIES }}
-      TF_VAR_fn_create_location:         ${{ vars.FN_CREATE_LOCATION }}
-      TF_VAR_fn_new_product:             ${{ vars.FN_NEW_PRODUCT }}
-      TF_VAR_fn_create_inventory:        ${{ vars.FN_CREATE_INVENTORY }}
-      TF_VAR_fn_get_business_products:   ${{ vars.FN_GET_BUSINESS_PRODUCTS }}
-      TF_VAR_fn_get_business_inventory:  ${{ vars.FN_GET_BUSINESS_INVENTORY }}
-      TF_VAR_fn_create_spotlight:        ${{ vars.FN_CREATE_SPOTLIGHT }}
-      TF_VAR_fn_create_offer:            ${{ vars.FN_CREATE_OFFER }}
-      TF_VAR_fn_get_business_offers:     ${{ vars.FN_GET_BUSINESS_OFFERS }}
-      TF_VAR_fn_update_offer:            ${{ vars.FN_UPDATE_OFFER }}
-      TF_VAR_fn_delete_offer:            ${{ vars.FN_DELETE_OFFER }}
-      TF_VAR_fn_nearby_products:         ${{ vars.FN_NEARBY_PRODUCTS }}
-      TF_VAR_fn_search_products:         ${{ vars.FN_SEARCH_PRODUCTS }}
-      TF_VAR_fn_spotlight_by_location:   ${{ vars.FN_SPOTLIGHT_BY_LOCATION }}
-      TF_VAR_fn_get_offers_by_business:  ${{ vars.FN_GET_OFFERS_BY_BUSINESS }}
-      TF_VAR_fn_like_business:           ${{ vars.FN_LIKE_BUSINESS }}
-      TF_VAR_fn_dislike_business:        ${{ vars.FN_DISLIKE_BUSINESS }}
-      TF_VAR_fn_get_liked_businesses:    ${{ vars.FN_GET_LIKED_BUSINESSES }}
-      TF_VAR_fn_follow_business:         ${{ vars.FN_FOLLOW_BUSINESS }}
-      TF_VAR_fn_get_following_businesses: ${{ vars.FN_GET_FOLLOWING_BUSINESSES }}
-      TF_VAR_fn_followed_spotlights:     ${{ vars.FN_FOLLOWED_SPOTLIGHTS }}
-      TF_VAR_fn_claim_product:           ${{ vars.FN_CLAIM_PRODUCT }}
-      TF_VAR_fn_get_my_claims:           ${{ vars.FN_GET_MY_CLAIMS }}
-      TF_VAR_fn_cancel_claim:            ${{ vars.FN_CANCEL_CLAIM }}
-      TF_VAR_fn_get_incoming_claims:     ${{ vars.FN_GET_INCOMING_CLAIMS }}
-      TF_VAR_fn_accept_claim:            ${{ vars.FN_ACCEPT_CLAIM }}
-      TF_VAR_fn_reject_claim:            ${{ vars.FN_REJECT_CLAIM }}
-      TF_VAR_fn_mark_received:           ${{ vars.FN_MARK_RECEIVED }}
-      TF_VAR_fn_add_review:              ${{ vars.FN_ADD_REVIEW }}
-      TF_VAR_fn_get_reviews:             ${{ vars.FN_GET_REVIEWS }}
-      TF_VAR_fn_get_notifications:       ${{ vars.FN_GET_NOTIFICATIONS }}
-      TF_VAR_fn_mark_notification_read:  ${{ vars.FN_MARK_NOTIFICATION_READ }}
-      TF_VAR_fn_user_profile_info:       ${{ vars.FN_USER_PROFILE_INFO }}
-      TF_VAR_fn_biz_profile_info:        ${{ vars.FN_BIZ_PROFILE_INFO }}
-      TF_VAR_product_category_id:        ${{ vars.PRODUCT_CATEGORY_ID }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -70,6 +23,70 @@ jobs:
           service_account: ${{ secrets.GCP_SA_EMAIL }}
 
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false   # clean stdout needed for output parsing
+
+      # Read every deployed function's URL straight from its GCS TF state.
+      # Function names come from the function-name: fields in business.yml / users.yml.
+      # Auth functions have no CI workflow yet — set FN_USER_REGISTER / FN_USER_LOGIN /
+      # FN_BIZ_REGISTER in repo Settings → Variables as a one-time manual step.
+      - name: Collect function URLs from TF state
+        id: urls
+        env:
+          BUCKET: ${{ secrets.GCP_BUCKET_NAME }}
+        run: |
+          get_url() {
+            gcloud storage cat "gs://${BUCKET}/cloud-functions/${1}/default.tfstate" 2>/dev/null \
+              | jq -r '.outputs.function_url.value // ""' 2>/dev/null || echo ""
+          }
+
+          {
+            # ── Business (names from business.yml function-name: fields) ──────
+            echo "fn_add_categories=$(get_url add_categories)"
+            echo "fn_get_categories=$(get_url get_categories)"
+            echo "fn_create_location=$(get_url create_location)"
+            echo "fn_new_product=$(get_url new_products)"
+            echo "fn_create_inventory=$(get_url create_inventory)"
+            echo "fn_get_business_products=$(get_url get_business_products)"
+            echo "fn_get_business_inventory=$(get_url get_business_inventory)"
+            echo "fn_create_spotlight=$(get_url create_spotlight)"
+            echo "fn_create_offer=$(get_url business_create_offer)"
+            echo "fn_get_business_offers=$(get_url business_get_offers)"
+            echo "fn_update_offer=$(get_url business_update_offer)"
+            echo "fn_delete_offer=$(get_url business_delete_offer)"
+            echo "fn_get_incoming_claims=$(get_url business_get_incoming_claims)"
+            echo "fn_accept_claim=$(get_url business_accept_claim)"
+            echo "fn_reject_claim=$(get_url business_reject_claim)"
+            echo "fn_biz_profile_info=$(get_url business_profile_info)"
+
+            # ── Users (names from users.yml function-name: fields) ────────────
+            echo "fn_nearby_products=$(get_url get_nearby_products)"
+            echo "fn_search_products=$(get_url search_products)"
+            echo "fn_spotlight_by_location=$(get_url get_spotlight_by_location)"
+            echo "fn_get_offers_by_business=$(get_url user_get_offers_by_business)"
+            echo "fn_like_business=$(get_url user-like)"
+            echo "fn_dislike_business=$(get_url user-dislike)"
+            echo "fn_get_liked_businesses=$(get_url user_get_liked_businesses)"
+            echo "fn_follow_business=$(get_url user-follow)"
+            echo "fn_get_following_businesses=$(get_url user-get-following-businesses)"
+            echo "fn_followed_spotlights=$(get_url get_followed_spotlights)"
+            echo "fn_claim_product=$(get_url user_claim_product)"
+            echo "fn_get_my_claims=$(get_url user_get_my_claims)"
+            echo "fn_cancel_claim=$(get_url user_cancel_claim)"
+            echo "fn_mark_received=$(get_url user_mark_received)"
+            echo "fn_add_review=$(get_url user_add_review)"
+            echo "fn_get_reviews=$(get_url user_get_reviews)"
+            echo "fn_get_notifications=$(get_url user_get_notifications)"
+            echo "fn_mark_notification_read=$(get_url user_mark_notification_read)"
+            echo "fn_user_profile_info=$(get_url user_profile_info)"
+
+            # ── Auth — no workflow; set these three in repo Settings → Variables
+            echo "fn_user_register=${{ vars.FN_USER_REGISTER }}"
+            echo "fn_user_login=${{ vars.FN_USER_LOGIN }}"
+            echo "fn_biz_register=${{ vars.FN_BIZ_REGISTER }}"
+
+            echo "product_category_id=${{ vars.PRODUCT_CATEGORY_ID }}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create source zip
         working-directory: integration-test
@@ -79,21 +96,70 @@ jobs:
 
       - name: Terraform Init
         working-directory: integration-test
+        env:
+          TF_VAR_function_name:   integration_test
+          TF_VAR_project_id:      ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:  ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_region:          ${{ vars.GCP_REGION }}
+          TF_VAR_bucket_name:     ${{ secrets.GCP_BUCKET_NAME }}
         run: |
           terraform init \
             -input=false \
             -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
             -backend-config="prefix=cloud-functions/integration_test"
 
-      - name: Terraform Plan
-        working-directory: integration-test
-        run: terraform plan -input=false
-
       - name: Terraform Apply
         working-directory: integration-test
+        env:
+          TF_VAR_function_name:               integration_test
+          TF_VAR_project_id:                  ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:              ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_service_account:             ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_region:                      ${{ vars.GCP_REGION }}
+          TF_VAR_bucket_name:                 ${{ secrets.GCP_BUCKET_NAME }}
+          TF_VAR_fn_user_register:            ${{ steps.urls.outputs.fn_user_register }}
+          TF_VAR_fn_user_login:               ${{ steps.urls.outputs.fn_user_login }}
+          TF_VAR_fn_biz_register:             ${{ steps.urls.outputs.fn_biz_register }}
+          TF_VAR_fn_add_categories:           ${{ steps.urls.outputs.fn_add_categories }}
+          TF_VAR_fn_get_categories:           ${{ steps.urls.outputs.fn_get_categories }}
+          TF_VAR_fn_create_location:          ${{ steps.urls.outputs.fn_create_location }}
+          TF_VAR_fn_new_product:              ${{ steps.urls.outputs.fn_new_product }}
+          TF_VAR_fn_create_inventory:         ${{ steps.urls.outputs.fn_create_inventory }}
+          TF_VAR_fn_get_business_products:    ${{ steps.urls.outputs.fn_get_business_products }}
+          TF_VAR_fn_get_business_inventory:   ${{ steps.urls.outputs.fn_get_business_inventory }}
+          TF_VAR_fn_create_spotlight:         ${{ steps.urls.outputs.fn_create_spotlight }}
+          TF_VAR_fn_create_offer:             ${{ steps.urls.outputs.fn_create_offer }}
+          TF_VAR_fn_get_business_offers:      ${{ steps.urls.outputs.fn_get_business_offers }}
+          TF_VAR_fn_update_offer:             ${{ steps.urls.outputs.fn_update_offer }}
+          TF_VAR_fn_delete_offer:             ${{ steps.urls.outputs.fn_delete_offer }}
+          TF_VAR_fn_nearby_products:          ${{ steps.urls.outputs.fn_nearby_products }}
+          TF_VAR_fn_search_products:          ${{ steps.urls.outputs.fn_search_products }}
+          TF_VAR_fn_spotlight_by_location:    ${{ steps.urls.outputs.fn_spotlight_by_location }}
+          TF_VAR_fn_get_offers_by_business:   ${{ steps.urls.outputs.fn_get_offers_by_business }}
+          TF_VAR_fn_like_business:            ${{ steps.urls.outputs.fn_like_business }}
+          TF_VAR_fn_dislike_business:         ${{ steps.urls.outputs.fn_dislike_business }}
+          TF_VAR_fn_get_liked_businesses:     ${{ steps.urls.outputs.fn_get_liked_businesses }}
+          TF_VAR_fn_follow_business:          ${{ steps.urls.outputs.fn_follow_business }}
+          TF_VAR_fn_get_following_businesses: ${{ steps.urls.outputs.fn_get_following_businesses }}
+          TF_VAR_fn_followed_spotlights:      ${{ steps.urls.outputs.fn_followed_spotlights }}
+          TF_VAR_fn_claim_product:            ${{ steps.urls.outputs.fn_claim_product }}
+          TF_VAR_fn_get_my_claims:            ${{ steps.urls.outputs.fn_get_my_claims }}
+          TF_VAR_fn_cancel_claim:             ${{ steps.urls.outputs.fn_cancel_claim }}
+          TF_VAR_fn_get_incoming_claims:      ${{ steps.urls.outputs.fn_get_incoming_claims }}
+          TF_VAR_fn_accept_claim:             ${{ steps.urls.outputs.fn_accept_claim }}
+          TF_VAR_fn_reject_claim:             ${{ steps.urls.outputs.fn_reject_claim }}
+          TF_VAR_fn_mark_received:            ${{ steps.urls.outputs.fn_mark_received }}
+          TF_VAR_fn_add_review:               ${{ steps.urls.outputs.fn_add_review }}
+          TF_VAR_fn_get_reviews:              ${{ steps.urls.outputs.fn_get_reviews }}
+          TF_VAR_fn_get_notifications:        ${{ steps.urls.outputs.fn_get_notifications }}
+          TF_VAR_fn_mark_notification_read:   ${{ steps.urls.outputs.fn_mark_notification_read }}
+          TF_VAR_fn_user_profile_info:        ${{ steps.urls.outputs.fn_user_profile_info }}
+          TF_VAR_fn_biz_profile_info:         ${{ steps.urls.outputs.fn_biz_profile_info }}
+          TF_VAR_product_category_id:         ${{ steps.urls.outputs.product_category_id }}
         run: terraform apply -auto-approve -input=false
 
-      - name: Get function URL
+      - name: Get integration test URL
         id: fn-url
         working-directory: integration-test
         run: echo "url=$(terraform output -raw function_url)" >> $GITHUB_OUTPUT
@@ -101,20 +167,12 @@ jobs:
       - name: Run integration tests
         run: |
           URL="${{ steps.fn-url.outputs.url }}"
-          echo "Integration test endpoint: $URL"
-          echo ""
-          echo "─────────────────────────────────────────────────────"
+          echo "Endpoint: $URL"
+          echo "──────────────────────────────────────────────────────────────"
           HTTP_CODE=$(curl -s -o /tmp/test_output.txt -w "%{http_code}" \
-            --max-time 360 \
-            --retry 2 --retry-delay 5 \
-            "$URL")
-          echo ""
+            --max-time 360 --retry 2 --retry-delay 5 "$URL")
           cat /tmp/test_output.txt
-          echo ""
-          echo "─────────────────────────────────────────────────────"
+          echo "──────────────────────────────────────────────────────────────"
           echo "HTTP status: $HTTP_CODE"
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Integration tests FAILED (HTTP $HTTP_CODE)"
-            exit 1
-          fi
+          [ "$HTTP_CODE" = "200" ] || { echo "Integration tests FAILED"; exit 1; }
           echo "Integration tests PASSED"

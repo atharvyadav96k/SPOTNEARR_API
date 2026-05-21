@@ -9,15 +9,17 @@ on:
       - 'business/**'
       - 'users/**'
       - 'bridge-service/**'
+      - 'integration-test/**'
 
 jobs:
   detect-domains:
     runs-on: ubuntu-latest
     outputs:
-      business: ${{ steps.changes.outputs.business }}
-      users: ${{ steps.changes.outputs.users }}
-      auth: ${{ steps.changes.outputs.auth }}
-      bridge: ${{ steps.changes.outputs.bridge }}
+      business:           ${{ steps.changes.outputs.business }}
+      users:              ${{ steps.changes.outputs.users }}
+      auth:               ${{ steps.changes.outputs.auth }}
+      bridge:             ${{ steps.changes.outputs.bridge }}
+      integration-test:   ${{ steps.changes.outputs.integration-test }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +35,8 @@ jobs:
               - 'auth/**'
             bridge:
               - 'bridge-service/**'
+            integration-test:
+              - 'integration-test/**'
 
   business:
     needs: detect-domains
@@ -47,6 +51,15 @@ jobs:
     needs: detect-domains
     if: needs.detect-domains.outputs.users == 'true'
     uses: ./.github/workflows/users.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets: inherit
+
+  integration-test:
+    needs: detect-domains
+    if: needs.detect-domains.outputs.integration-test == 'true'
+    uses: ./.github/workflows/integration-test.yml
     permissions:
       id-token: write
       contents: read
