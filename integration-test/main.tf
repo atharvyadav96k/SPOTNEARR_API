@@ -30,6 +30,7 @@ variable "fn_user_login" {
   type    = string
   default = ""
 }
+
 variable "fn_biz_register" {
   type    = string
   default = ""
