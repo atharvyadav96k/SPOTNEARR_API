@@ -77,16 +77,14 @@ Register a new business account.
 ---
 
 ### POST `/auth/business/login`
-Authenticate an existing business.
+Authenticate a business owner. Looks up the user by email and verifies the account has `role = business` and is verified.
 
 **Body**
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `email` | string | no* | *at least one required |
-| `phone` | string | no* | |
-| `password` | string | yes | |
+| Field | Type | Required |
+|-------|------|----------|
+| `email` | string | yes |
 
-**Response 200** → `BusinessResponse`
+**Response 200** → `UserResponse`
 
 ---
 
@@ -119,28 +117,27 @@ Remove the user's avatar.
 ## Business Profile
 
 ### GET `/business/profile/profile-info`
-Get a business profile.
+Get a business profile by owner.
 
 **Body**
 | Field | Type | Required |
 |-------|------|----------|
-| `id` | uuid | yes |
+| `owner_id` | uuid | yes |
 
 **Response 200** → `BusinessResponse`
 
 ---
 
 ### POST `/business/profile/profile-image/set-profile-image-in-db`
-Attach a logo/cover URL to a business after upload.
+Attach a logo URL to a business after upload. `logo_url` must be non-empty.
 
 **Body**
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `id` | uuid | yes | business id |
-| `logo_url` | string | no | |
-| `cover_url` | string | no | |
+| `logo_url` | string | yes | URL of uploaded image |
 
-**Response 200** → `BusinessResponse`
+**Response 200** → `null`
 
 ---
 
@@ -739,6 +736,31 @@ Remove a business like.
 
 ---
 
+### GET `/users/products/near_by_products`
+Get active products sold by businesses within 5 km of the given coordinates.
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `latitude` | float64 | yes |
+| `longitude` | float64 | yes |
+
+**Response 200** → `[]ProductResponse`
+
+---
+
+### GET `/users/products/search_proudcts`
+Full-text search across product names and descriptions (case-insensitive).
+
+**Body**
+| Field | Type | Required |
+|-------|------|----------|
+| `query` | string | yes |
+
+**Response 200** → `[]ProductResponse`
+
+---
+
 ## User — Spotlights
 
 ### GET `/users/spotlights/followed_business_spotlights`
@@ -754,14 +776,13 @@ Get spotlight feed from businesses the user follows.
 ---
 
 ### GET `/users/spotlights/get_spotlight_by_location`
-Get spotlights near a geographic location.
+Get published, non-expired spotlights from businesses within 10 km of the given coordinates.
 
 **Body**
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `latitude` | float64 | yes | |
-| `longitude` | float64 | yes | |
-| `radius_km` | float64 | no | default varies |
+| Field | Type | Required |
+|-------|------|----------|
+| `latitude` | float64 | yes |
+| `longitude` | float64 | yes |
 
 **Response 200** → `[]SpotlightResponse`
 
