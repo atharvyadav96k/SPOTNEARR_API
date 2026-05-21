@@ -1,24 +1,5 @@
 variable "function_name" {
-  type    = string
-  default = "business-login"
-}
-
-terraform {
-  backend "gcs" {
-    bucket = "terraform-state-603675804309"
-    prefix = "cloud-functions/business-login"
-  }
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
+  type = string
 }
 
 variable "project_id" {
@@ -45,6 +26,21 @@ variable "database_url" {
   type = string
 }
 
+terraform {
+  backend "gcs" {}
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -55,7 +51,6 @@ resource "random_id" "bucket_suffix" {
 }
 
 resource "google_storage_bucket" "source_bucket" {
-  # Updated to use the variable and fixed the empty interpolation
   name                        = "${var.function_name}-${var.project_id}-source-${random_id.bucket_suffix.hex}"
   location                    = var.region
   uniform_bucket_level_access = true
@@ -68,13 +63,13 @@ resource "google_storage_bucket_object" "source_archive" {
   source = "source.zip"
 }
 
-resource "google_cloudfunctions2_function" "register" {
+resource "google_cloudfunctions2_function" "function" {
   name     = var.function_name
   location = var.region
 
   build_config {
     runtime         = "go122"
-    entry_point     = "BusinessLogin"
+    entry_point     = "Function"
     service_account = "projects/${var.project_id}/serviceAccounts/${var.service_account}"
     source {
       storage_source {
@@ -99,12 +94,13 @@ resource "google_cloudfunctions2_function" "register" {
 
 resource "google_cloud_run_service_iam_member" "public_access" {
   location = var.region
-  # This automatically tracks the name used in the function resource
-  service  = google_cloudfunctions2_function.register.name
+  service  = google_cloudfunctions2_function.function.service_config[0].service
   role     = "roles/run.invoker"
   member   = "allUsers"
+  depends_on = [google_cloudfunctions2_function.function]
 }
 
+
 output "function_url" {
-  value = google_cloudfunctions2_function.register.service_config[0].uri
+  value = google_cloudfunctions2_function.function.service_config[0].uri
 }
