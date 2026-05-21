@@ -22,45 +22,162 @@ variable "bucket_name" {
   type = string
 }
 
-variable "fn_user_register"          { type = string; default = "" }
-variable "fn_user_login"             { type = string; default = "" }
-variable "fn_biz_register"           { type = string; default = "" }
-variable "fn_add_categories"         { type = string; default = "" }
-variable "fn_get_categories"         { type = string; default = "" }
-variable "fn_create_location"        { type = string; default = "" }
-variable "fn_new_product"            { type = string; default = "" }
-variable "fn_create_inventory"       { type = string; default = "" }
-variable "fn_get_business_products"  { type = string; default = "" }
-variable "fn_get_business_inventory" { type = string; default = "" }
-variable "fn_create_spotlight"       { type = string; default = "" }
-variable "fn_create_offer"           { type = string; default = "" }
-variable "fn_get_business_offers"    { type = string; default = "" }
-variable "fn_update_offer"           { type = string; default = "" }
-variable "fn_delete_offer"           { type = string; default = "" }
-variable "fn_nearby_products"        { type = string; default = "" }
-variable "fn_search_products"        { type = string; default = "" }
-variable "fn_spotlight_by_location"  { type = string; default = "" }
-variable "fn_get_offers_by_business" { type = string; default = "" }
-variable "fn_like_business"          { type = string; default = "" }
-variable "fn_dislike_business"       { type = string; default = "" }
-variable "fn_get_liked_businesses"   { type = string; default = "" }
-variable "fn_follow_business"        { type = string; default = "" }
-variable "fn_get_following_businesses" { type = string; default = "" }
-variable "fn_followed_spotlights"    { type = string; default = "" }
-variable "fn_claim_product"          { type = string; default = "" }
-variable "fn_get_my_claims"          { type = string; default = "" }
-variable "fn_cancel_claim"           { type = string; default = "" }
-variable "fn_get_incoming_claims"    { type = string; default = "" }
-variable "fn_accept_claim"           { type = string; default = "" }
-variable "fn_reject_claim"           { type = string; default = "" }
-variable "fn_mark_received"          { type = string; default = "" }
-variable "fn_add_review"             { type = string; default = "" }
-variable "fn_get_reviews"            { type = string; default = "" }
-variable "fn_get_notifications"      { type = string; default = "" }
-variable "fn_mark_notification_read" { type = string; default = "" }
-variable "fn_user_profile_info"      { type = string; default = "" }
-variable "fn_biz_profile_info"       { type = string; default = "" }
-variable "product_category_id"       { type = string; default = "" }
+variable "fn_user_register" {
+  type    = string
+  default = ""
+}
+variable "fn_user_login" {
+  type    = string
+  default = ""
+}
+variable "fn_biz_register" {
+  type    = string
+  default = ""
+}
+variable "fn_add_categories" {
+  type    = string
+  default = ""
+}
+variable "fn_get_categories" {
+  type    = string
+  default = ""
+}
+variable "fn_create_location" {
+  type    = string
+  default = ""
+}
+variable "fn_new_product" {
+  type    = string
+  default = ""
+}
+variable "fn_create_inventory" {
+  type    = string
+  default = ""
+}
+variable "fn_get_business_products" {
+  type    = string
+  default = ""
+}
+variable "fn_get_business_inventory" {
+  type    = string
+  default = ""
+}
+variable "fn_create_spotlight" {
+  type    = string
+  default = ""
+}
+variable "fn_create_offer" {
+  type    = string
+  default = ""
+}
+variable "fn_get_business_offers" {
+  type    = string
+  default = ""
+}
+variable "fn_update_offer" {
+  type    = string
+  default = ""
+}
+variable "fn_delete_offer" {
+  type    = string
+  default = ""
+}
+variable "fn_nearby_products" {
+  type    = string
+  default = ""
+}
+variable "fn_search_products" {
+  type    = string
+  default = ""
+}
+variable "fn_spotlight_by_location" {
+  type    = string
+  default = ""
+}
+variable "fn_get_offers_by_business" {
+  type    = string
+  default = ""
+}
+variable "fn_like_business" {
+  type    = string
+  default = ""
+}
+variable "fn_dislike_business" {
+  type    = string
+  default = ""
+}
+variable "fn_get_liked_businesses" {
+  type    = string
+  default = ""
+}
+variable "fn_follow_business" {
+  type    = string
+  default = ""
+}
+variable "fn_get_following_businesses" {
+  type    = string
+  default = ""
+}
+variable "fn_followed_spotlights" {
+  type    = string
+  default = ""
+}
+variable "fn_claim_product" {
+  type    = string
+  default = ""
+}
+variable "fn_get_my_claims" {
+  type    = string
+  default = ""
+}
+variable "fn_cancel_claim" {
+  type    = string
+  default = ""
+}
+variable "fn_get_incoming_claims" {
+  type    = string
+  default = ""
+}
+variable "fn_accept_claim" {
+  type    = string
+  default = ""
+}
+variable "fn_reject_claim" {
+  type    = string
+  default = ""
+}
+variable "fn_mark_received" {
+  type    = string
+  default = ""
+}
+variable "fn_add_review" {
+  type    = string
+  default = ""
+}
+variable "fn_get_reviews" {
+  type    = string
+  default = ""
+}
+variable "fn_get_notifications" {
+  type    = string
+  default = ""
+}
+variable "fn_mark_notification_read" {
+  type    = string
+  default = ""
+}
+variable "fn_user_profile_info" {
+  type    = string
+  default = ""
+}
+variable "fn_biz_profile_info" {
+  type    = string
+  default = ""
+}
+variable "product_category_id" {
+  type    = string
+  default = ""
+}
 
 terraform {
   backend "gcs" {}
