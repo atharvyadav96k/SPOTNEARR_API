@@ -2,7 +2,7 @@ module github.com/atharvyadav96k/SPOTNEARR_API/business_active_plan
 
 go 1.25.5
 
-require github.com/atharvyadav96k/spotnearr-gcp v0.0.19
+require github.com/atharvyadav96k/spotnearr-gcp v0.0.20
 
 require (
 	github.com/google/uuid v1.6.0 // indirect

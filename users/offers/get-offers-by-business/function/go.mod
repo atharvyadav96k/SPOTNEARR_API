@@ -3,7 +3,7 @@ module github.com/atharvyadav96k/SPOTNEARR_API/users/get_offers_by_business
 go 1.25.5
 
 require (
-	github.com/atharvyadav96k/spotnearr-gcp v0.0.19
+	github.com/atharvyadav96k/spotnearr-gcp v0.0.20
 	github.com/google/uuid v1.6.0
 )
 

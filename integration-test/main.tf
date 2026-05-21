@@ -35,6 +35,10 @@ variable "fn_biz_register" {
   type    = string
   default = ""
 }
+variable "fn_add_product_category" {
+  type    = string
+  default = ""
+}
 variable "fn_add_categories" {
   type    = string
   default = ""
@@ -244,6 +248,7 @@ resource "google_cloudfunctions2_function" "function" {
       FN_USER_REGISTER          = var.fn_user_register
       FN_USER_LOGIN             = var.fn_user_login
       FN_BIZ_REGISTER           = var.fn_biz_register
+      FN_ADD_PRODUCT_CATEGORY   = var.fn_add_product_category
       FN_ADD_CATEGORIES         = var.fn_add_categories
       FN_GET_CATEGORIES         = var.fn_get_categories
       FN_CREATE_LOCATION        = var.fn_create_location

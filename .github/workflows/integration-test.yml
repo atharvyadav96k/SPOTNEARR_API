@@ -40,6 +40,7 @@ jobs:
 
           {
             # ── Business (names from business.yml function-name: fields) ──────
+            echo "fn_add_product_category=$(get_url add_product_category)"
             echo "fn_add_categories=$(get_url add_categories)"
             echo "fn_get_categories=$(get_url get_categories)"
             echo "fn_create_location=$(get_url create_location)"
@@ -119,6 +120,7 @@ jobs:
           TF_VAR_fn_user_register:            ${{ steps.urls.outputs.fn_user_register }}
           TF_VAR_fn_user_login:               ${{ steps.urls.outputs.fn_user_login }}
           TF_VAR_fn_biz_register:             ${{ steps.urls.outputs.fn_biz_register }}
+          TF_VAR_fn_add_product_category:     ${{ steps.urls.outputs.fn_add_product_category }}
           TF_VAR_fn_add_categories:           ${{ steps.urls.outputs.fn_add_categories }}
           TF_VAR_fn_get_categories:           ${{ steps.urls.outputs.fn_get_categories }}
           TF_VAR_fn_create_location:          ${{ steps.urls.outputs.fn_create_location }}

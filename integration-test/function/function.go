@@ -126,16 +126,13 @@ func Function(w http.ResponseWriter, r *http.Request) {
 	userEmail := fmt.Sprintf("test%d@spotnearr.test", ts)
 	bizEmail := fmt.Sprintf("biz%d@spotnearr.test", ts)
 	testPass := "Test@123456"
-	productCategoryID := e("PRODUCT_CATEGORY_ID")
+	var productCategoryID string
 
 	fmt.Fprintf(out, "════════════════════════════════════════════════════════════════\n")
 	fmt.Fprintf(out, "  Spotnearr — End-to-End Integration Test Suite\n")
 	fmt.Fprintf(out, "════════════════════════════════════════════════════════════════\n")
 	fmt.Fprintf(out, "Started : %s\n", time.Now().Format("2006-01-02 15:04:05 UTC"))
 	fmt.Fprintf(out, "User    : %s\n", userEmail)
-	if productCategoryID == "" {
-		fmt.Fprintf(out, "WARNING : PRODUCT_CATEGORY_ID not set — product/inventory tests will be skipped\n")
-	}
 
 	now := time.Now()
 	expiresAt := now.Add(7 * 24 * time.Hour).Format(time.RFC3339)
@@ -181,6 +178,21 @@ func Function(w http.ResponseWriter, r *http.Request) {
 
 	// ─── BUSINESS SETUP ───────────────────────────────────────────────────────
 	section("BUSINESS SETUP")
+
+	run("Create product category", e("FN_ADD_PRODUCT_CATEGORY"), func() error {
+		resp, err := callFn(e("FN_ADD_PRODUCT_CATEGORY"), map[string]interface{}{
+			"name": fmt.Sprintf("Test Product Cat %d", ts),
+		})
+		if err != nil {
+			return err
+		}
+		productCategoryID = str(resp, "id")
+		if productCategoryID == "" {
+			return fmt.Errorf("no id in response")
+		}
+		fmt.Fprintf(out, "    id = %s\n", productCategoryID)
+		return nil
+	})
 
 	run("Create business category", e("FN_ADD_CATEGORIES"), func() error {
 		resp, err := callFn(e("FN_ADD_CATEGORIES"), map[string]interface{}{
@@ -254,7 +266,7 @@ func Function(w http.ResponseWriter, r *http.Request) {
 
 	run("Create product", e("FN_NEW_PRODUCT"), func() error {
 		if productCategoryID == "" {
-			return fmt.Errorf("skipped — PRODUCT_CATEGORY_ID not set")
+			return fmt.Errorf("skipped — product category not created")
 		}
 		resp, err := callFn(e("FN_NEW_PRODUCT"), map[string]interface{}{
 			"category_id":  productCategoryID,

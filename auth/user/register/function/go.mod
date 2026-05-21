@@ -3,7 +3,7 @@ module github.com/atharvyadav96k/spotnearr-gcp/auth/user/register
 go 1.25.5
 
 require (
-	github.com/atharvyadav96k/spotnearr-gcp v0.0.19
+	github.com/atharvyadav96k/spotnearr-gcp v0.0.20
 	golang.org/x/crypto v0.51.0
 )
 

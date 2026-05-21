@@ -20,6 +20,7 @@ jobs:
       spotlights-update:     ${{ steps.filter.outputs.spotlights-update }}
       spotlights-delete:     ${{ steps.filter.outputs.spotlights-delete }}
 
+      products-add-category: ${{ steps.filter.outputs.products-add-category }}
       products-new:          ${{ steps.filter.outputs.products-new }}
       products-get:          ${{ steps.filter.outputs.products-get }}
       products-update:       ${{ steps.filter.outputs.products-update }}
@@ -83,6 +84,8 @@ jobs:
             spotlights-delete:
               - 'business/spotlights/delete_spotlight/**'
 
+            products-add-category:
+              - 'business/products/add_product_category/**'
             products-new:
               - 'business/products/new_product/**'
             products-get:
@@ -275,6 +278,19 @@ jobs:
     secrets: inherit
 
 # ─── Products ──────────────────────────────────────────────────
+  products-add-category:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.products-add-category == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-function.yml
+    with:
+      function-name: add_product_category
+      working-directory: business/products/add_product_category
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+
   products-new:
     needs: detect-changes
     if: needs.detect-changes.outputs.products-new == 'true'
