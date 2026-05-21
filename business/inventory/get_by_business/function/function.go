@@ -4,19 +4,23 @@ import (
 	"net/http"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/inventory/get_by_business/applayer"
-	"github.com/atharvyadav96k/spotnearr-gcp/app/database/models"
 	"github.com/atharvyadav96k/spotnearr-gcp/app/utils"
+	"github.com/google/uuid"
 )
 
+type getByBusinessRequest struct {
+	BusinessID uuid.UUID `json:"business_id"`
+}
+
 func Function(w http.ResponseWriter, r *http.Request) {
-	business, err := utils.ParseBody[models.Business](r)
+	body, err := utils.ParseBody[getByBusinessRequest](r)
 	if err != nil {
 		utils.BadRequest(w, err)
 		return
 	}
 
 	app := applayer.Init()
-	inventories, err := app.GetProductInventoriesByBusinessID(business.ID)
+	inventories, err := app.GetProductInventoriesByBusinessID(body.BusinessID)
 	if err != nil {
 		utils.BadRequest(w, err)
 		return

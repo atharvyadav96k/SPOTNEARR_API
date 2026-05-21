@@ -2,7 +2,7 @@ module github.com/atharvyadav96k/SPOTNEARR_API/location/create_location
 
 go 1.25.5
 
-require github.com/atharvyadav96k/spotnearr-gcp v0.0.20
+require github.com/atharvyadav96k/spotnearr-gcp v0.0.21
 
 require (
 	github.com/google/uuid v1.6.0 // indirect

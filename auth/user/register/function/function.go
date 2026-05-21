@@ -22,11 +22,11 @@ func Function(
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*user.PasswordHash), bcrypt.DefaultCost)
 	hashed := string(hashedPassword)
 	user.PasswordHash = &hashed
-	err = app.RegisterUser(*user)
+	created, err := app.RegisterUser(*user)
 	if err != nil {
 		utils.Conflict(w, err.Error())
 		return
 	}
 
-	utils.Created(w, "user created successfully", user)
+	utils.Created(w, "user created successfully", created)
 }
