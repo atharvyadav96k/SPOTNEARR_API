@@ -37,6 +37,14 @@ variable "service_account" {
   type = string
 }
 
+variable "bucket_name" {
+  type = string
+}
+
+variable "database_url" {
+  type = string
+}
+
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -82,6 +90,10 @@ resource "google_cloudfunctions2_function" "register" {
     timeout_seconds       = 60
     service_account_email = var.service_account
     ingress_settings      = "ALLOW_ALL"
+
+    environment_variables = {
+      DATABASE_URL = var.database_url
+    }
   }
 }
 
