@@ -1,4 +1,52 @@
-# Spotnearr API Reference
+# Spotnearr API
+
+Spotnearr is a hyperlocal marketplace platform where businesses list products and spotlights, and customers discover them by location, follow businesses, claim products, and receive notifications.
+
+## Architecture
+
+- **Runtime**: Google Cloud Functions 2nd Gen (Go 1.22) — each endpoint is a standalone Cloud Function deployed as a Cloud Run service
+- **Shared library**: [`sportnearr-gcp`](https://github.com/atharvyadav96k/spotnearr-gcp) — database models, DB operations, and utilities shared across all functions
+- **Database**: PostgreSQL (connection injected via `DATABASE_URL` environment variable)
+- **Storage**: Google Cloud Storage for images (signed URLs via bridge service)
+- **Infrastructure**: Terraform (GCS backend) — one `main.tf` per function
+- **CI/CD**: GitHub Actions — `auth.yml`, `business.yml`, `users.yml` trigger on path-filtered pushes
+
+## Repository Layout
+
+```
+SPOTNEARR_API/
+├── auth/                   # Authentication (user & business register/login)
+├── business/               # Business-facing endpoints (products, inventory, spotlights, etc.)
+├── users/                  # User-facing endpoints (discovery, social, claims, etc.)
+├── bridge-service/         # Image upload (GCS signed URLs) & push notifications
+├── integration-test/       # End-to-end test suite (Cloud Function + Terraform)
+├── gateway/                # OpenAPI stub
+└── .github/workflows/      # CI/CD pipelines
+```
+
+## Deployment
+
+Each function directory contains:
+- `function/function.go` — handler (`Function(w, r)` entry point)
+- `main.tf` — Terraform config (Cloud Function, IAM, storage)
+
+Deploy a function:
+```sh
+cd <function-dir>
+zip -r source.zip .
+terraform init -backend-config=<config>
+terraform apply -var="database_url=$DATABASE_URL" ...
+```
+
+## Integration Tests
+
+The integration test is itself a Cloud Function deployed to GCP. It runs daily at 02:00 UTC via Cloud Scheduler. To trigger manually, invoke the function URL or run the GitHub Actions workflow `integration-test.yml`.
+
+The test suite covers 34 end-to-end cases across the full user journey: auth → business setup → product discovery → social (follows/likes) → product claims → completion → reviews.
+
+---
+
+## API Reference
 
 All endpoints return JSON in the following envelope:
 
@@ -353,7 +401,7 @@ List all inventory records for a business.
 **Body**
 | Field | Type | Required |
 |-------|------|----------|
-| `id` | uuid | yes |
+| `business_id` | uuid | yes |
 
 **Response 200** → `[]ProductInventoryResponse`
 

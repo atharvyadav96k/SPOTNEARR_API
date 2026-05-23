@@ -1,0 +1,104 @@
+package applayer
+
+import (
+	"net/http"
+
+	"github.com/gorilla/mux"
+)
+
+func (a *application) NewMux() *mux.Router {
+	router := mux.NewRouter()
+	apiV1 := router.PathPrefix("/api/v1").Subrouter()
+	a.healthRouter(apiV1)
+	a.authRouter(apiV1)
+	a.userRouter(apiV1)
+	a.businessRouter(apiV1)
+	a.inventoryRouter(apiV1)
+	a.productRouter(apiV1)
+	a.claimRouter(apiV1)
+	a.offerRouter(apiV1)
+	return router
+}
+
+func (a *application) healthRouter(router *mux.Router) {
+	router.HandleFunc("/health", a.healthHandler.HealthOK).Methods(http.MethodGet)
+}
+
+func (a *application) authRouter(router *mux.Router) {
+	auth := router.PathPrefix("/auth").Subrouter()
+	auth.HandleFunc("/users/register", a.userHandler.Register).Methods(http.MethodPost)
+	auth.HandleFunc("/users/login", a.userHandler.Login).Methods(http.MethodPost)
+	auth.HandleFunc("/businesses/register", a.businessHandler.BusinessRegister).Methods(http.MethodPost)
+	auth.HandleFunc("/businesses/login", a.businessHandler.BusinessLogin).Methods(http.MethodPost)
+}
+
+func (a *application) userRouter(router *mux.Router) {
+	user := router.PathPrefix("/users").Subrouter()
+	user.HandleFunc("/{userId}/profile", a.userHandler.Profile).Methods(http.MethodGet)
+	user.HandleFunc("/{userId}", a.userHandler.UpdateUserInfo)
+	user.HandleFunc("/{userId}/ban", a.userHandler.BanUser)
+}
+
+func (a *application) businessRouter(router *mux.Router) {
+	biz := router.PathPrefix("/businesses").Subrouter()
+	biz.HandleFunc("/{bizId}/profile", a.businessHandler.BusinessProfile).Methods(http.MethodGet)
+	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessUpdate).Methods(http.MethodPut)
+	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)
+	biz.HandleFunc("/{bizId}/ban", a.businessHandler.BusinessBan).Methods(http.MethodPost)
+	biz.HandleFunc("/{bizId}/inventory", a.businessHandler.BusinessInventory).Methods(http.MethodGet)
+}
+
+func (a *application) inventoryRouter(router *mux.Router) {
+	router.PathPrefix("/inventory")
+	router.HandleFunc("/{bizId}", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)
+	router.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)
+	router.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet)
+	router.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost)
+	router.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete)
+}
+
+func (a *application) productRouter(router *mux.Router) {
+	router.PathPrefix("/products")
+	router.HandleFunc("/${productId}", a.productHandler.ProductGet).Methods(http.MethodGet)
+	router.HandleFunc("/${productId}", a.productHandler.ProductUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/${productId}", a.productHandler.ProductDelete).Methods(http.MethodDelete)
+	router.HandleFunc("/nearby", a.productHandler.ProductNearBy).Methods(http.MethodGet)
+}
+
+func (a *application) claimRouter(router *mux.Router) {
+	router.PathPrefix("/claims")
+	router.HandleFunc("/${productId}", a.claimHandler.ClaimProduct).Methods(http.MethodPost)
+	router.HandleFunc("/${productId}", a.claimHandler.ClaimRemove).Methods(http.MethodDelete)
+}
+
+func (a *application) offerRouter(router *mux.Router) {
+	router.PathPrefix("/offers")
+	router.HandleFunc("/nearby", a.offerHandler.NearByOffers).Methods(http.MethodGet)
+	router.HandleFunc("/", a.offerHandler.OfferAdd).Methods(http.MethodPost)
+	router.HandleFunc("/", a.offerHandler.OfferUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/", a.offerHandler.OfferDelete).Methods(http.MethodDelete)
+}
+
+func (a *application) reviewRouter(router *mux.Router) {
+	router.PathPrefix("/review")
+	router.HandleFunc("/offers/${offerId}", a.reviewHandler.ReviewGetByOffer).Methods(http.MethodGet)
+	router.HandleFunc("/offers", a.reviewHandler.ReviewOffer).Methods(http.MethodPost)
+	router.HandleFunc("/offers", a.reviewHandler.ReviewOfferUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/offers", a.reviewHandler.ReviewOfferDelete).Methods(http.MethodDelete)
+
+	router.HandleFunc("/spotlights/${spotlightId}", a.reviewHandler.ReviewGetBySpotlight).Methods(http.MethodGet)
+	router.HandleFunc("/spotlights", a.reviewHandler.ReviewSpotlight).Methods(http.MethodPost)
+	router.HandleFunc("/spotlights", a.reviewHandler.ReviewSpotlightUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/spotlights", a.reviewHandler.ReviewSpotlightDelete).Methods(http.MethodDelete)
+
+	router.HandleFunc("/businesses", a.reviewHandler.ReviewGetByBusiness).Methods(http.MethodGet)
+	router.HandleFunc("/businesses", a.reviewHandler.ReviewBusiness).Methods(http.MethodPost)
+	router.HandleFunc("/businesses", a.reviewHandler.ReviewBusinessUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/businesses", a.reviewHandler.ReviewBusinessDelete).Methods(http.MethodDelete)
+
+	router.HandleFunc("/products", a.reviewHandler.ReviewGetByProduct).Methods(http.MethodGet)
+	router.HandleFunc("/products", a.reviewHandler.ReviewProduct).Methods(http.MethodPost)
+	router.HandleFunc("/products", a.reviewHandler.ReviewProductUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/products", a.reviewHandler.ReviewProductDelete).Methods(http.MethodDelete)
+}

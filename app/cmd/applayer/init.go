@@ -1,0 +1,24 @@
+package applayer
+
+import (
+	"github.com/atharvyadav96k/SPOTNEARR_API/handlers"
+	"github.com/atharvyadav96k/SPOTNEARR_API/services"
+)
+
+func Init() application {
+	a := application{}
+	if err := a.InitDb(); err != nil {
+		panic(err)
+	}
+	services := services.Init(a.GetDb())
+	a.healthHandler = handlers.NewHealthHandler()
+	a.businessHandler = handlers.NewBusinessHandler(services.BusinessService)
+	a.userHandler = handlers.NewUserHandler(services.UserService)
+	a.inventoryHandler = handlers.NewInventoryHandler()
+	a.productHandler = handlers.NewProductHandler()
+	a.claimHandler = handlers.NewClaimHandler()
+	a.spotlightHandler = handlers.NewSpotlightHandler()
+	a.offerHandler = handlers.NewOfferHandler()
+	a.reviewHandler = handlers.NewReviewHandler()
+	return a
+}
