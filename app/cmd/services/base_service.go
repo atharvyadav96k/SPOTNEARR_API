@@ -32,6 +32,10 @@ func (b *base_service) ResponseBadRequest(message string) response.Res {
 	return res(message, http.StatusBadRequest, nil)
 }
 
+func (b *base_service) ResponseUnauthorized() response.Res {
+	return res("unauthorized", http.StatusUnauthorized, nil)
+}
+
 func (b *base_service) ResponseConflict(message string) response.Res {
 	return res(message, http.StatusConflict, nil)
 }

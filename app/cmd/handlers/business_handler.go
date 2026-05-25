@@ -27,10 +27,6 @@ func (b *BusinessHandler) BusinessRegister(w http.ResponseWriter, r *http.Reques
 	b.Response(w, res)
 }
 
-func (b *BusinessHandler) BusinessLogin(w http.ResponseWriter, r *http.Request) {
-	b.ResponseOK(w)
-}
-
 func (b *BusinessHandler) BusinessProfile(w http.ResponseWriter, r *http.Request) {
 	id, err := b.GetBusinessId(r)
 	if err != nil {

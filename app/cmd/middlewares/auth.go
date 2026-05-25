@@ -1,0 +1,43 @@
+package middleware
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"strings"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
+)
+
+type contextKey string
+
+const ClaimsKey contextKey = "userClaims"
+
+func Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			log.Default().Println("Missing auth header")
+			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			log.Default().Println("Missing toke")
+			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+			return
+		}
+
+		tokenStr := parts[1]
+		claims, err := auth.ValidateToken(tokenStr, "dummy")
+		if err != nil {
+			log.Default().Println("Failed to validate token")
+			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+			return
+		}
+		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}

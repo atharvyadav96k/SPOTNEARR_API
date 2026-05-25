@@ -12,6 +12,7 @@ func Init() application {
 	}
 	services := services.Init(a.GetDb())
 	a.healthHandler = handlers.NewHealthHandler()
+	a.authHandler = handlers.NewAuthHandler(services)
 	a.businessHandler = handlers.NewBusinessHandler(services)
 	a.userHandler = handlers.NewUserHandler(services)
 	a.inventoryHandler = handlers.NewInventoryHandler(services)

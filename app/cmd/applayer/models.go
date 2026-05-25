@@ -8,6 +8,7 @@ import (
 type application struct {
 	app.App
 	healthHandler    *handlers.Health
+	authHandler      *handlers.AuthHandler
 	businessHandler  *handlers.BusinessHandler
 	userHandler      *handlers.UserHandler
 	productHandler   *handlers.ProductHandler

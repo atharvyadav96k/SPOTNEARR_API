@@ -9,7 +9,9 @@ import (
 type IUserRepository interface {
 	Register(ctx context.Context, user *models.User) error
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	GetById(ctx context.Context, id uint) (*models.User, error)
 	GetByPhone(ctx context.Context, phone string) (*models.User, error)
+	SetRefreshToken(ctx context.Context, userID uint, token string) error
 	UpdatePasswordWithEmail(ctx context.Context, email string, hashedPassword string) error
 	FreezeAccount(ctx context.Context, email string) error
 	UnfreezeAccount(ctx context.Context, email string) error

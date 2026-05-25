@@ -52,6 +52,21 @@ func (u *UserRepository) Register(ctx context.Context, user *models.User) error 
 	return nil
 }
 
+func (u *UserRepository) SetRefreshToken(ctx context.Context, userID uint, token string) error {
+	db := u.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("refresh_token", token)
+
+	if db.Error != nil {
+		return db.Error
+	}
+	if db.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (u *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	if err := u.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
@@ -65,6 +80,14 @@ func (u *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 		return nil, fmt.Errorf("Your account is deactivated. Please request system permission to reactivate")
 	}
 
+	return &user, nil
+}
+
+func (u *UserRepository) GetById(ctx context.Context, id uint) (*models.User, error) {
+	var user models.User
+	if err := u.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
+		return nil, err
+	}
 	return &user, nil
 }
 

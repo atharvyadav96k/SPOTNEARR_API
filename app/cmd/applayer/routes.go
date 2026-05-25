@@ -3,6 +3,7 @@ package applayer
 import (
 	"net/http"
 
+	middleware "github.com/atharvyadav96k/SPOTNEARR_API/middlewares"
 	"github.com/gorilla/mux"
 )
 
@@ -26,11 +27,14 @@ func (a *application) healthRouter(router *mux.Router) {
 }
 
 func (a *application) authRouter(router *mux.Router) {
-	auth := router.PathPrefix("/auth").Subrouter()
-	auth.HandleFunc("/users/register", a.userHandler.Register).Methods(http.MethodPost)
-	auth.HandleFunc("/users/login", a.userHandler.Login).Methods(http.MethodPost)
-	auth.HandleFunc("/businesses/register", a.businessHandler.BusinessRegister).Methods(http.MethodPost)
-	auth.HandleFunc("/businesses/login", a.businessHandler.BusinessLogin).Methods(http.MethodPost)
+	authSub := router.PathPrefix("/auth").Subrouter()
+	authSub.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost)
+	authSub.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)
+	authSub.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)
+
+	protectedAuth := authSub.PathPrefix("").Subrouter()
+	protectedAuth.Use(middleware.Auth)
+	protectedAuth.HandleFunc("/users/auth", a.authHandler.Auth).Methods(http.MethodGet)
 }
 
 func (a *application) userRouter(router *mux.Router) {
@@ -42,6 +46,7 @@ func (a *application) userRouter(router *mux.Router) {
 
 func (a *application) businessRouter(router *mux.Router) {
 	biz := router.PathPrefix("/businesses").Subrouter()
+	biz.HandleFunc("/register", a.businessHandler.BusinessRegister).Methods(http.MethodPost)
 	biz.HandleFunc("/{bizId}/profile", a.businessHandler.BusinessProfile).Methods(http.MethodGet)
 	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessUpdate).Methods(http.MethodPut)
 	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)
