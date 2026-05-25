@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
-	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/repository"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
@@ -44,24 +43,31 @@ func (u *UserService) Login(email string, password string) response.Res {
 		log.Default().Println(err)
 		return u.ResponseBadRequest("Invalid email or password")
 	}
-	refreshToken, err := auth.GenerateRefreshToken(user.ID, user.BusinessID, "dummy")
-	if err != nil {
-		log.Default().Println(err)
-		return u.ResponseInternalServer("Failed to login")
-	}
-	err = u.repo.SetRefreshToken(context.Background(), user.ID, refreshToken)
-	if err != nil {
-		log.Default().Println(err)
-		return u.ResponseInternalServer("Failed to login")
+	var refreshToken string
+	if _, err := auth.ValidateToken(user.RefreshToken, "dummy"); err == nil {
+		refreshToken = user.RefreshToken
+	} else {
+		refreshToken, err = auth.GenerateRefreshToken(user.ID, user.BusinessID, "dummy")
+		if err != nil {
+			log.Default().Println("Failed to generate refresh token:", err)
+			return u.ResponseInternalServer("Failed to login")
+		}
+
+		err = u.repo.SetRefreshToken(context.Background(), user.ID, refreshToken)
+		if err != nil {
+			log.Default().Println("Failed to save refresh token:", err)
+			return u.ResponseInternalServer("Failed to login")
+		}
 	}
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.BusinessID, "dummy")
 	if err != nil {
-		log.Default().Println(err)
+		log.Default().Println("Failed to generate access token:", err)
 		return u.ResponseInternalServer("Failed to login")
 	}
-	var data dtos.User
-	data = data.ResponseMapper(user, accessToken, refreshToken)
-	return u.ResponseOK("Logged in successfully", data)
+	return u.ResponseOK("Logged in successfully", auth.TokenResponse{
+		RefreshToken: refreshToken,
+		AccessToken:  accessToken,
+	})
 }
 
 func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) response.Res {
@@ -81,7 +87,15 @@ func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) respo
 		log.Default().Println("Failed to generate access token")
 		return u.ResponseUnauthorized()
 	}
-	var data dtos.User
-	data = data.ResponseMapper(user, accessToken, refreshToken)
-	return u.ResponseOK("New access token", data)
+	return u.ResponseOK("New access token", auth.TokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
+}
+
+func (u *UserService) DismissRefreshToken(id uint) response.Res {
+	if err := u.repo.RemoveRefreshToken(context.Background(), id); err != nil {
+		return u.ResponseNotFound("Account not found")
+	}
+	return u.ResponseOK("successfully logout from all devices", nil)
 }

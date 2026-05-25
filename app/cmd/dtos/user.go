@@ -5,13 +5,11 @@ import (
 )
 
 type User struct {
-	FullName     string `json:"full_name,omitempty"`
-	Email        string `json:"email"`
-	Phone        string `json:"phone"`
-	Password     string `json:"password,omitempty"`
-	Role         string `json:"role"`
-	AccessToken  string `json:"access_token",omitempty`
-	RefreshToken string `json:"refresh_token"`
+	FullName string `json:"full_name,omitempty"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Password string `json:"password,omitempty"`
+	Role     string `json:"role"`
 }
 
 func (u *User) RequestMapper(data User) *models.User {
@@ -28,7 +26,7 @@ func (u *User) RequestMapper(data User) *models.User {
 	}
 }
 
-func (u *User) ResponseMapper(data *models.User, access_token string, refresh_token string) User {
+func (u *User) ResponseMapper(data *models.User) User {
 	var email, phone string
 
 	if data.Email != nil {
@@ -39,11 +37,9 @@ func (u *User) ResponseMapper(data *models.User, access_token string, refresh_to
 	}
 
 	return User{
-		FullName:     data.FullName,
-		Email:        email,
-		Phone:        phone,
-		Role:         string(data.Role),
-		AccessToken:  access_token,
-		RefreshToken: refresh_token,
+		FullName: data.FullName,
+		Email:    email,
+		Phone:    phone,
+		Role:     string(data.Role),
 	}
 }

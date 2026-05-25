@@ -15,6 +15,7 @@ func GenerateAccessToken(userID uint, businessId *uint, secret string) (string, 
 				time.Now().Add(15 * time.Minute),
 			),
 		},
+		TokenType: TypeAccessToken,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -31,6 +32,7 @@ func GenerateRefreshToken(userID uint, businessId *uint, secret string) (string,
 				time.Now().Add(30 * 24 * time.Hour),
 			),
 		},
+		TokenType: TypeRefreshToken,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

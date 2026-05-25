@@ -35,6 +35,7 @@ func (a *application) authRouter(router *mux.Router) {
 	protectedAuth := authSub.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
 	protectedAuth.HandleFunc("/users/auth", a.authHandler.Auth).Methods(http.MethodGet)
+	protectedAuth.HandleFunc("/users/logout-all-devices", a.authHandler.LogoutFromAllDevices).Methods(http.MethodGet)
 }
 
 func (a *application) userRouter(router *mux.Router) {

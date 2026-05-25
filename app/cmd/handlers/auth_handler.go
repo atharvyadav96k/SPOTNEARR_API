@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -39,11 +40,13 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AuthHandler) Auth(w http.ResponseWriter, r *http.Request) {
+	log.Default().Println("User Id: ", a.ClaimGetUserId(r))
+	log.Default().Println("Business Id: ", a.ClaimGetBusinessId(r))
 	a.ResponseOK(w)
 }
 
 func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	userTokens, err := ParseBody[auth.UserClaims](r)
+	userTokens, err := ParseBody[auth.TokenResponse](r)
 	if err != nil {
 		a.ResponseBadRequest(w)
 		return
@@ -58,5 +61,16 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res := a.GetUserService().Refresh(*claims, userTokens.RefreshToken)
+	a.Response(w, res)
+}
+
+func (a *AuthHandler) LogoutFromAllDevices(w http.ResponseWriter, r *http.Request) {
+	userId := a.ClaimGetUserId(r)
+	if userId == 0 {
+		log.Default().Println("User Id: ", userId)
+		a.ResponseBadRequest(w)
+		return
+	}
+	res := a.GetUserService().DismissRefreshToken(userId)
 	a.Response(w, res)
 }

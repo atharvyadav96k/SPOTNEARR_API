@@ -67,6 +67,21 @@ func (u *UserRepository) SetRefreshToken(ctx context.Context, userID uint, token
 	return nil
 }
 
+func (u *UserRepository) RemoveRefreshToken(ctx context.Context, userID uint) error {
+	db := u.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("refresh_token", "")
+
+	if db.Error != nil {
+		return db.Error
+	}
+	if db.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (u *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	if err := u.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {

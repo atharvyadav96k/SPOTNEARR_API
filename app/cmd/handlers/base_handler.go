@@ -3,10 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
+	middleware "github.com/atharvyadav96k/SPOTNEARR_API/middlewares"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"github.com/gorilla/mux"
@@ -62,6 +65,35 @@ func (h *BaseHandler) Response(w http.ResponseWriter, r response.Res) {
 
 func (h *BaseHandler) ResponseBadRequest(w http.ResponseWriter) {
 	res(w, http.StatusBadGateway, nil)
+}
+
+func (h *BaseHandler) getClaims(r *http.Request) (auth.UserClaims, error) {
+	claims, ok := r.Context().Value(middleware.ClaimsKey).(*auth.UserClaims)
+	if !ok {
+		return auth.UserClaims{}, fmt.Errorf("unauthorized access")
+	}
+	return *claims, nil
+}
+
+func (h *BaseHandler) ClaimGetBusinessId(r *http.Request) uint {
+	claim, err := h.getClaims(r)
+	if err != nil {
+		return 0
+	}
+	if claim.BusinessId == nil {
+		return 0
+	}
+	log.Default().Println("business id : ", claim.BusinessId)
+	return *claim.BusinessId
+}
+
+func (h *BaseHandler) ClaimGetUserId(r *http.Request) uint {
+	claim, err := h.getClaims(r)
+	if err != nil {
+		return 0
+	}
+	log.Default().Println("user id : ", claim.UserId)
+	return claim.UserId
 }
 
 func extractKeyFromPath(r *http.Request, key string) (uint, error) {
