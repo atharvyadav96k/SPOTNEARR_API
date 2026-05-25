@@ -22,7 +22,13 @@ func NewBusinessService(repo repository.IBusinessesRepository) *BusinessService 
 func (b *BusinessService) RegisterBusiness(business *models.Business) response.Res {
 	business, err := b.repo.Create(context.Background(), business)
 	if err != nil {
-		b.ResponseBadRequest(err.Error())
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return b.ResponseConflict("This account is already associated with the business")
+		}
+		if errors.Is(err, gorm.ErrForeignKeyViolated) {
+			return b.ResponseConflict("Invalid user account")
+		}
+		return b.ResponseBadRequest(err.Error())
 	}
 	return b.ResponseCreated("Business successfully registered", business)
 }

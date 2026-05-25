@@ -7,11 +7,32 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"github.com/gorilla/mux"
 )
 
-type BaseHandler struct{}
+type BaseHandler struct {
+	services *services.Services
+}
+
+func NewBaserHandler(services *services.Services) *BaseHandler {
+	return &BaseHandler{
+		services: services,
+	}
+}
+
+func (b *BaseHandler) GetBizService() *services.BusinessService {
+	return b.services.BusinessService
+}
+
+func (b *BaseHandler) GetUserService() *services.UserService {
+	return b.services.UserService
+}
+
+func (b *BaseHandler) GetInvService() *services.InventoryService {
+	return b.services.InventoryService
+}
 
 func ParseBody[T any](r *http.Request) (*T, error) {
 	var data T

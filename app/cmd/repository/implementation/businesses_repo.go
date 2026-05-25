@@ -19,12 +19,8 @@ func NewBusinessRepository(db *gorm.DB) *BusinessRepository {
 
 func (r *BusinessRepository) Create(ctx context.Context, business *models.Business) (*models.Business, error) {
 	if err := r.db.WithContext(ctx).Create(business).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return nil, fmt.Errorf("this account is already associated with the business")
-		}
-		return nil, fmt.Errorf("failed to create business: %w", err)
+		return nil, err
 	}
-
 	return business, nil
 }
 

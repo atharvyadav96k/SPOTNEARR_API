@@ -17,6 +17,7 @@ func (a *application) NewMux() *mux.Router {
 	a.productRouter(apiV1)
 	a.claimRouter(apiV1)
 	a.offerRouter(apiV1)
+	a.reviewRouter(apiV1)
 	return router
 }
 
@@ -44,18 +45,17 @@ func (a *application) businessRouter(router *mux.Router) {
 	biz.HandleFunc("/{bizId}/profile", a.businessHandler.BusinessProfile).Methods(http.MethodGet)
 	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessUpdate).Methods(http.MethodPut)
 	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)
-	biz.HandleFunc("/{bizId}/ban", a.businessHandler.BusinessBan).Methods(http.MethodPost)
-	biz.HandleFunc("/{bizId}/inventory", a.businessHandler.BusinessInventory).Methods(http.MethodGet)
+	biz.HandleFunc("/{bizId}/inventories", a.businessHandler.BusinessInventories).Methods(http.MethodGet)
 }
 
 func (a *application) inventoryRouter(router *mux.Router) {
-	router.PathPrefix("/inventory")
-	router.HandleFunc("/{bizId}", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)
-	router.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPut)
-	router.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)
-	router.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet)
-	router.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost)
-	router.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete)
+	inv := router.PathPrefix("/inventory").Subrouter()
+	inv.HandleFunc("/{bizId}", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)
+	inv.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPut)
+	inv.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)
+	inv.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet)
+	inv.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost)
+	inv.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete)
 }
 
 func (a *application) productRouter(router *mux.Router) {

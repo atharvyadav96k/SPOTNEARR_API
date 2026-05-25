@@ -9,12 +9,11 @@ import (
 
 type BusinessHandler struct {
 	BaseHandler
-	businessService *services.BusinessService
 }
 
-func NewBusinessHandler(businessService *services.BusinessService) *BusinessHandler {
+func NewBusinessHandler(services *services.Services) *BusinessHandler {
 	return &BusinessHandler{
-		businessService: businessService,
+		BaseHandler: *NewBaserHandler(services),
 	}
 }
 
@@ -24,7 +23,7 @@ func (b *BusinessHandler) BusinessRegister(w http.ResponseWriter, r *http.Reques
 		b.ResponseBadRequest(w)
 		return
 	}
-	res := b.businessService.RegisterBusiness(business)
+	res := b.GetBizService().RegisterBusiness(business)
 	b.Response(w, res)
 }
 
@@ -38,7 +37,7 @@ func (b *BusinessHandler) BusinessProfile(w http.ResponseWriter, r *http.Request
 		b.ResponseBadRequest(w)
 		return
 	}
-	res := b.businessService.GetBusinessById(id)
+	res := b.GetBizService().GetBusinessById(id)
 	b.Response(w, res)
 }
 
@@ -52,7 +51,7 @@ func (b *BusinessHandler) BusinessUpdate(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		b.ResponseBadRequest(w)
 	}
-	res := b.businessService.UpdateBusinessById(id, business)
+	res := b.GetBizService().UpdateBusinessById(id, business)
 	b.Response(w, res)
 }
 
@@ -60,10 +59,11 @@ func (b *BusinessHandler) BusinessDelete(w http.ResponseWriter, r *http.Request)
 	b.ResponseOK(w)
 }
 
-func (b *BusinessHandler) BusinessBan(w http.ResponseWriter, r *http.Request) {
-	b.ResponseOK(w)
-}
-
-func (b *BusinessHandler) BusinessInventory(w http.ResponseWriter, t *http.Request) {
-	b.ResponseOK(w)
+func (b *BusinessHandler) BusinessInventories(w http.ResponseWriter, r *http.Request) {
+	id, err := b.GetBusinessId(r)
+	if err != nil {
+		b.ResponseBadRequest(w)
+	}
+	res := b.GetInvService().GetBusinessInventory(id)
+	b.Response(w, res)
 }

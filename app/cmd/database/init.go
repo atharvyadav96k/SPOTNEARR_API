@@ -8,7 +8,9 @@ import (
 )
 
 func InitDB(databaseUrl string) (*gorm.DB, error) {
-	DB, err := gorm.Open(postgres.Open(databaseUrl), &gorm.Config{})
+	DB, err := gorm.Open(postgres.Open(databaseUrl), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		return nil, err
 	}

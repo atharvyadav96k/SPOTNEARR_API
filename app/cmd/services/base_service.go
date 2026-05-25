@@ -32,6 +32,10 @@ func (b *base_service) ResponseBadRequest(message string) response.Res {
 	return res(message, http.StatusBadRequest, nil)
 }
 
+func (b *base_service) ResponseConflict(message string) response.Res {
+	return res(message, http.StatusConflict, nil)
+}
+
 func (b *base_service) ResponseCreated(message string, data interface{}) response.Res {
 	return res(message, http.StatusCreated, data)
 }

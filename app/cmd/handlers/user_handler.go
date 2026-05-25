@@ -9,12 +9,11 @@ import (
 
 type UserHandler struct {
 	BaseHandler
-	userService *services.UserService
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(services *services.Services) *UserHandler {
 	return &UserHandler{
-		userService: userService,
+		BaseHandler: *NewBaserHandler(services),
 	}
 }
 
@@ -23,7 +22,7 @@ func (u *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		u.ResponseBadRequest(w)
 	}
-	res := u.userService.RegisterUser(user)
+	res := u.GetUserService().RegisterUser(user)
 	u.Response(w, res)
 }
 
@@ -32,7 +31,7 @@ func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		u.ResponseBadRequest(w)
 	}
-	res := u.userService.Login(*user.Email, *user.PasswordHash)
+	res := u.GetUserService().Login(*user.Email, *user.PasswordHash)
 	u.Response(w, res)
 }
 
