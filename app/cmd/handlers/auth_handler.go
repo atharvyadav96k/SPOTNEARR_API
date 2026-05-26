@@ -73,7 +73,7 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		a.ResponseBadRequest(w)
 		return
 	}
-	claims, err := auth.ValidateToken(userTokens.RefreshToken, "dummy")
+	claims, err := auth.ValidateToken(userTokens.RefreshToken, "dummy", auth.TypeRefreshToken)
 	if err != nil {
 		a.ResponseBadRequest(w)
 		return

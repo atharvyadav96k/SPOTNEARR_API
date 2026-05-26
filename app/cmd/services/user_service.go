@@ -61,7 +61,7 @@ func (u *UserService) Login(email string, password string) response.Res {
 	}
 	var refreshToken string
 
-	if _, err := auth.ValidateToken(user.RefreshToken, "dummy"); err == nil {
+	if _, err := auth.ValidateToken(user.RefreshToken, "dummy", auth.TypeRefreshToken); err == nil {
 		refreshToken = user.RefreshToken
 	} else {
 		refreshToken, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, "dummy", userRole)

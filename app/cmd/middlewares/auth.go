@@ -30,7 +30,7 @@ func Auth(next http.Handler) http.Handler {
 		}
 
 		tokenStr := parts[1]
-		claims, err := auth.ValidateToken(tokenStr, "dummy")
+		claims, err := auth.ValidateToken(tokenStr, "dummy", auth.TypeAccessToken)
 		if err != nil {
 			log.Default().Println("Failed to validate token")
 			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
