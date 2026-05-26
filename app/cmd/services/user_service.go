@@ -24,6 +24,9 @@ func NewUserService(db *gorm.DB) *UserService {
 }
 
 func (u *UserService) RegisterUser(user *models.User) response.Res {
+	if user == nil {
+		return u.ResponseBadRequest("Failed to get user")
+	}
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(*user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		return u.ResponseBadRequest("Failed to process password")
@@ -37,36 +40,48 @@ func (u *UserService) RegisterUser(user *models.User) response.Res {
 }
 
 func (u *UserService) Login(email string, password string) response.Res {
-	user, err := u.RepoUser().GetByEmail(context.Background(), email)
+	ctx := context.Background()
+	user, err := u.RepoUser().GetByEmail(ctx, email)
 	if err != nil {
 		return u.ResponseBadRequest("Invalid email or password")
 	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(password))
 	if err != nil {
 		log.Default().Println(err)
 		return u.ResponseBadRequest("Invalid email or password")
 	}
+
+	var currentBusinessID *uint
+	var userRole = models.RoleUser
+	acccess, err := u.RepoAccess().GetAccessByUserId(ctx, user.ID)
+	if err == nil {
+		currentBusinessID = &acccess.BusinessID
+		userRole = acccess.Role
+	}
 	var refreshToken string
+
 	if _, err := auth.ValidateToken(user.RefreshToken, "dummy"); err == nil {
 		refreshToken = user.RefreshToken
 	} else {
-		refreshToken, err = auth.GenerateRefreshToken(user.ID, user.BusinessID, "dummy")
+		refreshToken, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, "dummy", userRole)
 		if err != nil {
 			log.Default().Println("Failed to generate refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
 		}
 
-		err = u.RepoUser().SetRefreshToken(context.Background(), user.ID, refreshToken)
+		err = u.RepoUser().SetRefreshToken(ctx, user.ID, refreshToken)
 		if err != nil {
 			log.Default().Println("Failed to save refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
 		}
 	}
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.BusinessID, "dummy")
+	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, "dummy", userRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token:", err)
 		return u.ResponseInternalServer("Failed to login")
 	}
+
 	return u.ResponseOK("Logged in successfully", auth.TokenResponse{
 		RefreshToken: refreshToken,
 		AccessToken:  accessToken,
@@ -74,22 +89,49 @@ func (u *UserService) Login(email string, password string) response.Res {
 }
 
 func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) response.Res {
-	user, err := u.RepoUser().GetById(context.Background(), claims.UserId)
+	ctx := context.Background()
+	user, err := u.RepoUser().GetById(ctx, claims.UserId)
 	if err != nil {
 		log.Default().Println("Failed to get user from db")
 		return u.ResponseUnauthorized()
 	}
 	if user.RefreshToken != refreshToken {
-		log.Default().Println(user.RefreshToken)
-		log.Default().Println(refreshToken)
-		log.Default().Println("Failed to match refresh token from database")
 		return u.ResponseUnauthorized()
 	}
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.BusinessID, "dummy")
+
+	var currentBusinessID *uint
+	var userRole = models.RoleUser
+	userAccess, err := u.RepoAccess().GetAccessByUserId(ctx, user.ID)
+	if err == nil {
+		currentBusinessID = &userAccess.BusinessID
+		userRole = userAccess.Role
+	}
+
+	isOutOfSync := false
+	if claims.BusinessId == nil && currentBusinessID != nil {
+		isOutOfSync = true
+	} else if claims.BusinessId != nil && currentBusinessID == nil {
+		isOutOfSync = true
+	} else if claims.BusinessId != nil && currentBusinessID != nil && *claims.BusinessId != *currentBusinessID {
+		isOutOfSync = true
+	} else if claims.UserRole != userRole {
+		isOutOfSync = true
+	}
+	if isOutOfSync {
+		newRefreshToken, err := auth.GenerateRefreshToken(user.ID, currentBusinessID, "dummy", userRole)
+		if err == nil {
+			refreshToken = newRefreshToken
+			_ = u.RepoUser().SetRefreshToken(ctx, user.ID, newRefreshToken)
+		} else {
+			log.Default().Println("Warning: Failed to generate updated refresh token:", err)
+		}
+	}
+	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, "dummy", userRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token")
 		return u.ResponseUnauthorized()
 	}
+
 	return u.ResponseOK("New access token", auth.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -101,4 +143,9 @@ func (u *UserService) DismissRefreshToken(id uint) response.Res {
 		return u.ResponseNotFound("Account not found")
 	}
 	return u.ResponseOK("successfully logout from all devices", nil)
+}
+
+func (u *UserService) AddUserToBusiness(userID uint, businessId uint, ownerId uint) response.Res {
+	// if err := u.RepoUser().
+	return response.Res{}
 }

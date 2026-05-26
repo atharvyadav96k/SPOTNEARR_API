@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
-	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
+	"github.com/atharvyadav96k/SPOTNEARR_API/utils/request"
 )
 
 type AuthHandler struct {
@@ -22,20 +22,38 @@ func NewAuthHandler(services *services.Services) *AuthHandler {
 }
 
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	user, err := ParseBody[models.User](r)
+	email, err := a.Email(r)
 	if err != nil {
-		a.ResponseBadRequest(w)
+		a.ResponseBadRequestWithMessage(w, err.Error())
+		return
 	}
+	password, err := a.Password(r)
+	if err != nil {
+		a.ResponseBadRequestWithMessage(w, err.Error())
+		return
+	}
+	phone, err := a.Phone(r)
+	if err != nil {
+		a.ResponseBadRequestWithMessage(w, err.Error())
+		return
+	}
+	user := models.NewUser(a.Name(r), email, phone, password)
 	res := a.GetUserService().RegisterUser(user)
 	a.Response(w, res)
 }
 
 func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	user, err := ParseBody[dtos.User](r)
+	email, err := a.Email(r)
 	if err != nil {
-		a.ResponseBadRequest(w)
+		a.ResponseBadRequestWithMessage(w, err.Error())
+		return
 	}
-	res := a.GetUserService().Login(user.Email, user.Password)
+	password := request.GetVal(r, "password").ToString()
+	if strings.TrimSpace(password) == "" {
+		a.ResponseBadRequestWithMessage(w, "missing password field")
+		return
+	}
+	res := a.GetUserService().Login(email, password)
 	a.Response(w, res)
 }
 

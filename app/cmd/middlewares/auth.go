@@ -36,6 +36,10 @@ func Auth(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
 			return
 		}
+		if claims.TokenType != auth.TypeAccessToken {
+			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+			return
+		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 
 		next.ServeHTTP(w, r.WithContext(ctx))

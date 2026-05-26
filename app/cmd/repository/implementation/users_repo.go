@@ -169,3 +169,10 @@ func (u *UserRepository) UnfreezeAccount(ctx context.Context, email string) erro
 	}
 	return nil
 }
+
+// func (u *UserRepository) SetBusinessId(ctx context.Context, email string, businessId uint) error {
+// 	db := u.db.WithContext(ctx).Model(&models.User).
+// 		Where("email = ?", email).
+// 		Update("business_id", businessId)
+
+// }

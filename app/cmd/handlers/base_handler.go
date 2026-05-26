@@ -11,6 +11,8 @@ import (
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
 	middleware "github.com/atharvyadav96k/SPOTNEARR_API/middlewares"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
+	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
+	"github.com/atharvyadav96k/SPOTNEARR_API/utils/request"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"github.com/gorilla/mux"
 )
@@ -35,6 +37,84 @@ func (b *BaseHandler) GetUserService() *services.UserService {
 
 func (b *BaseHandler) GetInvService() *services.InventoryService {
 	return b.services.InventoryService
+}
+func (b *BaseHandler) Email(r *http.Request) (string, error) {
+	val := request.GetVal(r, "email")
+	if val == nil {
+		return "", fmt.Errorf("email field is missing")
+	}
+	emailStr := val.ToString()
+	ok := utils.ValidateEmail(emailStr)
+	if !ok {
+		return emailStr, fmt.Errorf("Invalid Email")
+	}
+	return emailStr, nil
+}
+
+func (b *BaseHandler) Password(r *http.Request) (string, error) {
+	val := request.GetVal(r, "password")
+	if val == nil {
+		return "", fmt.Errorf("password field is missing")
+	}
+	passStr := val.ToString()
+	ok, message := utils.ValidatePassword(passStr)
+	if !ok {
+		return passStr, fmt.Errorf(message)
+	}
+	return passStr, nil
+}
+
+func (b *BaseHandler) Phone(r *http.Request) (string, error) {
+	val := request.GetVal(r, "phone")
+	if val == nil {
+		return "", fmt.Errorf("phone field is missing")
+	}
+	phoneStr := val.ToString()
+	ok := utils.ValidatePhone(phoneStr)
+	if !ok {
+		return phoneStr, fmt.Errorf("Invalid phone number")
+	}
+	return phoneStr, nil
+}
+
+func (b *BaseHandler) Name(r *http.Request) string {
+	val := request.GetVal(r, "name")
+	if val == nil {
+		return ""
+	}
+	return val.ToString()
+}
+
+func (b *BaseHandler) Desc(r *http.Request) string {
+	val := request.GetVal(r, "desc")
+	if val == nil {
+		return ""
+	}
+	return val.ToString()
+}
+
+func (b *BaseHandler) GeoHash(r *http.Request) string {
+	val := request.GetVal(r, "geohash")
+	if val == nil {
+		return ""
+	}
+	return val.ToString()
+}
+
+func (b *BaseHandler) Lat(r *http.Request) string {
+	val := request.GetVal(r, "lat")
+	if val == nil {
+		return ""
+	}
+	return val.ToString()
+}
+
+func (b *BaseHandler) Long(r *http.Request) string {
+	val := request.GetVal(r, "long")
+	if val == nil {
+		return ""
+	}
+	return val.ToString()
 }
 
 func ParseBody[T any](r *http.Request) (*T, error) {
@@ -65,6 +145,12 @@ func (h *BaseHandler) Response(w http.ResponseWriter, r response.Res) {
 
 func (h *BaseHandler) ResponseBadRequest(w http.ResponseWriter) {
 	res(w, http.StatusBadGateway, nil)
+}
+
+func (h *BaseHandler) ResponseBadRequestWithMessage(w http.ResponseWriter, message string) {
+	res(w, http.StatusBadRequest, response.Res{
+		Message: message,
+	})
 }
 
 func (h *BaseHandler) getClaims(r *http.Request) (auth.UserClaims, error) {

@@ -1,6 +1,9 @@
 package auth
 
-import "github.com/golang-jwt/jwt/v5"
+import (
+	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	"github.com/golang-jwt/jwt/v5"
+)
 
 const (
 	TypeAccessToken  = "access"
@@ -8,9 +11,10 @@ const (
 )
 
 type UserClaims struct {
-	UserId     uint   `json:"user_id"`
-	BusinessId *uint  `json:"business_id"`
-	TokenType  string `json:"token_type"`
+	UserId     uint            `json:"user_id"`
+	BusinessId *uint           `json:"business_id"`
+	TokenType  string          `json:"token_type"`
+	UserRole   models.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }
 

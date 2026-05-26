@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
@@ -21,16 +22,20 @@ func NewBusinessService(db *gorm.DB) *BusinessService {
 }
 
 func (b *BusinessService) RegisterBusiness(business *dtos.Business, userId uint) response.Res {
-
-	registerBusiness := &models.Business{
-		BusinessName: business.Name,
-		Email:        &business.Email,
-		Phone:        &business.Phone,
-		UserID:       userId,
-	}
-
-	biz, err := b.RepoBusiness().Create(context.Background(), registerBusiness)
+	biz, err := b.RepoBusiness().Create(context.Background(), models.NewBusiness(business.Name, business.Email, business.Phone, business.Desc))
 	if err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return b.ResponseConflict("Phone number or email is already in use")
+		}
+		if errors.Is(err, gorm.ErrForeignKeyViolated) {
+			return b.ResponseConflict("Invalid user account")
+		}
+		return b.ResponseBadRequest(err.Error())
+	}
+	err = b.RepoAccess().CreateNewAccess(context.Background(), models.NewBusinessAccess(userId, biz.ID, models.RoleAdmin))
+	if err != nil {
+		log.Default().Println(err)
+		b.RepoBusiness().HardDelete(context.Background(), biz.ID)
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return b.ResponseConflict("This account is already associated with the business")
 		}
@@ -53,8 +58,6 @@ func (b *BusinessService) GetBusinessById(id uint) response.Res {
 }
 
 func (b *BusinessService) UpdateBusinessById(id uint, business *models.Business) response.Res {
-	b.RepoBusiness()
-	business.ID = id
 	updateBusiness, err := b.RepoBusiness().Update(context.Background(), business)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

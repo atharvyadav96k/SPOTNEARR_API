@@ -54,6 +54,10 @@ func (r *BusinessRepository) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
+func (r *BusinessRepository) HardDelete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Unscoped().Delete(&models.Business{}, id).Error
+}
+
 func (r *BusinessRepository) GetByUserID(ctx context.Context, userID uint) (*models.Business, error) {
 	var business models.Business
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&business).Error; err != nil {

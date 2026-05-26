@@ -11,6 +11,7 @@ type IBusinessesRepository interface {
 	GetByID(ctx context.Context, id uint) (*models.Business, error)
 	Update(ctx context.Context, business *models.Business) (*models.Business, error)
 	Delete(ctx context.Context, id uint) error
+	HardDelete(ctx context.Context, id uint) error
 
 	GetByUserID(ctx context.Context, userID uint) (*models.Business, error)
 	GetByEmail(ctx context.Context, email string) (*models.Business, error)

@@ -6,13 +6,12 @@ import (
 )
 
 func AutoMigrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&models.User{}); err != nil {
-		return err
-	}
-	if err := db.AutoMigrate(&models.Business{}); err != nil {
-		return err
-	}
-	if err := db.AutoMigrate(&models.Store{}); err != nil {
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Business{},
+		&models.Store{},
+		&models.BusinessAccess{},
+	); err != nil {
 		return err
 	}
 	return nil

@@ -10,21 +10,25 @@ import (
 )
 
 type repo struct {
-	userRepo  repository.IUserRepository
-	bizRepo   repository.IBusinessesRepository
-	storeRepo repository.IStoreRepository
+	userRepo   repository.IUserRepository
+	bizRepo    repository.IBusinessesRepository
+	storeRepo  repository.IStoreRepository
+	accessRepo repository.IAccessRepository
 }
 
 type base_service struct {
 	repo repo
+	db   *gorm.DB
 }
 
 func NewBaseService(db *gorm.DB) base_service {
 	return base_service{
+		db: db,
 		repo: repo{
-			userRepo:  implementation.NewUserRepository(db),
-			bizRepo:   implementation.NewBusinessRepository(db),
-			storeRepo: implementation.NewStoreRepository(db),
+			userRepo:   implementation.NewUserRepository(db),
+			bizRepo:    implementation.NewBusinessRepository(db),
+			storeRepo:  implementation.NewStoreRepository(db),
+			accessRepo: implementation.NewAccessRepository(db),
 		},
 	}
 }
@@ -39,6 +43,10 @@ func (b *base_service) RepoUser() repository.IUserRepository {
 
 func (b *base_service) RepoStore() repository.IStoreRepository {
 	return b.repo.storeRepo
+}
+
+func (b *base_service) RepoAccess() repository.IAccessRepository {
+	return b.repo.accessRepo
 }
 
 func res(message string, statusCode int, data interface{}) response.Res {

@@ -9,19 +9,17 @@ type User struct {
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
 	Password string `json:"password,omitempty"`
-	Role     string `json:"role"`
 }
 
-func (u *User) RequestMapper(data User) *models.User {
-	emailStr := data.Email
-	phoneStr := data.Phone
-	passStr := data.Password
+func (u *User) RequestMapper() *models.User {
+	emailStr := u.Email
+	phoneStr := u.Phone
+	passStr := u.Password
 
 	return &models.User{
-		FullName:     data.FullName,
+		FullName:     u.FullName,
 		Email:        &emailStr,
 		Phone:        &phoneStr,
-		Role:         models.UserRole(data.Role),
 		PasswordHash: &passStr,
 	}
 }
@@ -40,6 +38,5 @@ func (u *User) ResponseMapper(data *models.User) User {
 		FullName: data.FullName,
 		Email:    email,
 		Phone:    phone,
-		Role:     string(data.Role),
 	}
 }
