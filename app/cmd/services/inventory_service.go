@@ -15,12 +15,14 @@ type InventoryService struct {
 	repo repository.IStoreRepository
 }
 
-func NewInventoryService(repo repository.IStoreRepository) *InventoryService {
-	return &InventoryService{repo: repo}
+func NewInventoryService(db *gorm.DB) *InventoryService {
+	return &InventoryService{
+		base_service: NewBaseService(db),
+	}
 }
 
 func (i *InventoryService) GetBusinessInventory(id uint) response.Res {
-	stores, err := i.repo.GetStoreByBusinessId(context.Background(), id)
+	stores, err := i.RepoStore().GetStoreByBusinessId(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return i.ResponseNotFound("Business not found")
@@ -32,7 +34,7 @@ func (i *InventoryService) GetBusinessInventory(id uint) response.Res {
 
 func (i *InventoryService) CreateInventory(id uint, store *models.Store) response.Res {
 	store.BusinessID = id
-	err := i.repo.CreateStoreByBusinessId(context.Background(), store)
+	err := i.RepoStore().CreateStoreByBusinessId(context.Background(), store)
 	if err != nil {
 		if errors.Is(err, gorm.ErrForeignKeyViolated) {
 			return i.ResponseConflict("Failed to create store due to invalid store")

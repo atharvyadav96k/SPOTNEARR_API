@@ -47,7 +47,9 @@ func (a *application) userRouter(router *mux.Router) {
 
 func (a *application) businessRouter(router *mux.Router) {
 	biz := router.PathPrefix("/businesses").Subrouter()
-	biz.HandleFunc("/register", a.businessHandler.BusinessRegister).Methods(http.MethodPost)
+	protectedAuth := biz.PathPrefix("").Subrouter()
+	protectedAuth.Use(middleware.Auth)
+	protectedAuth.HandleFunc("/register", a.businessHandler.BusinessRegister).Methods(http.MethodPost)
 	biz.HandleFunc("/{bizId}/profile", a.businessHandler.BusinessProfile).Methods(http.MethodGet)
 	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessUpdate).Methods(http.MethodPut)
 	biz.HandleFunc("/{bizId}", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)

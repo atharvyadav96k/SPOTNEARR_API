@@ -59,6 +59,8 @@ func ValidateToken(tokenString string, secret string) (*UserClaims, error) {
 	if !ok || !token.Valid {
 		return nil, jwt.ErrSignatureInvalid
 	}
-
+	if claims.TokenType != TypeAccessToken {
+		return nil, jwt.ErrSignatureInvalid
+	}
 	return claims, nil
 }

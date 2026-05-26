@@ -9,6 +9,7 @@ import (
 	"github.com/atharvyadav96k/SPOTNEARR_API/repository"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -16,8 +17,10 @@ type UserService struct {
 	repo repository.IUserRepository
 }
 
-func NewUserService(repo repository.IUserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(db *gorm.DB) *UserService {
+	return &UserService{
+		base_service: NewBaseService(db),
+	}
 }
 
 func (u *UserService) RegisterUser(user *models.User) response.Res {
@@ -27,14 +30,14 @@ func (u *UserService) RegisterUser(user *models.User) response.Res {
 	}
 	hashedPassword := string(hashedBytes)
 	user.PasswordHash = &hashedPassword
-	if err := u.repo.Register(context.Background(), user); err != nil {
+	if err := u.RepoUser().Register(context.Background(), user); err != nil {
 		return u.ResponseBadRequest(err.Error())
 	}
 	return u.ResponseCreated("User registered successfully", nil)
 }
 
 func (u *UserService) Login(email string, password string) response.Res {
-	user, err := u.repo.GetByEmail(context.Background(), email)
+	user, err := u.RepoUser().GetByEmail(context.Background(), email)
 	if err != nil {
 		return u.ResponseBadRequest("Invalid email or password")
 	}
@@ -53,7 +56,7 @@ func (u *UserService) Login(email string, password string) response.Res {
 			return u.ResponseInternalServer("Failed to login")
 		}
 
-		err = u.repo.SetRefreshToken(context.Background(), user.ID, refreshToken)
+		err = u.RepoUser().SetRefreshToken(context.Background(), user.ID, refreshToken)
 		if err != nil {
 			log.Default().Println("Failed to save refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
@@ -71,7 +74,7 @@ func (u *UserService) Login(email string, password string) response.Res {
 }
 
 func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) response.Res {
-	user, err := u.repo.GetById(context.Background(), claims.UserId)
+	user, err := u.RepoUser().GetById(context.Background(), claims.UserId)
 	if err != nil {
 		log.Default().Println("Failed to get user from db")
 		return u.ResponseUnauthorized()
@@ -94,7 +97,7 @@ func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) respo
 }
 
 func (u *UserService) DismissRefreshToken(id uint) response.Res {
-	if err := u.repo.RemoveRefreshToken(context.Background(), id); err != nil {
+	if err := u.RepoUser().RemoveRefreshToken(context.Background(), id); err != nil {
 		return u.ResponseNotFound("Account not found")
 	}
 	return u.ResponseOK("successfully logout from all devices", nil)

@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 )
@@ -18,12 +19,18 @@ func NewBusinessHandler(services *services.Services) *BusinessHandler {
 }
 
 func (b *BusinessHandler) BusinessRegister(w http.ResponseWriter, r *http.Request) {
-	business, err := ParseBody[models.Business](r)
-	if err != nil {
+	userId := b.ClaimGetUserId(r)
+	if userId == 0 {
 		b.ResponseBadRequest(w)
 		return
 	}
-	res := b.GetBizService().RegisterBusiness(business)
+	business, err := ParseBody[dtos.Business](r)
+	if err != nil && business == nil {
+		b.ResponseBadRequest(w)
+		return
+	}
+
+	res := b.GetBizService().RegisterBusiness(business, userId)
 	b.Response(w, res)
 }
 
@@ -38,16 +45,23 @@ func (b *BusinessHandler) BusinessProfile(w http.ResponseWriter, r *http.Request
 }
 
 func (b *BusinessHandler) BusinessUpdate(w http.ResponseWriter, r *http.Request) {
-	id, err := b.GetBusinessId(r)
+	userId := b.ClaimGetUserId(r)
+	if userId == 0 {
+		b.ResponseBadRequest(w)
+		return
+	}
+	bizId := b.ClaimGetBusinessId(r)
+	if bizId == 0 {
+		b.ResponseBadRequest(w)
+		return
+	}
+	b.GetUserService()
+	business, err := ParseBody[models.Business](r)
 	if err != nil {
 		b.ResponseBadRequest(w)
 		return
 	}
-	business, err := ParseBody[models.Business](r)
-	if err != nil {
-		b.ResponseBadRequest(w)
-	}
-	res := b.GetBizService().UpdateBusinessById(id, business)
+	res := b.GetBizService().UpdateBusinessById(bizId, business)
 	b.Response(w, res)
 }
 
