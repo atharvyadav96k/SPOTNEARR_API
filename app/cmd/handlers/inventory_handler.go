@@ -33,7 +33,23 @@ func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Reques
 }
 
 func (i *InventoryHandler) InventoryUpdate(w http.ResponseWriter, r *http.Request) {
-	i.ResponseOK(w)
+	businessId := i.ClaimGetBusinessId(r)
+	if businessId == 0 {
+		i.ResponseBadRequest(w)
+		return
+	}
+	storeId, err := i.GetInventoryId(r)
+	if err != nil || storeId != 0 {
+		i.ResponseBadRequest(w)
+		return
+	}
+	name := i.Name(r)
+	address := i.Address(r)
+	lat := i.Lat(r).ToFloat64()
+	long := i.Long(r).ToFloat64()
+
+	res := i.GetInvService().UpdateInventory(businessId, storeId, name, address, lat, long)
+	i.Response(w, res)
 }
 
 func (i *InventoryHandler) InventoryDelete(w http.ResponseWriter, r *http.Request) {

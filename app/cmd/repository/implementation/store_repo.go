@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	"github.com/mmcloughlin/geohash"
 	"gorm.io/gorm"
 )
 
@@ -56,6 +57,7 @@ func (s *StoreRepository) CreateStoreByBusinessId(ctx context.Context, store *mo
 
 func (s *StoreRepository) UpdateStoreByBusinessId(ctx context.Context, store models.Store) (models.Store, error) {
 	var existingStore models.Store
+
 	err := s.db.WithContext(ctx).
 		Where("id = ? AND business_id = ?", store.ID, store.BusinessID).
 		First(&existingStore).Error
@@ -67,9 +69,54 @@ func (s *StoreRepository) UpdateStoreByBusinessId(ctx context.Context, store mod
 		return models.Store{}, err
 	}
 
-	if err := s.db.WithContext(ctx).Save(store).Error; err != nil {
+	updates := map[string]interface{}{}
+
+	if store.Name != "" {
+		updates["name"] = store.Name
+	}
+
+	if store.StreetAddress != "" {
+		updates["street_address"] = store.StreetAddress
+	}
+
+	hasLat := store.Lat != 0
+	hasLong := store.Long != 0
+
+	if hasLat || hasLong {
+		if !(hasLat && hasLong) {
+			return models.Store{}, fmt.Errorf("both lat and long are required together")
+		}
+
+		geoHash := geohash.Encode(store.Lat, store.Long)
+
+		updates["lat"] = store.Lat
+		updates["long"] = store.Long
+		updates["geo_hash"] = geoHash
+	}
+
+	if len(updates) == 0 {
+		return existingStore, nil
+	}
+
+	db := s.db.WithContext(ctx).
+		Model(&existingStore).
+		Updates(updates)
+
+	if db.Error != nil {
 		return models.Store{}, fmt.Errorf("failed to update store values: %w", err)
 	}
 
-	return store, nil
+	if db.RowsAffected == 0 {
+		return models.Store{}, gorm.ErrRecordNotFound
+	}
+
+	err = s.db.WithContext(ctx).
+		Where("id = ?", existingStore.ID).
+		First(&existingStore).Error
+
+	if err != nil {
+		return models.Store{}, err
+	}
+
+	return existingStore, nil
 }

@@ -43,3 +43,20 @@ func (i *InventoryService) CreateInventory(id uint, store *models.Store) respons
 	}
 	return i.ResponseOK("Store registered successfully", nil)
 }
+
+func (i *InventoryService) UpdateInventory(businessId uint, storeId uint, name string, address string, lat float64, long float64) response.Res {
+	store := models.Store{
+		Name:          name,
+		StreetAddress: address,
+		Lat:           lat,
+		Long:          long,
+	}
+	store, err := i.RepoStore().UpdateStoreByBusinessId(context.Background(), store)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return i.ResponseNotFound("Store not found")
+		}
+		return i.ResponseInternalServer("Failed to update store")
+	}
+	return i.ResponseOK("store updated successfully", store)
+}

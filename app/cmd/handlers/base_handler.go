@@ -85,6 +85,14 @@ func (b *BaseHandler) Name(r *http.Request) string {
 	return val.ToString()
 }
 
+func (b *BaseHandler) Address(r *http.Request) string {
+	val := request.GetVal(r, "address")
+	if val == nil {
+		return ""
+	}
+	return val.ToString()
+}
+
 func (b *BaseHandler) Desc(r *http.Request) string {
 	val := request.GetVal(r, "desc")
 	if val == nil {
@@ -101,20 +109,20 @@ func (b *BaseHandler) GeoHash(r *http.Request) string {
 	return val.ToString()
 }
 
-func (b *BaseHandler) Lat(r *http.Request) string {
+func (b *BaseHandler) Lat(r *http.Request) *request.Body {
 	val := request.GetVal(r, "lat")
 	if val == nil {
-		return ""
+		return nil
 	}
-	return val.ToString()
+	return val
 }
 
-func (b *BaseHandler) Long(r *http.Request) string {
+func (b *BaseHandler) Long(r *http.Request) *request.Body {
 	val := request.GetVal(r, "long")
 	if val == nil {
-		return ""
+		return nil
 	}
-	return val.ToString()
+	return val
 }
 
 func ParseBody[T any](r *http.Request) (*T, error) {

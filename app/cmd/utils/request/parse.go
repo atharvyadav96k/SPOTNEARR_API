@@ -45,6 +45,36 @@ func (b Body) ToInt() int {
 	}
 }
 
+func (b Body) ToFloat64() float64 {
+	if b.value == nil {
+		return 0
+	}
+
+	switch v := b.value.(type) {
+	case float64:
+		return v
+
+	case float32:
+		return float64(v)
+
+	case int:
+		return float64(v)
+
+	case int64:
+		return float64(v)
+
+	case int32:
+		return float64(v)
+
+	case string:
+		f, _ := strconv.ParseFloat(v, 64)
+		return f
+
+	default:
+		return 0
+	}
+}
+
 func GetVal(r *http.Request, key string) *Body {
 	rawMap, err := parseBodyToMap(r)
 	if err != nil {

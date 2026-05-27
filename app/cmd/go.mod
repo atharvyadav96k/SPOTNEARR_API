@@ -8,6 +8,8 @@ require (
 	gorm.io/gorm v1.31.1
 )
 
+require github.com/mmcloughlin/geohash v0.10.0 // indirect
+
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
