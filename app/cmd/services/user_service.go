@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
@@ -148,4 +149,30 @@ func (u *UserService) DismissRefreshToken(id uint) response.Res {
 func (u *UserService) AddUserToBusiness(userID uint, businessId uint, ownerId uint) response.Res {
 	// if err := u.RepoUser().
 	return response.Res{}
+}
+
+func (u *UserService) GetUserProfile(userId uint) response.Res {
+	user, err := u.RepoUser().GetById(context.Background(), userId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return u.ResponseNotFound("User not found")
+		}
+		return u.ResponseBadRequest("Failed to get user profile")
+	}
+	return u.ResponseOK("User profile", user)
+}
+
+func (u *UserService) UpdatePassword(userId uint, password string) response.Res {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return u.ResponseInternalServer("Failed to update password")
+	}
+	err = u.RepoUser().UpdatePasswordWithUserId(context.Background(), userId, string(hashedPassword))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return u.ResponseConflict("No user found")
+		}
+		return u.ResponseBadRequest("Failed to update password")
+	}
+	return u.ResponseOK("successfully updated user password", nil)
 }

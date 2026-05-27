@@ -147,6 +147,10 @@ func (h *BaseHandler) ResponseBadRequest(w http.ResponseWriter) {
 	res(w, http.StatusBadGateway, nil)
 }
 
+func (h *BaseHandler) ResponseNotFound(w http.ResponseWriter) {
+	res(w, http.StatusNotFound, nil)
+}
+
 func (h *BaseHandler) ResponseBadRequestWithMessage(w http.ResponseWriter, message string) {
 	res(w, http.StatusBadRequest, response.Res{
 		Message: message,

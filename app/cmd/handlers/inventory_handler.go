@@ -18,8 +18,8 @@ func NewInventoryHandler(services *services.Services) *InventoryHandler {
 }
 
 func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Request) {
-	id, err := i.GetBusinessId(r)
-	if err != nil {
+	id := i.ClaimGetBusinessId(r)
+	if id == 0 {
 		i.ResponseBadRequest(w)
 		return
 	}

@@ -14,6 +14,7 @@ type IUserRepository interface {
 	SetRefreshToken(ctx context.Context, userID uint, token string) error
 	RemoveRefreshToken(ctx context.Context, userID uint) error
 	UpdatePasswordWithEmail(ctx context.Context, email string, hashedPassword string) error
+	UpdatePasswordWithUserId(ctx context.Context, userId uint, hashedPassword string) error
 	FreezeAccount(ctx context.Context, email string) error
 	UnfreezeAccount(ctx context.Context, email string) error
 }

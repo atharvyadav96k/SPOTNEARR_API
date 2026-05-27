@@ -100,8 +100,12 @@ func (u *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 func (u *UserRepository) GetById(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
-	if err := u.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
-		return nil, err
+	db := u.db.WithContext(ctx).Where("id = ?", id).First(&user)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	if db.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &user, nil
 }
@@ -135,6 +139,19 @@ func (u *UserRepository) UpdatePasswordWithEmail(ctx context.Context, email stri
 		return fmt.Errorf("Cannot update password: user does not exist or is inactive")
 	}
 
+	return nil
+}
+
+func (u *UserRepository) UpdatePasswordWithUserId(ctx context.Context, userId uint, hasedPassword string) error {
+	db := u.db.WithContext(ctx).Model(&models.User{}).
+		Where("id = ? AND is_active = ?", userId, true).
+		Update("password_hash", hasedPassword)
+	if db.Error != nil {
+		return fmt.Errorf("Failed to update the password")
+	}
+	if db.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
 	return nil
 }
 
