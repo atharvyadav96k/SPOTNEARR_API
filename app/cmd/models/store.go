@@ -23,3 +23,12 @@ type Store struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 }
+
+func NewStore(name string, address string, lat float64, long float64) Store {
+	return Store{
+		Name:          name,
+		StreetAddress: address,
+		Lat:           lat,
+		Long:          long,
+	}
+}

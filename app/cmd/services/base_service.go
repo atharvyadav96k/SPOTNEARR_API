@@ -10,10 +10,12 @@ import (
 )
 
 type repo struct {
-	userRepo   repository.IUserRepository
-	bizRepo    repository.IBusinessesRepository
-	storeRepo  repository.IStoreRepository
-	accessRepo repository.IAccessRepository
+	userRepo       repository.IUserRepository
+	bizRepo        repository.IBusinessesRepository
+	storeRepo      repository.IStoreRepository
+	accessRepo     repository.IAccessRepository
+	invProductRepo repository.IInventoryProduct
+	productRepo    repository.IProductRepository
 }
 
 type base_service struct {
@@ -25,10 +27,12 @@ func NewBaseService(db *gorm.DB) base_service {
 	return base_service{
 		db: db,
 		repo: repo{
-			userRepo:   implementation.NewUserRepository(db),
-			bizRepo:    implementation.NewBusinessRepository(db),
-			storeRepo:  implementation.NewStoreRepository(db),
-			accessRepo: implementation.NewAccessRepository(db),
+			userRepo:       implementation.NewUserRepository(db),
+			bizRepo:        implementation.NewBusinessRepository(db),
+			storeRepo:      implementation.NewStoreRepository(db),
+			accessRepo:     implementation.NewAccessRepository(db),
+			invProductRepo: implementation.NewInvProductRepository(db),
+			productRepo:    implementation.NewProductRepository(db),
 		},
 	}
 }
@@ -47,6 +51,14 @@ func (b *base_service) RepoStore() repository.IStoreRepository {
 
 func (b *base_service) RepoAccess() repository.IAccessRepository {
 	return b.repo.accessRepo
+}
+
+func (b *base_service) RepoInvProduct() repository.IInventoryProduct {
+	return b.repo.invProductRepo
+}
+
+func (b *base_service) RepoProduct() repository.IProductRepository {
+	return b.repo.productRepo
 }
 
 func res(message string, statusCode int, data interface{}) response.Res {

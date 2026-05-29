@@ -57,8 +57,8 @@ func (b *BusinessService) GetBusinessById(id uint) response.Res {
 	return b.ResponseOK("Business info", business)
 }
 
-func (b *BusinessService) UpdateBusinessById(id uint, business *models.Business) response.Res {
-	updateBusiness, err := b.RepoBusiness().Update(context.Background(), business)
+func (b *BusinessService) UpdateBusinessById(id uint, businessId uint, businessName string, desc string) response.Res {
+	updateBusiness, err := b.RepoBusiness().Update(context.Background(), businessId, businessName, desc)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return b.ResponseNotFound("business not found")

@@ -9,7 +9,7 @@ import (
 type IBusinessesRepository interface {
 	Create(ctx context.Context, business *models.Business) (*models.Business, error)
 	GetByID(ctx context.Context, id uint) (*models.Business, error)
-	Update(ctx context.Context, business *models.Business) (*models.Business, error)
+	Update(ctx context.Context, businessID uint, businessName string, desc string) (*models.Business, error)
 	Delete(ctx context.Context, id uint) error
 	HardDelete(ctx context.Context, id uint) error
 

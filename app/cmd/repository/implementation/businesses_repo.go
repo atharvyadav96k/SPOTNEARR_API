@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type BusinessRepository struct {
@@ -32,15 +34,39 @@ func (r *BusinessRepository) GetByID(ctx context.Context, id uint) (*models.Busi
 	return &business, nil
 }
 
-func (r *BusinessRepository) Update(ctx context.Context, business *models.Business) (*models.Business, error) {
-	db := r.db.WithContext(ctx).Save(business)
-	if db.Error != nil {
-		return nil, fmt.Errorf("failed to update business: %w", db.Error)
+func (r *BusinessRepository) Update(ctx context.Context, businessID uint, businessName string, desc string) (*models.Business, error) {
+	updates := map[string]interface{}{}
+
+	if strings.TrimSpace(businessName) != "" {
+		updates["business_name"] = businessName
 	}
-	if db.RowsAffected == 0 {
+
+	if strings.TrimSpace(desc) != "" {
+		updates["desc"] = desc
+	}
+
+	if len(updates) == 0 {
+		return nil, fmt.Errorf("no fields to update")
+	}
+
+	var business models.Business
+
+	err := r.db.WithContext(ctx).
+		Model(&models.Business{}).
+		Clauses(clause.Returning{}).
+		Where("id = ?", businessID).
+		Updates(updates).
+		Scan(&business).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update business: %w", err)
+	}
+
+	if business.ID == 0 {
 		return nil, gorm.ErrRecordNotFound
 	}
-	return business, nil
+
+	return &business, nil
 }
 
 func (r *BusinessRepository) Delete(ctx context.Context, id uint) error {

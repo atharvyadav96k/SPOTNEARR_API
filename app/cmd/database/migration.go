@@ -11,6 +11,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Business{},
 		&models.Store{},
 		&models.BusinessAccess{},
+		&models.Product{},
+		&models.InventoryProduct{},
 	); err != nil {
 		return err
 	}
