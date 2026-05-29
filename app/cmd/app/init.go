@@ -1,10 +1,19 @@
 package app
 
-import "github.com/atharvyadav96k/SPOTNEARR_API/database"
+import (
+	"os"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/database"
+)
 
 func (a *App) InitDb() error {
 	var err error
-	a.db, err = database.InitDB("postgresql://admin:admin123@localhost:5432/spotnearr")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		// local database (development)
+		dbURL = "postgresql://admin:admin123@localhost:5432/spotnearr"
+	}
+	a.db, err = database.InitDB(dbURL)
 	if err != nil {
 		return err
 	}
