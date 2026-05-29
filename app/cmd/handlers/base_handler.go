@@ -125,6 +125,32 @@ func (b *BaseHandler) Long(r *http.Request) *request.Body {
 	return val
 }
 
+func (b *BaseHandler) ProductID(r *http.Request) uint {
+	val := request.GetVal(r, "productID")
+	if val == nil {
+		return 0
+	}
+	return uint(val.ToInt())
+}
+
+func (b *BaseHandler) Count(r *http.Request) *int {
+	val := request.GetVal(r, "count")
+	if val == nil {
+		return nil
+	}
+	result := val.ToInt()
+	return &result
+}
+
+func (b *BaseHandler) Available(r *http.Request) *bool {
+	val := request.GetVal(r, "available")
+	if val == nil {
+		return nil
+	}
+	result := strings.ToLower(val.ToString()) == "true"
+	return &result
+}
+
 func ParseBody[T any](r *http.Request) (*T, error) {
 	var data T
 

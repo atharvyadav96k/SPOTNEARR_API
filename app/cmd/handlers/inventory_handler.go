@@ -57,11 +57,25 @@ func (i *InventoryHandler) InventoryDelete(w http.ResponseWriter, r *http.Reques
 }
 
 func (i *InventoryHandler) InventoryGetProducts(w http.ResponseWriter, r *http.Request) {
-	i.ResponseOK(w)
+	businessID := i.ClaimGetBusinessId(r)
+	invId, err := i.GetInventoryId(r)
+	if err != nil {
+		i.ResponseBadRequest(w)
+		return
+	}
+	res := i.GetInvService().GetInvProducts(businessID, invId)
+	i.Response(w, res)
 }
 
 func (i *InventoryHandler) InventoryAddProduct(w http.ResponseWriter, r *http.Request) {
-	i.ResponseOK(w)
+	businessID := i.ClaimGetBusinessId(r)
+	invID, err := i.GetInventoryId(r)
+	if err != nil {
+		i.ResponseBadRequest(w)
+		return
+	}
+	res := i.GetInvService().AddInvProduct(businessID, invID, i.ProductID(r), i.Count(r), i.Available(r))
+	i.Response(w, res)
 }
 
 func (i *InventoryHandler) InventoryRemoveProduct(w http.ResponseWriter, r *http.Request) {

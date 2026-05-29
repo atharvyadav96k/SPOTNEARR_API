@@ -67,8 +67,8 @@ func (a *application) inventoryRouter(router *mux.Router) {
 	protectedAuth.HandleFunc("/", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)                     // ✅
 	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPatch)             // ✅
 	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)            //
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet) //
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost)
+	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet) // ✅
+	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost) // ✅
 	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete)
 }
 

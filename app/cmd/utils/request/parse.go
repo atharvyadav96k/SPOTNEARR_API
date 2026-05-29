@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type contextKey string
@@ -25,7 +26,7 @@ func (b Body) ToString() string {
 	if str, ok := b.value.(string); ok {
 		return str
 	}
-	return fmt.Sprintf("%v", b.value)
+	return strings.TrimSpace(fmt.Sprintf("%v", b.value))
 }
 
 func (b Body) ToInt() int {

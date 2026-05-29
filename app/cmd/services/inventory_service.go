@@ -55,3 +55,23 @@ func (i *InventoryService) UpdateInventory(businessId uint, storeId uint, name s
 	}
 	return i.ResponseOK("store updated successfully", store)
 }
+
+func (i *InventoryService) GetInvProducts(bizID uint, storeID uint) response.Res {
+	products, err := i.RepoInvProduct().GetInvProductList(context.Background(), storeID, bizID)
+	if err != nil {
+		return i.ResponseInternalServer("Failed to load the product")
+	}
+	return i.ResponseOK("Products list", products)
+}
+
+func (i *InventoryService) AddInvProduct(bizID uint, invID uint, productID uint, count *int, available *bool) response.Res {
+	product := models.NewInvProduct(invID, productID, count, available)
+	err := i.RepoInvProduct().AddProduct(context.Background(), product, bizID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return i.ResponseNotFound("Product not found.")
+		}
+		return i.ResponseInternalServer("Failed to add the product in store.")
+	}
+	return i.ResponseOK("Product added successfully to store", nil)
+}
