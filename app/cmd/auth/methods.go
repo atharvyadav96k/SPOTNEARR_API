@@ -6,6 +6,7 @@ import (
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func claimsGenerator(userID uint, businessId *uint, secret string, userRole models.UserRole, tokenType string, expire *jwt.NumericDate) UserClaims {
@@ -59,4 +60,12 @@ func ValidateToken(tokenString string, secret string, expectedTokenType string) 
 		return nil, errors.New("invalid token type or unauthorized user payload")
 	}
 	return claims, nil
+}
+
+func GenerateHashedPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
 }

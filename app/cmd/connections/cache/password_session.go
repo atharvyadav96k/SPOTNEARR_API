@@ -3,8 +3,6 @@ package cache
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -24,16 +22,22 @@ func (p *passwordSession) key(key string) string {
 	return fmt.Sprint("passwordSession:", key)
 }
 
-func (p *passwordSession) NewPasswordSession(ctx context.Context, email string, session string) error {
+func (p *passwordSession) NewPasswordSession(ctx context.Context, email string, expireTime time.Duration, session string) (string, error) {
 	val := p.getClient().Get(ctx, p.key(email)).Val()
 	if val != "" {
-		return nil
+		return val, nil
 	}
-	passwordSessionTime := 1
-	if val := os.Getenv("PASSWORD_SESSION_TIME"); val != "" {
-		if parsed, err := strconv.Atoi(val); err == nil {
-			passwordSessionTime = parsed
-		}
+	cache := p.getClient().Set(ctx, p.key(session), email, time.Duration(expireTime))
+	if cache.Err() != nil {
+		return "", cache.Err()
 	}
-	return p.getClient().Set(ctx, p.key(email), session, time.Duration(passwordSessionTime)*time.Hour).Err()
+	return cache.Val(), nil
+}
+
+func (p *passwordSession) GetPasswordSession(ctx context.Context, session string) (string, error) {
+	cache := p.getClient().GetDel(ctx, p.key(session))
+	if cache.Err() != nil {
+		return "", nil
+	}
+	return cache.Val(), nil
 }

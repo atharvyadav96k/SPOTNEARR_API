@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -57,17 +58,26 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	a.Response(w, res)
 }
 
-func (a *AuthHandler) ResetSession(w http.ResponseWriter, r *http.Request) {
-	// email, err := a.Email(r)
-	// if err != nil {
-	// 	a.ResponseBadRequestWithMessage(w, err.Error())
-	// 	return
-	// }
-	// a.GetUserService().
+func (a *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
+	email, err := a.Email(r)
+	if err != nil {
+		a.ResponseBadRequestWithMessage(w, err.Error())
+		return
+	}
+	fmt.Println(email)
+	res := a.GetUserService().SessionNotification(email)
+	a.Response(w, res)
 }
 
 func (a *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-
+	session := a.QuerySession(r)
+	password, err := a.Password(r)
+	if err != nil {
+		a.ResponseBadRequestWithMessage(w, err.Error())
+		return
+	}
+	res := a.GetUserService().UpdatePassword(password, session)
+	a.Response(w, res)
 }
 
 func (a *AuthHandler) Auth(w http.ResponseWriter, r *http.Request) {

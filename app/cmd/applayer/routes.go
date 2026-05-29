@@ -27,23 +27,34 @@ func (a *application) healthRouter(router *mux.Router) {
 }
 
 func (a *application) authRouter(router *mux.Router) {
-	authSub := router.PathPrefix("/auth").Subrouter()
-	authSub.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost) // ✅
-	authSub.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)       // ✅
-	authSub.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)    // ✅
-	// authSub.Handle("/rest", a.authHandler.)
+	authBase := router.PathPrefix("/auth").Subrouter()
 
-	protectedAuth := authSub.PathPrefix("").Subrouter()
+	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)
+
+	captchaRoutes := authBase.PathPrefix("").Subrouter()
+	captchaRoutes.Use(middleware.CaptchaValidation)
+
+	captchaRoutes.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost)
+	captchaRoutes.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)
+	captchaRoutes.HandleFunc("/reset-request", a.authHandler.Session).Methods(http.MethodPost)
+
+	authBase.Handle("/reset-password",
+		middleware.SessionValidation(
+			middleware.CaptchaValidation(
+				http.HandlerFunc(a.authHandler.ResetPassword),
+			),
+		),
+	).Methods(http.MethodPost)
+
+	protectedAuth := router.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/users/auth", a.authHandler.Auth).Methods(http.MethodGet)                               // ✅
-	protectedAuth.HandleFunc("/users/logout-all-devices", a.authHandler.LogoutFromAllDevices).Methods(http.MethodGet) // ✅
 }
 
 func (a *application) userRouter(router *mux.Router) {
 	protectedAuth := router.PathPrefix("/users").Subrouter()
 	protectedAuth.Use(middleware.Auth)
 	protectedAuth.HandleFunc("/{userId}/profile", a.userHandler.Profile).Methods(http.MethodGet) //✅
-	protectedAuth.HandleFunc("/password", a.userHandler.UpdatePassword).Methods(http.MethodPost) // ✅
+	// protectedAuth.HandleFunc("/password", a.userHandler.UpdatePassword).Methods(http.MethodPost)
 	protectedAuth.HandleFunc("/{userId}/ban", a.userHandler.BanUser)
 }
 

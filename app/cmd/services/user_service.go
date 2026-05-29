@@ -3,11 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -27,11 +30,10 @@ func (u *UserService) RegisterUser(user *models.User) response.Res {
 	if user == nil {
 		return u.ResponseBadRequest("Failed to get user")
 	}
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(*user.PasswordHash), bcrypt.DefaultCost)
+	hashedPassword, err := auth.GenerateHashedPassword(*user.PasswordHash)
 	if err != nil {
 		return u.ResponseBadRequest("Failed to process password")
 	}
-	hashedPassword := string(hashedBytes)
 	user.PasswordHash = &hashedPassword
 	if err := u.RepoUser().Register(context.Background(), user); err != nil {
 		return u.ResponseBadRequest(err.Error())
@@ -161,28 +163,55 @@ func (u *UserService) GetUserProfile(userId uint) response.Res {
 	return u.ResponseOK("User profile", user)
 }
 
-func (u *UserService) ResetSessionNotification(email string) response.Res {
-	user, err := u.RepoUser().GetByEmail(context.Background(), email)
+func (u *UserService) SessionNotification(email string) response.Res {
+	expireTime := time.Hour * 1
+	session, err := utils.GenerateSession(email, expireTime)
 	if err != nil {
-		return u.ResponseInternalServer(err.Error())
+		return u.ResponseInternalServer("Failed to send the email.")
 	}
-	if user.Email == nil {
-		return u.ResponseNotFound("User not found")
+	_, err = u.Cache().GetPasswordSessions().NewPasswordSession(context.Background(), email, expireTime, session)
+	if err != nil {
+		return u.ResponseBadRequest("Failed to send the email.")
+	}
+	// just for development
+	sessionLink := fmt.Sprintf("session=%s", session)
+	log.Default().Println(sessionLink)
+	return u.ResponseOK("", sessionLink)
+}
+
+func (u *UserService) UpdatePassword(password string, session string) response.Res {
+	email, err := u.Cache().GetPasswordSessions().GetPasswordSession(context.Background(), session)
+	if err != nil {
+		return u.ResponseInternalServer("Failed to update password")
+	}
+	if email == "" {
+		return u.ResponseBadRequest("Invalid URL")
+	}
+	hashedPassword, err := auth.GenerateHashedPassword(password)
+	if err != nil {
+		return u.ResponseInternalServer("Failed to update password")
+	}
+	err = u.RepoUser().UpdatePasswordWithEmail(context.Background(), email, string(hashedPassword))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return u.ResponseNotFound("User not found with this email")
+		}
+		return u.ResponseInternalServer("Failed to update the password")
 	}
 	return u.ResponseOK("", nil)
 }
 
-func (u *UserService) UpdatePassword(userId uint, password string) response.Res {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return u.ResponseInternalServer("Failed to update password")
-	}
-	err = u.RepoUser().UpdatePasswordWithUserId(context.Background(), userId, string(hashedPassword))
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return u.ResponseConflict("No user found")
-		}
-		return u.ResponseBadRequest("Failed to update password")
-	}
-	return u.ResponseOK("successfully updated user password", nil)
-}
+// func (u *UserService) UpdatePassword(userId uint, password string) response.Res {
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		return u.ResponseInternalServer("Failed to update password")
+// 	}
+// 	err = u.RepoUser().UpdatePasswordWithUserId(context.Background(), userId, string(hashedPassword))
+// 	if err != nil {
+// 		if errors.Is(err, gorm.ErrRecordNotFound) {
+// 			return u.ResponseConflict("No user found")
+// 		}
+// 		return u.ResponseBadRequest("Failed to update password")
+// 	}
+// 	return u.ResponseOK("successfully updated user password", nil)
+// }

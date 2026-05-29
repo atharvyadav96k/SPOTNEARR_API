@@ -40,6 +40,10 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 	}
 }
 
+func (b *base_service) Cache() *cache.Cache {
+	return b.cache
+}
+
 func (b *base_service) RepoBusiness() repository.IBusinessesRepository {
 	return b.repo.bizRepo
 }

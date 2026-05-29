@@ -257,3 +257,7 @@ func (h *BaseHandler) GetOfferId(r *http.Request) (uint, error) {
 func (h *BaseHandler) GetSpotlightId(r *http.Request) (uint, error) {
 	return extractKeyFromPath(r, "spotlightId")
 }
+
+func (h *BaseHandler) QuerySession(r *http.Request) string {
+	return r.URL.Query().Get("session")
+}
