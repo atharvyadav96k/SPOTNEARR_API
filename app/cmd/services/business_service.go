@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
@@ -15,9 +16,9 @@ type BusinessService struct {
 	base_service
 }
 
-func NewBusinessService(db *gorm.DB) *BusinessService {
+func NewBusinessService(db *gorm.DB, cache *cache.Cache) *BusinessService {
 	return &BusinessService{
-		base_service: NewBaseService(db),
+		base_service: NewBaseService(db, cache),
 	}
 }
 

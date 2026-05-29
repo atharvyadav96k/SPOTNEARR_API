@@ -3,6 +3,7 @@ package services
 import (
 	"net/http"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/repository"
 	"github.com/atharvyadav96k/SPOTNEARR_API/repository/implementation"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
@@ -19,13 +20,15 @@ type repo struct {
 }
 
 type base_service struct {
-	repo repo
-	db   *gorm.DB
+	cache *cache.Cache
+	repo  repo
+	db    *gorm.DB
 }
 
-func NewBaseService(db *gorm.DB) base_service {
+func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 	return base_service{
-		db: db,
+		db:    db,
+		cache: cache,
 		repo: repo{
 			userRepo:       implementation.NewUserRepository(db),
 			bizRepo:        implementation.NewBusinessRepository(db),

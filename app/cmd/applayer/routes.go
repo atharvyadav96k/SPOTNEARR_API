@@ -31,6 +31,7 @@ func (a *application) authRouter(router *mux.Router) {
 	authSub.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost) // ✅
 	authSub.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)       // ✅
 	authSub.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)    // ✅
+	// authSub.Handle("/rest", a.authHandler.)
 
 	protectedAuth := authSub.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)

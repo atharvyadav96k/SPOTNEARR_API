@@ -57,6 +57,19 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	a.Response(w, res)
 }
 
+func (a *AuthHandler) ResetSession(w http.ResponseWriter, r *http.Request) {
+	// email, err := a.Email(r)
+	// if err != nil {
+	// 	a.ResponseBadRequestWithMessage(w, err.Error())
+	// 	return
+	// }
+	// a.GetUserService().
+}
+
+func (a *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (a *AuthHandler) Auth(w http.ResponseWriter, r *http.Request) {
 	log.Default().Println("User Id: ", a.ClaimGetUserId(r))
 	log.Default().Println("Business Id: ", a.ClaimGetBusinessId(r))

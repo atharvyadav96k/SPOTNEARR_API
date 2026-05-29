@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
+	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
-	"github.com/atharvyadav96k/SPOTNEARR_API/repository"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -15,12 +15,11 @@ import (
 
 type UserService struct {
 	base_service
-	repo repository.IUserRepository
 }
 
-func NewUserService(db *gorm.DB) *UserService {
+func NewUserService(db *gorm.DB, cache *cache.Cache) *UserService {
 	return &UserService{
-		base_service: NewBaseService(db),
+		base_service: NewBaseService(db, cache),
 	}
 }
 
@@ -160,6 +159,17 @@ func (u *UserService) GetUserProfile(userId uint) response.Res {
 		return u.ResponseBadRequest("Failed to get user profile")
 	}
 	return u.ResponseOK("User profile", user)
+}
+
+func (u *UserService) ResetSessionNotification(email string) response.Res {
+	user, err := u.RepoUser().GetByEmail(context.Background(), email)
+	if err != nil {
+		return u.ResponseInternalServer(err.Error())
+	}
+	if user.Email == nil {
+		return u.ResponseNotFound("User not found")
+	}
+	return u.ResponseOK("", nil)
 }
 
 func (u *UserService) UpdatePassword(userId uint, password string) response.Res {

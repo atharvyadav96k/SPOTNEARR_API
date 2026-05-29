@@ -1,9 +1,12 @@
 package app
 
 import (
+	"log"
 	"os"
+	"strings"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/database"
+	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
+	"github.com/atharvyadav96k/SPOTNEARR_API/connections/database"
 )
 
 func (a *App) InitDb() error {
@@ -18,6 +21,21 @@ func (a *App) InitDb() error {
 		return err
 	}
 	if err := database.AutoMigrate(a.db); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) InitCache() error {
+	var err error
+	cacheUrl := os.Getenv("CACHE_URL")
+	password := os.Getenv("CACHE_PASSWORD")
+	if strings.TrimSpace(cacheUrl) == "" {
+		cacheUrl = "localhost:6380"
+	}
+	log.Default().Println(cacheUrl, password)
+	a.cache, err = cache.InitCache(cacheUrl, password)
+	if err != nil {
 		return err
 	}
 	return nil

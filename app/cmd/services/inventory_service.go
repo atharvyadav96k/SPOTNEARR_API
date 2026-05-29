@@ -4,20 +4,19 @@ import (
 	"context"
 	"errors"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
-	"github.com/atharvyadav96k/SPOTNEARR_API/repository"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"gorm.io/gorm"
 )
 
 type InventoryService struct {
 	base_service
-	repo repository.IStoreRepository
 }
 
-func NewInventoryService(db *gorm.DB) *InventoryService {
+func NewInventoryService(db *gorm.DB, cache *cache.Cache) *InventoryService {
 	return &InventoryService{
-		base_service: NewBaseService(db),
+		base_service: NewBaseService(db, cache),
 	}
 }
 

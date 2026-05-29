@@ -7,10 +7,13 @@ import (
 
 func Init() application {
 	a := application{}
+	if err := a.InitCache(); err != nil {
+		panic(err)
+	}
 	if err := a.InitDb(); err != nil {
 		panic(err)
 	}
-	services := services.Init(a.GetDb())
+	services := services.Init(a.GetDb(), a.GetCache())
 	a.healthHandler = handlers.NewHealthHandler()
 	a.authHandler = handlers.NewAuthHandler(services)
 	a.businessHandler = handlers.NewBusinessHandler(services)
