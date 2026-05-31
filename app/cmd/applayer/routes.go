@@ -48,6 +48,7 @@ func (a *application) authRouter(router *mux.Router) {
 
 	protectedAuth := router.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
+	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet)
 }
 
 func (a *application) userRouter(router *mux.Router) {
