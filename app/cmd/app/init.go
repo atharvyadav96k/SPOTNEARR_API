@@ -31,10 +31,10 @@ func (a *App) InitCache() error {
 	cacheUrl := os.Getenv("CACHE_URL")
 	password := os.Getenv("CACHE_PASSWORD")
 	if strings.TrimSpace(cacheUrl) == "" {
-		cacheUrl = "localhost:6380"
+		cacheUrl = "redis://localhost:6379"
 	}
 	log.Default().Println(cacheUrl, password)
-	a.cache, err = cache.InitCache(cacheUrl, password)
+	a.cache, err = cache.InitCache(cacheUrl)
 	if err != nil {
 		return err
 	}

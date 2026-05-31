@@ -7,17 +7,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func InitCache(cacheUrl string, password string) (*Cache, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     cacheUrl,
-		Password: password,
-		DB:       0,
-	})
-
-	cache := client.Ping(context.Background())
-	if cache.Err() != nil {
-		return nil, cache.Err()
+func InitCache(cacheUrl string) (*Cache, error) {
+	opt, err := redis.ParseURL(cacheUrl)
+	if err != nil {
+		return nil, err
 	}
-	log.Default().Println(cache.Val())
+
+	client := redis.NewClient(opt)
+
+	err = client.Ping(context.Background()).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Default().Println("Connected to local Redis successfully!")
 	return newCache(client), nil
 }

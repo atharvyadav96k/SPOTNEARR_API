@@ -5,21 +5,15 @@ on:
     branches:
       - main
     paths:
-      - 'auth/**'
-      - 'business/**'
-      - 'users/**'
       - 'bridge-service/**'
-      - 'integration-test/**'
+      - 'app/**'
 
 jobs:
   detect-domains:
     runs-on: ubuntu-latest
     outputs:
-      business:           ${{ steps.changes.outputs.business }}
-      users:              ${{ steps.changes.outputs.users }}
-      auth:               ${{ steps.changes.outputs.auth }}
-      bridge:             ${{ steps.changes.outputs.bridge }}
-      integration-test:   ${{ steps.changes.outputs.integration-test }}
+      bridge: ${{ steps.changes.outputs.bridge }}
+      app:    ${{ steps.changes.outputs.app }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,49 +21,28 @@ jobs:
         id: changes
         with:
           filters: |
-            business:
-              - 'business/**'
-            users:
-              - 'users/**'
-            auth:
-              - 'auth/**'
             bridge:
               - 'bridge-service/**'
-            integration-test:
-              - 'integration-test/**'
+            app:
+              - 'app/**'
 
-  auth:
+  bridge:
     needs: detect-domains
-    if: needs.detect-domains.outputs.auth == 'true'
-    uses: ./.github/workflows/auth.yml
+    if: needs.detect-domains.outputs.bridge == 'true'
+    uses: ./.github/workflows/bridge.yml
     permissions:
       id-token: write
       contents: read
     secrets: inherit
 
-  business:
+  app:
     needs: detect-domains
-    if: needs.detect-domains.outputs.business == 'true'
-    uses: ./.github/workflows/business.yml
+    if: needs.detect-domains.outputs.app == 'true'
+    uses: ./.github/workflows/app.yml
     permissions:
       id-token: write
       contents: read
-    secrets: inherit
-
-  users:
-    needs: detect-domains
-    if: needs.detect-domains.outputs.users == 'true'
-    uses: ./.github/workflows/users.yml
-    permissions:
-      id-token: write
-      contents: read
-    secrets: inherit
-
-  integration-test:
-    needs: detect-domains
-    if: needs.detect-domains.outputs.integration-test == 'true'
-    uses: ./.github/workflows/integration-test.yml
-    permissions:
-      id-token: write
-      contents: read
+    with:
+      working-directory: app
+      gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit

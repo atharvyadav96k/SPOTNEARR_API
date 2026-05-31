@@ -1,0 +1,87 @@
+name: Deploy Go App
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      gcp_region:
+        required: true
+        type: string
+
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+      GCP_PROJECT_NUMBER:
+        required: true
+      GCP_SA_EMAIL:
+        required: true
+      GCP_WIF_PROVIDER:
+        required: true
+      GCP_BUCKET_NAME:
+        required: true
+      DATABASE_URL:
+        required: true
+      CACHE_URL:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    env:
+      IMAGE_NAME: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/app
+      IMAGE_TAG: ${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ inputs.gcp_region }}-docker.pkg.dev --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -input=false \
+            -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
+            -backend-config="prefix=cloud-run/app"
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+        env:
+          TF_VAR_project_id:      ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:  ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_region:          ${{ inputs.gcp_region }}
+          TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_image:           ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
+          TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_project_id:      ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:  ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_region:          ${{ inputs.gcp_region }}
+          TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_image:           ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
+          TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
