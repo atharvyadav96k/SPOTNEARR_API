@@ -9,6 +9,12 @@ on:
       gcp_region:
         required: true
         type: string
+      captcha_url:
+        required: true
+        type: string
+      captcha_secret_key:
+        required: true
+        type: string
 
     secrets:
       GCP_PROJECT_ID:
@@ -24,10 +30,6 @@ on:
       DATABASE_URL:
         required: true
       CACHE_URL:
-        required: true
-      CAPTCHA_URL: 
-        required: true
-      CAPTCHA_SECRET_KEY:
         required: true
 
 jobs:
@@ -78,8 +80,8 @@ jobs:
           TF_VAR_image:           ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
           TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
-          TF_VAR_captcha_secret_key: ${{ vars.CAPTCHA_SECRET_KEY }}
-          TF_VAR_captcha_url: ${{ vars.CAPTCHA_URL }}
+          TF_VAR_captcha_secret_key: ${{ inputs.captcha_secret_key }}
+          TF_VAR_captcha_url: ${{ inputs.captcha_url }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
@@ -91,5 +93,5 @@ jobs:
           TF_VAR_image:           ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
           TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
-          TF_VAR_captcha_secret_key: ${{ vars.CAPTCHA_SECRET_KEY }}
-          TF_VAR_captcha_url: ${{ vars.CAPTCHA_URL }}
+          TF_VAR_captcha_secret_key: ${{ inputs.captcha_secret_key }}
+          TF_VAR_captcha_url: ${{ inputs.captcha_url }}
