@@ -13,6 +13,9 @@ func Init() application {
 	if err := a.InitDb(); err != nil {
 		panic(err)
 	}
+	if err := a.InitCaptcha(); err != nil {
+		panic(err)
+	}
 	services := services.Init(a.GetDb(), a.GetCache())
 	a.healthHandler = handlers.NewHealthHandler()
 	a.authHandler = handlers.NewAuthHandler(services)

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -37,6 +38,18 @@ func (a *App) InitCache() error {
 	a.cache, err = cache.InitCache(cacheUrl)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (a *App) InitCaptcha() error {
+	captchaUrl := os.Getenv("CAPTCHA_URL")
+	if strings.TrimSpace(captchaUrl) == "" {
+		return fmt.Errorf("Failed to get captcha url")
+	}
+	captchaSecret := os.Getenv("CAPTCHA_SECRET_KEY")
+	if strings.TrimSpace(captchaSecret) == "" {
+		return fmt.Errorf("failed to get captcha secret")
 	}
 	return nil
 }
