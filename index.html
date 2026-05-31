@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Turnstile Token Generator</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f9fafb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+        }
+        h2 { color: #111827; margin-bottom: 20px; }
+        .widget-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: #f3f4f6;
+            font-family: monospace;
+            font-size: 12px;
+            resize: none;
+            box-sizing: border-box;
+        }
+        .status {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #059669;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Turnstile Token Generator</h2>
+        <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+            Complete the challenge below to grab a live production token for Postman.
+        </p>
+
+        <div class="widget-wrapper">
+            <div class="cf-turnstile" 
+                 data-sitekey="0x4AAAAAADba56bLBvEhCm1A" 
+                 data-callback="onTurnstileSuccess">
+            </div>
+        </div>
+
+        <label style="display: block; text-align: left; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: #374151;">
+            Generated Production Token:
+        </label>
+        <textarea id="tokenBox" placeholder="The token will appear here once verified..." readonly></textarea>
+        
+        <div id="statusMessage" class="status">✓ Token copied to clipboard!</div>
+    </div>
+
+    <script>
+        function onTurnstileSuccess(token) {
+            const tokenBox = document.getElementById('tokenBox');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            // 1. Show token in the UI box
+            tokenBox.value = token;
+            
+            // 2. Copy automatically to clipboard for fast testing
+            navigator.clipboard.writeText(token).then(() => {
+                statusMessage.style.display = 'block';
+            }).catch(err => {
+                console.error('Failed to auto-copy: ', err);
+            });
+        }
+    </script>
+
+</body>
+</html>
