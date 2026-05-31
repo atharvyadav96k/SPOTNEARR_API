@@ -15,7 +15,9 @@ terraform {
 
 variable "project_id"      {}
 variable "project_number"  {}
-variable "region"          {}
+variable "region" {
+  default = "asia-east1"
+}
 variable "service_account" {}
 variable "backend_url"     {}
 
