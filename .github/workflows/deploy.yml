@@ -7,6 +7,7 @@ on:
     paths:
       - 'bridge-service/**'
       - 'app/**'
+      - 'gateway/**'
 
 jobs:
   detect-domains:
@@ -25,6 +26,8 @@ jobs:
               - 'bridge-service/**'
             app:
               - 'app/**'
+            api-gateway:
+              - 'gateway/**'
 
   bridge:
     needs: detect-domains
@@ -44,5 +47,17 @@ jobs:
       contents: read
     with:
       working-directory: app
+      gcp_region: ${{ vars.GCP_REGION }}
+    secrets: inherit
+    
+  api-gateway:
+    needs: detect-domains
+    if: needs.detect-domains.outputs.api-gateway == 'true'
+    uses: ./.github/workflows/api-gateway.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      working-directory: api-gateway
       gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
