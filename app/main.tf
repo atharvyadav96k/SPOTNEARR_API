@@ -20,6 +20,8 @@ variable "service_account" {}
 variable "image"           {}
 variable "database_url"    {}
 variable "cache_url"       {}
+variable "captcha_url"     {}
+variable "captcha_secret_key" {}
 
 provider "google" {
   project = var.project_id
@@ -80,6 +82,16 @@ resource "google_cloud_run_v2_service" "app" {
 
       env {
         name = "CACHE_URL"
+        value = var.cache_url
+      }
+
+      env {
+        name = "CAPTCHA_SECRET_KEY"
+        value = var.captcha_secret_key
+      }
+
+      env {
+        name = "CAPTCHA_SITE_KEY"
         value = var.cache_url
       }
 
