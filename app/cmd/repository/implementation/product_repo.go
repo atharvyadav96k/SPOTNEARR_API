@@ -79,7 +79,7 @@ func (p *ProductRepository) GetProductsByBusiness(ctx context.Context, bizID uin
 	return products, nil
 }
 
-func (p *ProductRepository) GetProductById(ctx context.Context, id uint) (models.Product, error) {
+func (p *ProductRepository) GetProductById(ctx context.Context, id uint, bizID uint) (models.Product, error) {
 
 	var product models.Product
 

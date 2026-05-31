@@ -29,26 +29,26 @@ func (a *application) healthRouter(router *mux.Router) {
 func (a *application) authRouter(router *mux.Router) {
 	authBase := router.PathPrefix("/auth").Subrouter()
 
-	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)
+	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost) // ✅
 
 	captchaRoutes := authBase.PathPrefix("").Subrouter()
 	captchaRoutes.Use(middleware.CaptchaValidation)
 
-	captchaRoutes.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost)
-	captchaRoutes.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)
-	captchaRoutes.HandleFunc("/reset-request", a.authHandler.Session).Methods(http.MethodPost)
+	captchaRoutes.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost) // ✅
+	captchaRoutes.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)       // ✅
+	captchaRoutes.HandleFunc("/reset-request", a.authHandler.Session).Methods(http.MethodPost)   // ✅
 
 	authBase.Handle("/reset-password",
 		middleware.SessionValidation(
 			middleware.CaptchaValidation(
-				http.HandlerFunc(a.authHandler.ResetPassword),
+				http.HandlerFunc(a.authHandler.ResetPassword), // ✅
 			),
 		),
 	).Methods(http.MethodPost)
 
 	protectedAuth := router.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet)
+	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet) // ✅
 }
 
 func (a *application) userRouter(router *mux.Router) {
@@ -77,18 +77,19 @@ func (a *application) inventoryRouter(router *mux.Router) {
 	protectedAuth := router.PathPrefix("/inventory").Subrouter()
 	protectedAuth.Use(middleware.Auth)
 	protectedAuth.Use(middleware.BusinessOnly)
-	protectedAuth.HandleFunc("/", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)                     // ✅
-	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPatch)             // ✅
-	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)            //
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet) // ✅
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost) // ✅
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete)
+	protectedAuth.HandleFunc("/", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)                          // ✅
+	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPatch)                  // ✅
+	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)                 //
+	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet)      // ✅
+	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost)      // ✅
+	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete) // ✅
 }
 
 func (a *application) productRouter(router *mux.Router) {
 	router.PathPrefix("/products")
+	router.HandleFunc("/", a.productHandler.ProductAdd).Methods(http.MethodPost)
 	router.HandleFunc("/${productId}", a.productHandler.ProductGet).Methods(http.MethodGet)
-	router.HandleFunc("/${productId}", a.productHandler.ProductUpdate).Methods(http.MethodPut)
+	router.HandleFunc("/${productId}", a.productHandler.ProductUpdate).Methods(http.MethodPatch)
 	router.HandleFunc("/${productId}", a.productHandler.ProductDelete).Methods(http.MethodDelete)
 	router.HandleFunc("/nearby", a.productHandler.ProductNearBy).Methods(http.MethodGet)
 }

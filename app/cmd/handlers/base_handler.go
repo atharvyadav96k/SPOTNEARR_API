@@ -38,6 +38,11 @@ func (b *BaseHandler) GetUserService() *services.UserService {
 func (b *BaseHandler) GetInvService() *services.InventoryService {
 	return b.services.InventoryService
 }
+
+func (b *BaseHandler) GetProductService() *services.ProductService {
+	return b.services.ProductService
+}
+
 func (b *BaseHandler) Email(r *http.Request) (string, error) {
 	val := request.GetVal(r, "email")
 	if val == nil {
@@ -82,7 +87,7 @@ func (b *BaseHandler) Name(r *http.Request) string {
 	if val == nil {
 		return ""
 	}
-	return val.ToString()
+	return strings.TrimSpace(val.ToString())
 }
 
 func (b *BaseHandler) Address(r *http.Request) string {
@@ -123,6 +128,15 @@ func (b *BaseHandler) Long(r *http.Request) *request.Body {
 		return nil
 	}
 	return val
+}
+
+func (b *BaseHandler) Price(r *http.Request) *float64 {
+	val := request.GetVal(r, "price")
+	if val == nil {
+		return nil
+	}
+	price := val.ToFloat64()
+	return &price
 }
 
 func (b *BaseHandler) ProductID(r *http.Request) uint {

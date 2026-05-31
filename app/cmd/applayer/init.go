@@ -19,7 +19,7 @@ func Init() application {
 	a.businessHandler = handlers.NewBusinessHandler(services)
 	a.userHandler = handlers.NewUserHandler(services)
 	a.inventoryHandler = handlers.NewInventoryHandler(services)
-	a.productHandler = handlers.NewProductHandler()
+	a.productHandler = handlers.NewProductHandler(services)
 	a.claimHandler = handlers.NewClaimHandler()
 	a.spotlightHandler = handlers.NewSpotlightHandler()
 	a.offerHandler = handlers.NewOfferHandler()
