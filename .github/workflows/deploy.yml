@@ -15,6 +15,7 @@ jobs:
     outputs:
       bridge: ${{ steps.changes.outputs.bridge }}
       app:    ${{ steps.changes.outputs.app }}
+      gateway: ${{ steps.changes.outputs.gateway }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,7 +53,7 @@ jobs:
     
   gateway:
     needs: detect-domains
-    if: needs.detect-domains.outputs.api-gateway == 'true'
+    if: needs.detect-domains.outputs.gateway == 'true'
     uses: ./.github/workflows/api-gateway.yml
     permissions:
       id-token: write
