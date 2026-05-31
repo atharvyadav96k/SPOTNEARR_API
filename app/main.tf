@@ -81,7 +81,7 @@ resource "google_cloud_run_v2_service" "app" {
 
 
       env {
-        name = "CACHE_URL"
+        name = "CAPTCHA_URL"
         value = var.cache_url
       }
 
