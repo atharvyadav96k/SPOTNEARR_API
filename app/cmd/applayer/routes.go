@@ -2,6 +2,7 @@ package applayer
 
 import (
 	"net/http"
+	"time"
 
 	middleware "github.com/atharvyadav96k/SPOTNEARR_API/middlewares"
 	"github.com/gorilla/mux"
@@ -52,90 +53,268 @@ func (a *application) authRouter(router *mux.Router) {
 	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet)
 	protectedAuth.HandleFunc("/logout-all-devices", a.authHandler.LogoutFromAllDevices).Methods(http.MethodPost)
 }
-
 func (a *application) userRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 10, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+
 	protectedAuth := router.PathPrefix("/users").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/{userId}/profile", a.userHandler.Profile).Methods(http.MethodGet) //✅
-	// protectedAuth.HandleFunc("/password", a.userHandler.UpdatePassword).Methods(http.MethodPost)
-	protectedAuth.HandleFunc("/{userId}/ban", a.userHandler.BanUser)
+
+	protectedAuth.Handle("/{userId}/profile",
+		normalRateLimit(
+			http.HandlerFunc(a.userHandler.Profile),
+		),
+	).Methods(http.MethodGet)
+
+	protectedAuth.Handle("/{userId}/ban",
+		strictRateLimit(
+			http.HandlerFunc(a.userHandler.BanUser),
+		),
+	)
 }
 
 func (a *application) businessRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+
 	biz := router.PathPrefix("/businesses").Subrouter()
 	protectedAuth := biz.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/register", a.businessHandler.BusinessRegister).Methods(http.MethodPost)      // ✅
-	protectedAuth.HandleFunc("/{bizId}/profile", a.businessHandler.BusinessProfile).Methods(http.MethodGet) // ✅
+
+	protectedAuth.Handle("/register",
+		strictRateLimit(
+			http.HandlerFunc(a.businessHandler.BusinessRegister),
+		),
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/{bizId}/profile",
+		normalRateLimit(
+			http.HandlerFunc(a.businessHandler.BusinessProfile),
+		),
+	).Methods(http.MethodGet)
 
 	bizOnly := protectedAuth.PathPrefix("").Subrouter()
 	bizOnly.Use(middleware.BusinessOnly)
-	bizOnly.HandleFunc("/inventories", a.businessHandler.BusinessInventories).Methods(http.MethodGet) // ✅
-	bizOnly.HandleFunc("/", a.businessHandler.BusinessUpdate).Methods(http.MethodPatch)               // ✅
-	bizOnly.HandleFunc("/", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)              //
+
+	bizOnly.Handle("/inventories",
+		normalRateLimit(
+			http.HandlerFunc(a.businessHandler.BusinessInventories),
+		),
+	).Methods(http.MethodGet)
+
+	bizOnly.Handle("/",
+		normalRateLimit(
+			http.HandlerFunc(a.businessHandler.BusinessUpdate),
+		),
+	).Methods(http.MethodPatch)
+
+	bizOnly.Handle("/",
+		strictRateLimit(
+			http.HandlerFunc(a.businessHandler.BusinessDelete),
+		),
+	).Methods(http.MethodDelete)
 }
 
 func (a *application) inventoryRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+
 	protectedAuth := router.PathPrefix("/inventory").Subrouter()
 	protectedAuth.Use(middleware.Auth)
 	protectedAuth.Use(middleware.BusinessOnly)
-	protectedAuth.HandleFunc("/", a.inventoryHandler.InventoryCreate).Methods(http.MethodPost)                          // ✅
-	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryUpdate).Methods(http.MethodPatch)                  // ✅
-	protectedAuth.HandleFunc("/{invId}", a.inventoryHandler.InventoryDelete).Methods(http.MethodDelete)                 //
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryGetProducts).Methods(http.MethodGet)      // ✅
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryAddProduct).Methods(http.MethodPost)      // ✅
-	protectedAuth.HandleFunc("/{invId}/products", a.inventoryHandler.InventoryRemoveProduct).Methods(http.MethodDelete) // ✅
+
+	protectedAuth.Handle("/",
+		strictRateLimit(
+			http.HandlerFunc(a.inventoryHandler.InventoryCreate),
+		),
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/{invId}",
+		normalRateLimit(
+			http.HandlerFunc(a.inventoryHandler.InventoryUpdate),
+		),
+	).Methods(http.MethodPatch)
+
+	protectedAuth.Handle("/{invId}",
+		strictRateLimit(
+			http.HandlerFunc(a.inventoryHandler.InventoryDelete),
+		),
+	).Methods(http.MethodDelete)
+
+	protectedAuth.Handle("/{invId}/products",
+		normalRateLimit(
+			http.HandlerFunc(a.inventoryHandler.InventoryGetProducts),
+		),
+	).Methods(http.MethodGet)
+
+	protectedAuth.Handle("/{invId}/products",
+		normalRateLimit(
+			http.HandlerFunc(a.inventoryHandler.InventoryAddProduct),
+		),
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/{invId}/products",
+		strictRateLimit(
+			http.HandlerFunc(a.inventoryHandler.InventoryRemoveProduct),
+		),
+	).Methods(http.MethodDelete)
 }
 
 func (a *application) productRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60, time.Minute)
+
 	protectedAuth := router.PathPrefix("/products").Subrouter()
 	protectedAuth.Use(middleware.Auth)
 	protectedAuth.Use(middleware.BusinessOnly)
-	protectedAuth.HandleFunc("/", a.productHandler.ProductAdd).Methods(http.MethodPost)                  // ✅
-	protectedAuth.HandleFunc("/${productId}", a.productHandler.ProductGet).Methods(http.MethodGet)       // ✅
-	protectedAuth.HandleFunc("/${productId}", a.productHandler.ProductUpdate).Methods(http.MethodPatch)  // ✅`
-	protectedAuth.HandleFunc("/${productId}", a.productHandler.ProductDelete).Methods(http.MethodDelete) // ✅
-	protectedAuth.HandleFunc("/nearby", a.productHandler.ProductNearBy).Methods(http.MethodGet)
+
+	protectedAuth.Handle("/",
+		strictRateLimit(
+			http.HandlerFunc(a.productHandler.ProductAdd),
+		),
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/{productId}",
+		relaxedRateLimit(
+			http.HandlerFunc(a.productHandler.ProductGet),
+		),
+	).Methods(http.MethodGet)
+
+	protectedAuth.Handle("/{productId}",
+		normalRateLimit(
+			http.HandlerFunc(a.productHandler.ProductUpdate),
+		),
+	).Methods(http.MethodPatch)
+
+	protectedAuth.Handle("/{productId}",
+		strictRateLimit(
+			http.HandlerFunc(a.productHandler.ProductDelete),
+		),
+	).Methods(http.MethodDelete)
+
+	protectedAuth.Handle("/nearby",
+		relaxedRateLimit(
+			http.HandlerFunc(a.productHandler.ProductNearBy),
+		),
+	).Methods(http.MethodGet)
 }
 
 func (a *application) claimRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 10, time.Minute)
+
 	protectedAuth := router.PathPrefix("/claims").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/${productId}", a.claimHandler.ClaimProduct).Methods(http.MethodPost)
-	protectedAuth.HandleFunc("/${productId}", a.claimHandler.ClaimRemove).Methods(http.MethodDelete)
+
+	protectedAuth.Handle("/{productId}",
+		normalRateLimit(
+			http.HandlerFunc(a.claimHandler.ClaimProduct),
+		),
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/{productId}",
+		normalRateLimit(
+			http.HandlerFunc(a.claimHandler.ClaimRemove),
+		),
+	).Methods(http.MethodDelete)
 }
 
 func (a *application) offerRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60, time.Minute)
+
 	protectedAuth := router.PathPrefix("/offers").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/nearby", a.offerHandler.NearByOffers).Methods(http.MethodGet)
+
+	protectedAuth.Handle("/nearby",
+		relaxedRateLimit(
+			http.HandlerFunc(a.offerHandler.NearByOffers),
+		),
+	).Methods(http.MethodGet)
+
 	bizOnly := protectedAuth.PathPrefix("/").Subrouter()
 	bizOnly.Use(middleware.BusinessOnly)
-	bizOnly.HandleFunc("", a.offerHandler.OfferAdd).Methods(http.MethodPost)
-	bizOnly.HandleFunc("/{offerID}", a.offerHandler.OfferUpdate).Methods(http.MethodPut)
-	bizOnly.HandleFunc("${offerID}", a.offerHandler.OfferDelete).Methods(http.MethodDelete)
+
+	bizOnly.Handle("",
+		strictRateLimit(
+			http.HandlerFunc(a.offerHandler.OfferAdd),
+		),
+	).Methods(http.MethodPost)
+
+	bizOnly.Handle("/{offerID}",
+		normalRateLimit(
+			http.HandlerFunc(a.offerHandler.OfferUpdate),
+		),
+	).Methods(http.MethodPut)
+
+	bizOnly.Handle("/{offerID}",
+		strictRateLimit(
+			http.HandlerFunc(a.offerHandler.OfferDelete),
+		),
+	).Methods(http.MethodDelete)
 }
 
 func (a *application) reviewRouter(router *mux.Router) {
-	router = router.PathPrefix("/review").Subrouter()
-	router.Use(middleware.Auth)
-	router.HandleFunc("/offers/${offerId}", a.reviewHandler.ReviewGetByOffer).Methods(http.MethodGet)
-	router.HandleFunc("/offers", a.reviewHandler.ReviewOffer).Methods(http.MethodPost)
-	router.HandleFunc("/offers", a.reviewHandler.ReviewOfferUpdate).Methods(http.MethodPut)
-	router.HandleFunc("/offers", a.reviewHandler.ReviewOfferDelete).Methods(http.MethodDelete)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 10, time.Minute)
+	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60, time.Minute)
 
-	router.HandleFunc("/spotlights/${spotlightId}", a.reviewHandler.ReviewGetBySpotlight).Methods(http.MethodGet)
-	router.HandleFunc("/spotlights", a.reviewHandler.ReviewSpotlight).Methods(http.MethodPost)
-	router.HandleFunc("/spotlights", a.reviewHandler.ReviewSpotlightUpdate).Methods(http.MethodPut)
-	router.HandleFunc("/spotlights", a.reviewHandler.ReviewSpotlightDelete).Methods(http.MethodDelete)
+	r := router.PathPrefix("/review").Subrouter()
+	r.Use(middleware.Auth)
 
-	router.HandleFunc("/businesses", a.reviewHandler.ReviewGetByBusiness).Methods(http.MethodGet)
-	router.HandleFunc("/businesses", a.reviewHandler.ReviewBusiness).Methods(http.MethodPost)
-	router.HandleFunc("/businesses", a.reviewHandler.ReviewBusinessUpdate).Methods(http.MethodPut)
-	router.HandleFunc("/businesses", a.reviewHandler.ReviewBusinessDelete).Methods(http.MethodDelete)
+	// Offer reviews
+	r.Handle("/offers/{offerId}",
+		relaxedRateLimit(http.HandlerFunc(a.reviewHandler.ReviewGetByOffer)),
+	).Methods(http.MethodGet)
+	r.Handle("/offers",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewOffer)),
+	).Methods(http.MethodPost)
+	r.Handle("/offers",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewOfferUpdate)),
+	).Methods(http.MethodPut)
+	r.Handle("/offers",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewOfferDelete)),
+	).Methods(http.MethodDelete)
 
-	router.HandleFunc("/products", a.reviewHandler.ReviewGetByProduct).Methods(http.MethodGet)
-	router.HandleFunc("/products", a.reviewHandler.ReviewProduct).Methods(http.MethodPost)
-	router.HandleFunc("/products", a.reviewHandler.ReviewProductUpdate).Methods(http.MethodPut)
-	router.HandleFunc("/products", a.reviewHandler.ReviewProductDelete).Methods(http.MethodDelete)
+	// Spotlight reviews
+	r.Handle("/spotlights/{spotlightId}",
+		relaxedRateLimit(http.HandlerFunc(a.reviewHandler.ReviewGetBySpotlight)),
+	).Methods(http.MethodGet)
+	r.Handle("/spotlights",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewSpotlight)),
+	).Methods(http.MethodPost)
+	r.Handle("/spotlights",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewSpotlightUpdate)),
+	).Methods(http.MethodPut)
+	r.Handle("/spotlights",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewSpotlightDelete)),
+	).Methods(http.MethodDelete)
+
+	// Business reviews
+	r.Handle("/businesses",
+		relaxedRateLimit(http.HandlerFunc(a.reviewHandler.ReviewGetByBusiness)),
+	).Methods(http.MethodGet)
+	r.Handle("/businesses",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewBusiness)),
+	).Methods(http.MethodPost)
+	r.Handle("/businesses",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewBusinessUpdate)),
+	).Methods(http.MethodPut)
+	r.Handle("/businesses",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewBusinessDelete)),
+	).Methods(http.MethodDelete)
+
+	// Product reviews
+	r.Handle("/products",
+		relaxedRateLimit(http.HandlerFunc(a.reviewHandler.ReviewGetByProduct)),
+	).Methods(http.MethodGet)
+	r.Handle("/products",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewProduct)),
+	).Methods(http.MethodPost)
+	r.Handle("/products",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewProductUpdate)),
+	).Methods(http.MethodPut)
+	r.Handle("/products",
+		normalRateLimit(http.HandlerFunc(a.reviewHandler.ReviewProductDelete)),
+	).Methods(http.MethodDelete)
 }
