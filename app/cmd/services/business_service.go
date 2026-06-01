@@ -33,6 +33,7 @@ func (b *BusinessService) RegisterBusiness(business *dtos.Business, userId uint)
 		}
 		return b.ResponseBadRequest(err.Error())
 	}
+
 	err = b.RepoAccess().CreateNewAccess(context.Background(), models.NewBusinessAccess(userId, biz.ID, models.RoleAdmin))
 	if err != nil {
 		log.Default().Println(err)
@@ -44,6 +45,9 @@ func (b *BusinessService) RegisterBusiness(business *dtos.Business, userId uint)
 			return b.ResponseConflict("Invalid user account")
 		}
 		return b.ResponseBadRequest(err.Error())
+	}
+	if err := b.Cache().GetRefreshTokenSession().InvalidateRefreshToken(userId); err != nil {
+		log.Default().Println("Failed to invalidate refresh token after business registration:", err)
 	}
 	return b.ResponseCreated("Business successfully registered", biz)
 }

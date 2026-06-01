@@ -56,28 +56,35 @@ func (u *UserService) Login(email string, password string) response.Res {
 
 	var currentBusinessID *uint
 	var userRole = models.RoleUser
-	acccess, err := u.RepoAccess().GetAccessByUserId(ctx, user.ID)
+	access, err := u.RepoAccess().GetAccessByUserId(ctx, user.ID)
 	if err == nil {
-		currentBusinessID = &acccess.BusinessID
-		userRole = acccess.Role
+		currentBusinessID = &access.BusinessID
+		userRole = access.Role
 	}
+
 	var refreshToken string
 
-	if _, err := auth.ValidateToken(user.RefreshToken, "dummy", auth.TypeRefreshToken); err == nil {
-		refreshToken = user.RefreshToken
-	} else {
+	cachedToken, err := u.Cache().GetRefreshTokenSession().GetRefreshTokenSession(user.ID)
+	if err == nil {
+		if _, err := auth.ValidateToken(cachedToken, "dummy", auth.TypeRefreshToken); err == nil {
+			refreshToken = cachedToken
+		}
+	}
+
+	if refreshToken == "" {
 		refreshToken, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, "dummy", userRole)
 		if err != nil {
 			log.Default().Println("Failed to generate refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
 		}
 
-		err = u.RepoUser().SetRefreshToken(ctx, user.ID, refreshToken)
+		err = u.Cache().GetRefreshTokenSession().NewRefreshToken(user.ID, refreshToken, 30*24*time.Hour)
 		if err != nil {
 			log.Default().Println("Failed to save refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
 		}
 	}
+
 	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, "dummy", userRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token:", err)
@@ -91,44 +98,13 @@ func (u *UserService) Login(email string, password string) response.Res {
 }
 
 func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) response.Res {
-	ctx := context.Background()
-	user, err := u.RepoUser().GetById(ctx, claims.UserId)
-	if err != nil {
-		log.Default().Println("Failed to get user from db")
-		return u.ResponseUnauthorized()
-	}
-	if user.RefreshToken != refreshToken {
+	cachedToken, err := u.Cache().GetRefreshTokenSession().GetRefreshTokenSession(claims.UserId)
+	if err != nil || cachedToken != refreshToken {
+		log.Default().Println("Refresh token not found in cache or mismatch")
 		return u.ResponseUnauthorized()
 	}
 
-	var currentBusinessID *uint
-	var userRole = models.RoleUser
-	userAccess, err := u.RepoAccess().GetAccessByUserId(ctx, user.ID)
-	if err == nil {
-		currentBusinessID = &userAccess.BusinessID
-		userRole = userAccess.Role
-	}
-
-	isOutOfSync := false
-	if claims.BusinessId == nil && currentBusinessID != nil {
-		isOutOfSync = true
-	} else if claims.BusinessId != nil && currentBusinessID == nil {
-		isOutOfSync = true
-	} else if claims.BusinessId != nil && currentBusinessID != nil && *claims.BusinessId != *currentBusinessID {
-		isOutOfSync = true
-	} else if claims.UserRole != userRole {
-		isOutOfSync = true
-	}
-	if isOutOfSync {
-		newRefreshToken, err := auth.GenerateRefreshToken(user.ID, currentBusinessID, "dummy", userRole)
-		if err == nil {
-			refreshToken = newRefreshToken
-			_ = u.RepoUser().SetRefreshToken(ctx, user.ID, newRefreshToken)
-		} else {
-			log.Default().Println("Warning: Failed to generate updated refresh token:", err)
-		}
-	}
-	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, "dummy", userRole)
+	accessToken, err := auth.GenerateAccessToken(claims.UserId, claims.BusinessId, "dummy", claims.UserRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token")
 		return u.ResponseUnauthorized()
@@ -141,10 +117,11 @@ func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) respo
 }
 
 func (u *UserService) DismissRefreshToken(id uint) response.Res {
-	if err := u.RepoUser().RemoveRefreshToken(context.Background(), id); err != nil {
-		return u.ResponseNotFound("Account not found")
+	if err := u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(id); err != nil {
+		log.Default().Println("Failed to invalidate refresh token:", err)
+		return u.ResponseInternalServer("Failed to logout")
 	}
-	return u.ResponseOK("successfully logout from all devices", nil)
+	return u.ResponseOK("Successfully logged out from all devices", nil)
 }
 
 func (u *UserService) AddUserToBusiness(userID uint, businessId uint, ownerId uint) response.Res {
@@ -173,45 +150,43 @@ func (u *UserService) SessionNotification(email string) response.Res {
 	if err != nil {
 		return u.ResponseBadRequest("Failed to send the email.")
 	}
-	// just for development
 	sessionLink := fmt.Sprintf("session=%s", session)
 	log.Default().Println(sessionLink)
 	return u.ResponseOK("", sessionLink)
 }
 
 func (u *UserService) UpdatePassword(password string, session string) response.Res {
-	email, err := u.Cache().GetPasswordSessions().GetPasswordSession(context.Background(), session)
+	ctx := context.Background()
+
+	email, err := u.Cache().GetPasswordSessions().GetPasswordSession(ctx, session)
 	if err != nil {
 		return u.ResponseInternalServer("Failed to update password")
 	}
 	if email == "" {
 		return u.ResponseBadRequest("Invalid URL")
 	}
+	user, err := u.RepoUser().GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return u.ResponseNotFound("User not found with this email")
+		}
+		return u.ResponseInternalServer("Failed to update password")
+	}
+
 	hashedPassword, err := auth.GenerateHashedPassword(password)
 	if err != nil {
 		return u.ResponseInternalServer("Failed to update password")
 	}
-	err = u.RepoUser().UpdatePasswordWithEmail(context.Background(), email, string(hashedPassword))
+	err = u.RepoUser().UpdatePasswordWithEmail(ctx, email, string(hashedPassword))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return u.ResponseNotFound("User not found with this email")
 		}
 		return u.ResponseInternalServer("Failed to update the password")
 	}
-	return u.ResponseOK("", nil)
-}
+	if err := u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(user.ID); err != nil {
+		log.Default().Println("Failed to invalidate refresh token after password update:", err)
+	}
 
-// func (u *UserService) UpdatePassword(userId uint, password string) response.Res {
-// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-// 	if err != nil {
-// 		return u.ResponseInternalServer("Failed to update password")
-// 	}
-// 	err = u.RepoUser().UpdatePasswordWithUserId(context.Background(), userId, string(hashedPassword))
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return u.ResponseConflict("No user found")
-// 		}
-// 		return u.ResponseBadRequest("Failed to update password")
-// 	}
-// 	return u.ResponseOK("successfully updated user password", nil)
-// }
+	return u.ResponseOK("Password updated successfully", nil)
+}

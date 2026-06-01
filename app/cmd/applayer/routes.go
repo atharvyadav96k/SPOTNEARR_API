@@ -27,28 +27,30 @@ func (a *application) healthRouter(router *mux.Router) {
 }
 
 func (a *application) authRouter(router *mux.Router) {
+	// This creates the base path: /api/v1/auth
 	authBase := router.PathPrefix("/auth").Subrouter()
 
-	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost) // ✅
+	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)
 
 	captchaRoutes := authBase.PathPrefix("").Subrouter()
 	captchaRoutes.Use(middleware.CaptchaValidation)
-
-	captchaRoutes.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost) // ✅
-	captchaRoutes.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)       // ✅
-	captchaRoutes.HandleFunc("/reset-request", a.authHandler.Session).Methods(http.MethodPost)   // ✅
+	captchaRoutes.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost)
+	captchaRoutes.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)
+	captchaRoutes.HandleFunc("/reset-request", a.authHandler.Session).Methods(http.MethodPost)
 
 	authBase.Handle("/reset-password",
 		middleware.SessionValidation(
 			middleware.CaptchaValidation(
-				http.HandlerFunc(a.authHandler.ResetPassword), // ✅
+				http.HandlerFunc(a.authHandler.ResetPassword),
 			),
 		),
 	).Methods(http.MethodPost)
 
-	protectedAuth := router.PathPrefix("").Subrouter()
+	protectedAuth := authBase.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet) // ✅
+
+	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet)
+	protectedAuth.HandleFunc("/logout-all-devices", a.authHandler.LogoutFromAllDevices).Methods(http.MethodPost)
 }
 
 func (a *application) userRouter(router *mux.Router) {
