@@ -31,6 +31,12 @@ on:
         required: true
       CACHE_URL:
         required: true
+      JWT_SECRET:
+        required: true
+      CACHE_PASSWORD:
+        required: false
+      PORT:
+        required: false
 
 jobs:
   deploy:
@@ -81,7 +87,10 @@ jobs:
           TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
           TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
           TF_VAR_captcha_secret_key: ${{ inputs.captcha_secret_key }}
-          TF_VAR_captcha_url: ${{ inputs.captcha_url }}
+          TF_VAR_captcha_url:     ${{ inputs.captcha_url }}
+          TF_VAR_jwt_secret:      ${{ secrets.JWT_SECRET }}
+          TF_VAR_cache_password:  ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_port:            ${{ secrets.PORT }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
@@ -94,4 +103,7 @@ jobs:
           TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
           TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
           TF_VAR_captcha_secret_key: ${{ inputs.captcha_secret_key }}
-          TF_VAR_captcha_url: ${{ inputs.captcha_url }}
+          TF_VAR_captcha_url:     ${{ inputs.captcha_url }}
+          TF_VAR_jwt_secret:      ${{ secrets.JWT_SECRET }}
+          TF_VAR_cache_password:  ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_port:            ${{ secrets.PORT }}
