@@ -42,6 +42,10 @@ func (b *BaseHandler) GetProductService() *services.ProductService {
 	return b.services.ProductService
 }
 
+func (b *BaseHandler) GetClaimService() *services.ClaimService {
+	return b.services.ClaimService
+}
+
 func (b *BaseHandler) Email(r *http.Request) (string, error) {
 	val := request.GetVal(r, "email")
 	if val == nil {
@@ -267,6 +271,14 @@ func (h *BaseHandler) GetOfferId(r *http.Request) (uint, error) {
 
 func (h *BaseHandler) GetSpotlightId(r *http.Request) (uint, error) {
 	return extractKeyFromPath(r, "spotlightId")
+}
+
+func (h *BaseHandler) GetInvProductId(r *http.Request) (uint, error) {
+	return extractKeyFromPath(r, "invProductId")
+}
+
+func (h *BaseHandler) GetClaimId(r *http.Request) (uint, error) {
+	return extractKeyFromPath(r, "claimId")
 }
 
 func (h *BaseHandler) QuerySession(r *http.Request) string {

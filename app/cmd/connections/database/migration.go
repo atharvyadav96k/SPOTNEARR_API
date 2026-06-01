@@ -13,6 +13,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.BusinessAccess{},
 		&models.Product{},
 		&models.InventoryProduct{},
+		&models.Claim{},
 	); err != nil {
 		return err
 	}

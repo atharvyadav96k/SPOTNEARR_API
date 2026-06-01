@@ -206,13 +206,19 @@ func (a *application) claimRouter(router *mux.Router) {
 	protectedAuth := router.PathPrefix("/claims").Subrouter()
 	protectedAuth.Use(middleware.Auth)
 
-	protectedAuth.Handle("/{productId}",
+	protectedAuth.Handle("",
+		normalRateLimit(
+			http.HandlerFunc(a.claimHandler.GetUserClaims),
+		),
+	).Methods(http.MethodGet)
+
+	protectedAuth.Handle("/{invProductId}",
 		normalRateLimit(
 			http.HandlerFunc(a.claimHandler.ClaimProduct),
 		),
 	).Methods(http.MethodPost)
 
-	protectedAuth.Handle("/{productId}",
+	protectedAuth.Handle("/{claimId}",
 		normalRateLimit(
 			http.HandlerFunc(a.claimHandler.ClaimRemove),
 		),

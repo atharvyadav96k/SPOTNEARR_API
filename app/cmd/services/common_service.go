@@ -10,13 +10,16 @@ type Services struct {
 	BusinessService  *BusinessService
 	InventoryService *InventoryService
 	ProductService   *ProductService
+	ClaimService     *ClaimService
 }
 
 func Init(db *gorm.DB, cache *cache.Cache) *Services {
+	base := NewBaseService(db, cache)
 	return &Services{
 		UserService:      NewUserService(db, cache),
 		BusinessService:  NewBusinessService(db, cache),
 		InventoryService: NewInventoryService(db, cache),
 		ProductService:   NewProductService(db, cache),
+		ClaimService:     NewClaimService(base),
 	}
 }
