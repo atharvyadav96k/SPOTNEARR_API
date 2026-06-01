@@ -24,7 +24,6 @@ variable "captcha_url"     {}
 variable "captcha_secret_key" {}
 variable "jwt_secret"      {}
 variable "cache_password"  { default = "" }
-variable "port"            { default = "8080" }
 
 provider "google" {
   project = var.project_id
@@ -107,11 +106,6 @@ resource "google_cloud_run_v2_service" "app" {
       env {
         name  = "CACHE_PASSWORD"
         value = var.cache_password
-      }
-
-      env {
-        name  = "PORT"
-        value = var.port
       }
 
       resources {
