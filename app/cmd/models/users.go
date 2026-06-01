@@ -20,7 +20,7 @@ type User struct {
 	IsVerifiedPhone bool    `gorm:"default:false;not null" json:"isVerifiedPhone"`
 	IsActive        bool    `gorm:"default:true;not null" json:"isActive"`
 
-	PushToken *string `gorm:"type:text;json:"-"`
+	PushToken *string `gorm:"type:text" json:"-"`
 
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`

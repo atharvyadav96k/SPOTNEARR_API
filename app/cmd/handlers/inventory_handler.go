@@ -39,14 +39,20 @@ func (i *InventoryHandler) InventoryUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	storeId, err := i.GetInventoryId(r)
-	if err != nil || storeId != 0 {
+	if err != nil || storeId == 0 {
 		i.ResponseBadRequest(w)
 		return
 	}
 	name := i.Name(r)
 	address := i.Address(r)
-	lat := i.Lat(r).ToFloat64()
-	long := i.Long(r).ToFloat64()
+	latBody := i.Lat(r)
+	longBody := i.Long(r)
+	if latBody == nil || longBody == nil {
+		i.ResponseBadRequestWithMessage(w, "lat and long are required")
+		return
+	}
+	lat := latBody.ToFloat64()
+	long := longBody.ToFloat64()
 
 	res := i.GetInvService().UpdateInventory(businessId, storeId, name, address, lat, long)
 	i.Response(w, res)

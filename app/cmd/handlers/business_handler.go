@@ -24,7 +24,7 @@ func (b *BusinessHandler) BusinessRegister(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	business, err := ParseBody[dtos.Business](r)
-	if err != nil && business == nil {
+	if err != nil || business == nil {
 		b.ResponseBadRequest(w)
 		return
 	}

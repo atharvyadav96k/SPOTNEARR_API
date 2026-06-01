@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
@@ -64,7 +64,6 @@ func (a *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	fmt.Println(email)
 	res := a.GetUserService().SessionNotification(email)
 	a.Response(w, res)
 }
@@ -96,7 +95,7 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		a.ResponseBadRequest(w)
 		return
 	}
-	claims, err := auth.ValidateToken(userTokens.RefreshToken, "dummy", auth.TypeRefreshToken)
+	claims, err := auth.ValidateToken(userTokens.RefreshToken, os.Getenv("JWT_SECRET"), auth.TypeRefreshToken)
 	if err != nil {
 		a.ResponseBadRequest(w)
 		return

@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -10,12 +9,18 @@ import (
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/database"
 )
 
+func ValidateEnv() error {
+	if strings.TrimSpace(os.Getenv("JWT_SECRET")) == "" {
+		return fmt.Errorf("JWT_SECRET environment variable is required")
+	}
+	return nil
+}
+
 func (a *App) InitDb() error {
 	var err error
 	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		// local database (development)
-		dbURL = "postgresql://admin:admin123@localhost:5432/spotnearr"
+	if strings.TrimSpace(dbURL) == "" {
+		return fmt.Errorf("DATABASE_URL environment variable is required")
 	}
 	a.db, err = database.InitDB(dbURL)
 	if err != nil {
@@ -34,8 +39,7 @@ func (a *App) InitCache() error {
 	if strings.TrimSpace(cacheUrl) == "" {
 		cacheUrl = "redis://localhost:6379"
 	}
-	log.Default().Println(cacheUrl, password)
-	a.cache, err = cache.InitCache(cacheUrl)
+	a.cache, err = cache.InitCache(cacheUrl, password)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -64,7 +63,7 @@ func (b *BaseHandler) Password(r *http.Request) (string, error) {
 	passStr := val.ToString()
 	ok, message := utils.ValidatePassword(passStr)
 	if !ok {
-		return passStr, fmt.Errorf(message)
+		return passStr, fmt.Errorf("%s", message)
 	}
 	return passStr, nil
 }
@@ -192,7 +191,7 @@ func (h *BaseHandler) Response(w http.ResponseWriter, r response.Res) {
 }
 
 func (h *BaseHandler) ResponseBadRequest(w http.ResponseWriter) {
-	res(w, http.StatusBadGateway, nil)
+	res(w, http.StatusBadRequest, nil)
 }
 
 func (h *BaseHandler) ResponseNotFound(w http.ResponseWriter) {
@@ -221,7 +220,6 @@ func (h *BaseHandler) ClaimGetBusinessId(r *http.Request) uint {
 	if claim.BusinessId == nil {
 		return 0
 	}
-	log.Default().Println("business id : ", claim.BusinessId)
 	return *claim.BusinessId
 }
 
@@ -230,7 +228,6 @@ func (h *BaseHandler) ClaimGetUserId(r *http.Request) uint {
 	if err != nil {
 		return 0
 	}
-	log.Default().Println("user id : ", claim.UserId)
 	return claim.UserId
 }
 

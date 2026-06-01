@@ -7,10 +7,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func InitCache(cacheUrl string) (*Cache, error) {
+func InitCache(cacheUrl string, password string) (*Cache, error) {
 	opt, err := redis.ParseURL(cacheUrl)
 	if err != nil {
 		return nil, err
+	}
+	if password != "" {
+		opt.Password = password
 	}
 
 	client := redis.NewClient(opt)

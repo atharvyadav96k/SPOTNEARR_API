@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
@@ -30,7 +31,7 @@ func Auth(next http.Handler) http.Handler {
 		}
 
 		tokenStr := parts[1]
-		claims, err := auth.ValidateToken(tokenStr, "dummy", auth.TypeAccessToken)
+		claims, err := auth.ValidateToken(tokenStr, os.Getenv("JWT_SECRET"), auth.TypeAccessToken)
 		if err != nil {
 			log.Default().Println("Failed to validate token")
 			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
