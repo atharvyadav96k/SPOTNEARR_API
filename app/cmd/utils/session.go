@@ -2,9 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -17,7 +17,7 @@ func GenerateSession(email string, expireTime time.Duration) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString([]byte(config.C.JWTSecret))
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +29,7 @@ func IsValidSession(session string) bool {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
+		return []byte(config.C.JWTSecret), nil
 	})
 	return err == nil && token.Valid
 }

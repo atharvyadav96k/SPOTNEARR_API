@@ -3,10 +3,10 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/request"
@@ -95,7 +95,7 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		a.ResponseBadRequest(w)
 		return
 	}
-	claims, err := auth.ValidateToken(userTokens.RefreshToken, os.Getenv("JWT_SECRET"), auth.TypeRefreshToken)
+	claims, err := auth.ValidateToken(userTokens.RefreshToken, config.C.JWTSecret, auth.TypeRefreshToken)
 	if err != nil {
 		a.ResponseBadRequest(w)
 		return

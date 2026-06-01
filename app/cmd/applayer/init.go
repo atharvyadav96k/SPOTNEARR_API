@@ -1,13 +1,13 @@
 package applayer
 
 import (
-	"github.com/atharvyadav96k/SPOTNEARR_API/app"
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/atharvyadav96k/SPOTNEARR_API/handlers"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 )
 
 func Init() application {
-	if err := app.ValidateEnv(); err != nil {
+	if err := config.Load(); err != nil {
 		panic(err)
 	}
 	a := application{}
