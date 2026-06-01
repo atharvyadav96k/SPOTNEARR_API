@@ -70,7 +70,7 @@ func (a *application) businessRouter(router *mux.Router) {
 	bizOnly.Use(middleware.BusinessOnly)
 	bizOnly.HandleFunc("/inventories", a.businessHandler.BusinessInventories).Methods(http.MethodGet) // ✅
 	bizOnly.HandleFunc("/", a.businessHandler.BusinessUpdate).Methods(http.MethodPatch)               // ✅
-	bizOnly.HandleFunc("/", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)
+	bizOnly.HandleFunc("/", a.businessHandler.BusinessDelete).Methods(http.MethodDelete)              //
 }
 
 func (a *application) inventoryRouter(router *mux.Router) {
@@ -86,30 +86,37 @@ func (a *application) inventoryRouter(router *mux.Router) {
 }
 
 func (a *application) productRouter(router *mux.Router) {
-	router.PathPrefix("/products")
-	router.HandleFunc("/", a.productHandler.ProductAdd).Methods(http.MethodPost)
-	router.HandleFunc("/${productId}", a.productHandler.ProductGet).Methods(http.MethodGet)
-	router.HandleFunc("/${productId}", a.productHandler.ProductUpdate).Methods(http.MethodPatch)
-	router.HandleFunc("/${productId}", a.productHandler.ProductDelete).Methods(http.MethodDelete)
-	router.HandleFunc("/nearby", a.productHandler.ProductNearBy).Methods(http.MethodGet)
+	protectedAuth := router.PathPrefix("/products").Subrouter()
+	protectedAuth.Use(middleware.Auth)
+	protectedAuth.Use(middleware.BusinessOnly)
+	protectedAuth.HandleFunc("/", a.productHandler.ProductAdd).Methods(http.MethodPost)                  // ✅
+	protectedAuth.HandleFunc("/${productId}", a.productHandler.ProductGet).Methods(http.MethodGet)       // ✅
+	protectedAuth.HandleFunc("/${productId}", a.productHandler.ProductUpdate).Methods(http.MethodPatch)  // ✅`
+	protectedAuth.HandleFunc("/${productId}", a.productHandler.ProductDelete).Methods(http.MethodDelete) // ✅
+	protectedAuth.HandleFunc("/nearby", a.productHandler.ProductNearBy).Methods(http.MethodGet)
 }
 
 func (a *application) claimRouter(router *mux.Router) {
-	router.PathPrefix("/claims")
-	router.HandleFunc("/${productId}", a.claimHandler.ClaimProduct).Methods(http.MethodPost)
-	router.HandleFunc("/${productId}", a.claimHandler.ClaimRemove).Methods(http.MethodDelete)
+	protectedAuth := router.PathPrefix("/claims").Subrouter()
+	protectedAuth.Use(middleware.Auth)
+	protectedAuth.HandleFunc("/${productId}", a.claimHandler.ClaimProduct).Methods(http.MethodPost)
+	protectedAuth.HandleFunc("/${productId}", a.claimHandler.ClaimRemove).Methods(http.MethodDelete)
 }
 
 func (a *application) offerRouter(router *mux.Router) {
-	router.PathPrefix("/offers")
-	router.HandleFunc("/nearby", a.offerHandler.NearByOffers).Methods(http.MethodGet)
-	router.HandleFunc("/", a.offerHandler.OfferAdd).Methods(http.MethodPost)
-	router.HandleFunc("/", a.offerHandler.OfferUpdate).Methods(http.MethodPut)
-	router.HandleFunc("/", a.offerHandler.OfferDelete).Methods(http.MethodDelete)
+	protectedAuth := router.PathPrefix("/offers").Subrouter()
+	protectedAuth.Use(middleware.Auth)
+	protectedAuth.HandleFunc("/nearby", a.offerHandler.NearByOffers).Methods(http.MethodGet)
+	bizOnly := protectedAuth.PathPrefix("/").Subrouter()
+	bizOnly.Use(middleware.BusinessOnly)
+	bizOnly.HandleFunc("", a.offerHandler.OfferAdd).Methods(http.MethodPost)
+	bizOnly.HandleFunc("/{offerID}", a.offerHandler.OfferUpdate).Methods(http.MethodPut)
+	bizOnly.HandleFunc("${offerID}", a.offerHandler.OfferDelete).Methods(http.MethodDelete)
 }
 
 func (a *application) reviewRouter(router *mux.Router) {
-	router.PathPrefix("/review")
+	router = router.PathPrefix("/review").Subrouter()
+	router.Use(middleware.Auth)
 	router.HandleFunc("/offers/${offerId}", a.reviewHandler.ReviewGetByOffer).Methods(http.MethodGet)
 	router.HandleFunc("/offers", a.reviewHandler.ReviewOffer).Methods(http.MethodPost)
 	router.HandleFunc("/offers", a.reviewHandler.ReviewOfferUpdate).Methods(http.MethodPut)
