@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,6 +42,10 @@ func (b *BaseHandler) GetProductService() *services.ProductService {
 	return b.services.ProductService
 }
 
+func (b *BaseHandler) GetClaimService() *services.ClaimService {
+	return b.services.ClaimService
+}
+
 func (b *BaseHandler) Email(r *http.Request) (string, error) {
 	val := request.GetVal(r, "email")
 	if val == nil {
@@ -64,7 +67,7 @@ func (b *BaseHandler) Password(r *http.Request) (string, error) {
 	passStr := val.ToString()
 	ok, message := utils.ValidatePassword(passStr)
 	if !ok {
-		return passStr, fmt.Errorf(message)
+		return passStr, fmt.Errorf("%s", message)
 	}
 	return passStr, nil
 }
@@ -192,7 +195,7 @@ func (h *BaseHandler) Response(w http.ResponseWriter, r response.Res) {
 }
 
 func (h *BaseHandler) ResponseBadRequest(w http.ResponseWriter) {
-	res(w, http.StatusBadGateway, nil)
+	res(w, http.StatusBadRequest, nil)
 }
 
 func (h *BaseHandler) ResponseNotFound(w http.ResponseWriter) {
@@ -221,7 +224,6 @@ func (h *BaseHandler) ClaimGetBusinessId(r *http.Request) uint {
 	if claim.BusinessId == nil {
 		return 0
 	}
-	log.Default().Println("business id : ", claim.BusinessId)
 	return *claim.BusinessId
 }
 
@@ -230,7 +232,6 @@ func (h *BaseHandler) ClaimGetUserId(r *http.Request) uint {
 	if err != nil {
 		return 0
 	}
-	log.Default().Println("user id : ", claim.UserId)
 	return claim.UserId
 }
 
@@ -270,6 +271,14 @@ func (h *BaseHandler) GetOfferId(r *http.Request) (uint, error) {
 
 func (h *BaseHandler) GetSpotlightId(r *http.Request) (uint, error) {
 	return extractKeyFromPath(r, "spotlightId")
+}
+
+func (h *BaseHandler) GetInvProductId(r *http.Request) (uint, error) {
+	return extractKeyFromPath(r, "invProductId")
+}
+
+func (h *BaseHandler) GetClaimId(r *http.Request) (uint, error) {
+	return extractKeyFromPath(r, "claimId")
 }
 
 func (h *BaseHandler) QuerySession(r *http.Request) string {

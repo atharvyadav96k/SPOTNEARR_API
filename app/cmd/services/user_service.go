@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
@@ -66,13 +67,13 @@ func (u *UserService) Login(email string, password string) response.Res {
 
 	cachedToken, err := u.Cache().GetRefreshTokenSession().GetRefreshTokenSession(user.ID)
 	if err == nil {
-		if _, err := auth.ValidateToken(cachedToken, "dummy", auth.TypeRefreshToken); err == nil {
+		if _, err := auth.ValidateToken(cachedToken, config.C.JWTSecret, auth.TypeRefreshToken); err == nil {
 			refreshToken = cachedToken
 		}
 	}
 
 	if refreshToken == "" {
-		refreshToken, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, "dummy", userRole)
+		refreshToken, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
 		if err != nil {
 			log.Default().Println("Failed to generate refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
@@ -85,7 +86,7 @@ func (u *UserService) Login(email string, password string) response.Res {
 		}
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, "dummy", userRole)
+	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token:", err)
 		return u.ResponseInternalServer("Failed to login")
@@ -104,7 +105,7 @@ func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) respo
 		return u.ResponseUnauthorized()
 	}
 
-	accessToken, err := auth.GenerateAccessToken(claims.UserId, claims.BusinessId, "dummy", claims.UserRole)
+	accessToken, err := auth.GenerateAccessToken(claims.UserId, claims.BusinessId, config.C.JWTSecret, claims.UserRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token")
 		return u.ResponseUnauthorized()

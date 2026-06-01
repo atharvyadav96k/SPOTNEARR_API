@@ -21,10 +21,14 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 	bizID := p.ClaimGetBusinessId(r)
 	name := p.Name(r)
 	if name == "" {
-		p.ResponseBadRequestWithMessage(w, "Product price is required")
+		p.ResponseBadRequestWithMessage(w, "Product name is required")
 		return
 	}
 	price := p.Price(r)
+	if price == nil {
+		p.ResponseBadRequestWithMessage(w, "Product price is required")
+		return
+	}
 	if *price < 1 {
 		p.ResponseBadRequestWithMessage(w, "Price should not be 0")
 		return
@@ -43,6 +47,10 @@ func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	name := p.Name(r)
 	price := p.Price(r)
+	if price == nil {
+		p.ResponseBadRequestWithMessage(w, "Product price is required")
+		return
+	}
 	product := models.NewProduct(name, *price)
 	product.ID = productId
 	res := p.GetProductService().UpdateProduct(bizID, product)

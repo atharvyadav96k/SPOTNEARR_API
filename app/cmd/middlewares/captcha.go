@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
+
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 )
 
 type turnstileResponse struct {
@@ -22,12 +23,12 @@ func CaptchaValidation(next http.Handler) http.Handler {
 			return
 		}
 		formData := url.Values{}
-		formData.Set("secret", os.Getenv("CAPTCHA_SECRET_KEY"))
+		formData.Set("secret", config.C.CaptchaSecretKey)
 		formData.Set("response", captchaToken)
 
 		client := &http.Client{Timeout: 10 * time.Second}
 
-		resp, err := client.PostForm(os.Getenv("CAPTCHA_URL"), formData)
+		resp, err := client.PostForm(config.C.CaptchaURL, formData)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`{"message": "Internal verification system error"}`))

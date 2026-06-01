@@ -1,11 +1,15 @@
 package applayer
 
 import (
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/atharvyadav96k/SPOTNEARR_API/handlers"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 )
 
 func Init() application {
+	if err := config.Load(); err != nil {
+		panic(err)
+	}
 	a := application{}
 	if err := a.InitCache(); err != nil {
 		panic(err)
@@ -23,7 +27,7 @@ func Init() application {
 	a.userHandler = handlers.NewUserHandler(services)
 	a.inventoryHandler = handlers.NewInventoryHandler(services)
 	a.productHandler = handlers.NewProductHandler(services)
-	a.claimHandler = handlers.NewClaimHandler()
+	a.claimHandler = handlers.NewClaimHandler(services)
 	a.spotlightHandler = handlers.NewSpotlightHandler()
 	a.offerHandler = handlers.NewOfferHandler()
 	a.reviewHandler = handlers.NewReviewHandler()
