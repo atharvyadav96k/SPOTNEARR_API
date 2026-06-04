@@ -24,6 +24,7 @@ variable "captcha_url"     {}
 variable "captcha_secret_key" {}
 variable "jwt_secret"      {}
 variable "cache_password"  { default = "" }
+variable "environment"    { default = "prod" }
 
 provider "google" {
   project = var.project_id
@@ -66,7 +67,7 @@ resource "docker_registry_image" "app" {
 }
 
 resource "google_cloud_run_v2_service" "app" {
-  name     = "app"
+  name     = "app-${var.environment}"
   location = var.region
   project  = var.project_id
 
