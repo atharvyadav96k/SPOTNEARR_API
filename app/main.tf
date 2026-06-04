@@ -110,6 +110,11 @@ resource "google_cloud_run_v2_service" "app" {
         value = var.cache_password
       }
 
+      env {
+        name  = "APP_ENV"
+        value = var.environment
+      }
+
       resources {
         limits = {
           cpu    = "1"
