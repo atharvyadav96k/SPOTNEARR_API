@@ -20,11 +20,16 @@ func (a *application) NewMux() *mux.Router {
 	a.claimRouter(apiV1)
 	a.offerRouter(apiV1)
 	a.reviewRouter(apiV1)
+	a.searchRouter(apiV1)
 	return router
 }
 
 func (a *application) healthRouter(router *mux.Router) {
 	router.HandleFunc("/health", a.healthHandler.HealthOK).Methods(http.MethodGet)
+}
+
+func (a *application) searchRouter(router *mux.Router) {
+	router.HandleFunc("/search", a.searchHandler.Search).Methods(http.MethodGet)
 }
 
 func (a *application) authRouter(router *mux.Router) {
@@ -170,9 +175,7 @@ func (a *application) productRouter(router *mux.Router) {
 	protectedAuth.Use(middleware.BusinessOnly)
 
 	protectedAuth.Handle("/",
-		strictRateLimit(
-			http.HandlerFunc(a.productHandler.ProductAdd),
-		),
+		http.HandlerFunc(a.productHandler.ProductAdd),
 	).Methods(http.MethodPost)
 
 	protectedAuth.Handle("/{productId}",

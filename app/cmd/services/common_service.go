@@ -11,6 +11,7 @@ type Services struct {
 	InventoryService *InventoryService
 	ProductService   *ProductService
 	ClaimService     *ClaimService
+	SearchService    *SearchService
 }
 
 func Init(db *gorm.DB, cache *cache.Cache) *Services {
@@ -21,5 +22,6 @@ func Init(db *gorm.DB, cache *cache.Cache) *Services {
 		InventoryService: NewInventoryService(db, cache),
 		ProductService:   NewProductService(db, cache),
 		ClaimService:     NewClaimService(base),
+		SearchService:    NewSearchService(db, cache),
 	}
 }

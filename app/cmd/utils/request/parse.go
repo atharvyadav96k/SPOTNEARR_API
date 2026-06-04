@@ -19,6 +19,23 @@ type Body struct {
 	value any
 }
 
+type ValueUnit struct {
+	Value float64 `json:"value"`
+	Unit  string  `json:"unit"`
+}
+
+func (b Body) ToMap() map[string]any {
+	if b.value == nil {
+		return nil
+	}
+
+	if result, ok := b.value.(map[string]any); ok {
+		return result
+	}
+
+	return nil
+}
+
 func (b Body) ToString() string {
 	if b.value == nil {
 		return ""
@@ -27,6 +44,18 @@ func (b Body) ToString() string {
 		return str
 	}
 	return strings.TrimSpace(fmt.Sprintf("%v", b.value))
+}
+
+func (b Body) ToValueUnit() *ValueUnit {
+	data := b.ToMap()
+	if data == nil {
+		return nil
+	}
+
+	return &ValueUnit{
+		Value: Body{value: data["value"]}.ToFloat64(),
+		Unit:  Body{value: data["unit"]}.ToString(),
+	}
 }
 
 func (b Body) ToInt() int {

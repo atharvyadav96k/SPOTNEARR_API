@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/factories/token"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 )
@@ -26,14 +28,18 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	price := p.Price(r)
 	if price == nil {
-		p.ResponseBadRequestWithMessage(w, "Product price is required")
+		p.ResponseBadRequestWithMessage(w, "Price is required")
 		return
 	}
-	if *price < 1 {
-		p.ResponseBadRequestWithMessage(w, "Price should not be 0")
+	quantity := p.Quantity(r)
+	if quantity == nil {
+		p.ResponseBadRequestWithMessage(w, "Quantity is required")
 		return
 	}
-	product := models.NewProduct(name, *price)
+	desc := p.Desc(r)
+	log.Default().Println(desc)
+	searchToken := token.MergeTokens(name, desc)
+	product := models.NewProduct(name, *price, desc, *quantity, searchToken)
 	res := p.GetProductService().AddNewProduct(bizID, product)
 	p.Response(w, res)
 }
@@ -48,10 +54,17 @@ func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
 	name := p.Name(r)
 	price := p.Price(r)
 	if price == nil {
-		p.ResponseBadRequestWithMessage(w, "Product price is required")
+		p.ResponseBadRequestWithMessage(w, "Price is required")
 		return
 	}
-	product := models.NewProduct(name, *price)
+	desc := p.Desc(r)
+	quantity := p.Quantity(r)
+	if quantity == nil {
+		p.ResponseBadRequestWithMessage(w, "Quantity is required")
+		return
+	}
+	searchToken := token.MergeTokens(name, desc)
+	product := models.NewProduct(name, *price, desc, *quantity, searchToken)
 	product.ID = productId
 	res := p.GetProductService().UpdateProduct(bizID, product)
 	p.Response(w, res)

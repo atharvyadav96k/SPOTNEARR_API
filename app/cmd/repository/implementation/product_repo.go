@@ -3,6 +3,7 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"gorm.io/gorm"
@@ -30,6 +31,18 @@ func (p *ProductRepository) UpdateProduct(ctx context.Context, product models.Pr
 
 	if product.Price > 0 {
 		updates["price"] = product.Price
+	}
+
+	if product.PriceUnit != "" {
+		updates["price_unit"] = product.PriceUnit
+	}
+
+	if product.Quantity != nil {
+		updates["quantity"] = product.Quantity
+	}
+
+	if product.QuantityUnit != nil {
+		updates["quantity_unit"] = product.QuantityUnit
 	}
 
 	if product.Desc != "" {
@@ -112,4 +125,28 @@ func (p *ProductRepository) DeleteProduct(ctx context.Context, productID uint, b
 	}
 
 	return nil
+}
+
+func (p *ProductRepository) SearchProducts(ctx context.Context, tokens []string) ([]models.Product, error) {
+	if len(tokens) == 0 {
+		return []models.Product{}, nil
+	}
+
+	// Build a PostgreSQL text-array literal: {token1,token2,...}
+	// Tokens are safe (lowercase alphanumeric only) so embedding directly is fine.
+	tokenArray := "{" + strings.Join(tokens, ",") + "}"
+
+	var products []models.Product
+	err := p.db.WithContext(ctx).Raw(`
+		SELECT p.*
+		FROM products p,
+		     jsonb_array_elements_text(p.search_tokens::jsonb) AS elem
+		WHERE p.deleted_at IS NULL
+		  AND elem = ANY(?::text[])
+		GROUP BY p.id
+		ORDER BY COUNT(DISTINCT elem) DESC
+		LIMIT 50
+	`, tokenArray).Scan(&products).Error
+
+	return products, err
 }

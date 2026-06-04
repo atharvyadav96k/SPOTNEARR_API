@@ -46,6 +46,10 @@ func (b *BaseHandler) GetClaimService() *services.ClaimService {
 	return b.services.ClaimService
 }
 
+func (b *BaseHandler) GetSearchService() *services.SearchService {
+	return b.services.SearchService
+}
+
 func (b *BaseHandler) Email(r *http.Request) (string, error) {
 	val := request.GetVal(r, "email")
 	if val == nil {
@@ -109,6 +113,14 @@ func (b *BaseHandler) Desc(r *http.Request) string {
 	return val.ToString()
 }
 
+func (b *BaseHandler) Quantity(r *http.Request) *request.ValueUnit {
+	val := request.GetVal(r, "quantity")
+	if val == nil {
+		return nil
+	}
+	return val.ToValueUnit()
+}
+
 func (b *BaseHandler) GeoHash(r *http.Request) string {
 	val := request.GetVal(r, "geohash")
 	if val == nil {
@@ -133,13 +145,12 @@ func (b *BaseHandler) Long(r *http.Request) *request.Body {
 	return val
 }
 
-func (b *BaseHandler) Price(r *http.Request) *float64 {
+func (b *BaseHandler) Price(r *http.Request) *request.ValueUnit {
 	val := request.GetVal(r, "price")
 	if val == nil {
 		return nil
 	}
-	price := val.ToFloat64()
-	return &price
+	return val.ToValueUnit()
 }
 
 func (b *BaseHandler) ProductID(r *http.Request) uint {
