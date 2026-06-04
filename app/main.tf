@@ -23,8 +23,9 @@ variable "cache_url"       {}
 variable "captcha_url"     {}
 variable "captcha_secret_key" {}
 variable "jwt_secret"      {}
-variable "cache_password"  { default = "" }
-variable "environment"    { default = "prod" }
+variable "cache_password"   { default = "" }
+variable "environment"     { default = "prod" }
+variable "artifact_repo"   {}
 
 provider "google" {
   project = var.project_id
@@ -44,7 +45,7 @@ provider "docker" {
 data "google_artifact_registry_repository" "app" {
   project       = var.project_id
   location      = var.region
-  repository_id = "gcf-artifacts"
+  repository_id = var.artifact_repo
 }
 
 resource "docker_image" "app" {

@@ -54,7 +54,8 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
     env:
-      IMAGE_NAME: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/app
+      ARTIFACT_REPO: ${{ inputs.environment == 'dev' && 'dev' || 'app' }}
+      IMAGE_NAME: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.environment == 'dev' && 'dev' || 'app' }}/app
       IMAGE_TAG: ${{ github.sha }}
 
     steps:
@@ -92,6 +93,7 @@ jobs:
           TF_VAR_service_account:    ${{ secrets.GCP_SA_EMAIL }}
           TF_VAR_image:              ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           TF_VAR_environment:        ${{ inputs.environment }}
+          TF_VAR_artifact_repo:      ${{ env.ARTIFACT_REPO }}
           TF_VAR_database_url:       ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_cache_url:          ${{ secrets.CACHE_URL }}
           TF_VAR_captcha_secret_key: ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
@@ -108,6 +110,7 @@ jobs:
           TF_VAR_service_account:    ${{ secrets.GCP_SA_EMAIL }}
           TF_VAR_image:              ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           TF_VAR_environment:        ${{ inputs.environment }}
+          TF_VAR_artifact_repo:      ${{ env.ARTIFACT_REPO }}
           TF_VAR_database_url:       ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_cache_url:          ${{ secrets.CACHE_URL }}
           TF_VAR_captcha_secret_key: ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
