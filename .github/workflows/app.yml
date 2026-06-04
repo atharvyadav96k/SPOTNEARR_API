@@ -54,26 +54,11 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
     env:
+      IMAGE_NAME: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/${{ inputs.environment == 'dev' && 'dev' || 'app' }}
       IMAGE_TAG: ${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set environment config
-        run: |
-          if [[ "${{ inputs.environment }}" == "dev" ]]; then
-            echo "ARTIFACT_REPO=dev"                                                                                                              >> $GITHUB_ENV
-            echo "IMAGE_NAME=${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dev/app"                                     >> $GITHUB_ENV
-            echo "ENV_DATABASE_URL=${{ secrets.DEV_DATABASE_URL }}"                                                                              >> $GITHUB_ENV
-            echo "ENV_JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}"                                                                                  >> $GITHUB_ENV
-            echo "ENV_CAPTCHA_SECRET_KEY=${{ secrets.DEV_CAPTCHA_SECRET_KEY }}"                                                                  >> $GITHUB_ENV
-          else
-            echo "ARTIFACT_REPO=app"                                                                                                              >> $GITHUB_ENV
-            echo "IMAGE_NAME=${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/app/app"                                     >> $GITHUB_ENV
-            echo "ENV_DATABASE_URL=${{ secrets.DATABASE_URL }}"                                                                                   >> $GITHUB_ENV
-            echo "ENV_JWT_SECRET=${{ secrets.JWT_SECRET }}"                                                                                       >> $GITHUB_ENV
-            echo "ENV_CAPTCHA_SECRET_KEY=${{ secrets.PROD_CAPTCHA_SECRET_KEY }}"                                                                  >> $GITHUB_ENV
-          fi
 
       - name: Authenticate to GCP (OIDC)
         uses: google-github-actions/auth@v2
@@ -107,12 +92,11 @@ jobs:
           TF_VAR_service_account:    ${{ secrets.GCP_SA_EMAIL }}
           TF_VAR_image:              ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           TF_VAR_environment:        ${{ inputs.environment }}
-          TF_VAR_artifact_repo:      ${{ env.ARTIFACT_REPO }}
-          TF_VAR_database_url:       ${{ env.ENV_DATABASE_URL }}
+          TF_VAR_database_url:       ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_cache_url:          ${{ secrets.CACHE_URL }}
-          TF_VAR_captcha_secret_key: ${{ env.ENV_CAPTCHA_SECRET_KEY }}
+          TF_VAR_captcha_secret_key: ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
           TF_VAR_captcha_url:        ${{ inputs.captcha_url }}
-          TF_VAR_jwt_secret:         ${{ env.ENV_JWT_SECRET }}
+          TF_VAR_jwt_secret:         ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
           TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
 
       - name: Terraform Apply
@@ -124,10 +108,9 @@ jobs:
           TF_VAR_service_account:    ${{ secrets.GCP_SA_EMAIL }}
           TF_VAR_image:              ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           TF_VAR_environment:        ${{ inputs.environment }}
-          TF_VAR_artifact_repo:      ${{ env.ARTIFACT_REPO }}
-          TF_VAR_database_url:       ${{ env.ENV_DATABASE_URL }}
+          TF_VAR_database_url:       ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_cache_url:          ${{ secrets.CACHE_URL }}
-          TF_VAR_captcha_secret_key: ${{ env.ENV_CAPTCHA_SECRET_KEY }}
+          TF_VAR_captcha_secret_key: ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
           TF_VAR_captcha_url:        ${{ inputs.captcha_url }}
-          TF_VAR_jwt_secret:         ${{ env.ENV_JWT_SECRET }}
+          TF_VAR_jwt_secret:         ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
           TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
