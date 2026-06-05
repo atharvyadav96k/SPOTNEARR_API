@@ -38,13 +38,12 @@ func (a *application) categoryRouter(router *mux.Router) {
 	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
 
 	cat := router.PathPrefix("/categories").Subrouter()
-
-	cat.Handle("", normalRateLimit(http.HandlerFunc(a.categoryHandler.CategoryList))).Methods(http.MethodGet)
+	cat.Use(middleware.Auth)
+	cat.Handle("/", normalRateLimit(http.HandlerFunc(a.categoryHandler.CategoryList))).Methods(http.MethodGet)
 
 	bizOnly := cat.PathPrefix("").Subrouter()
-	bizOnly.Use(middleware.Auth)
 	bizOnly.Use(middleware.BusinessOnly)
-	bizOnly.Handle("", strictRateLimit(http.HandlerFunc(a.categoryHandler.CategoryAdd))).Methods(http.MethodPost)
+	bizOnly.Handle("/", strictRateLimit(http.HandlerFunc(a.categoryHandler.CategoryAdd))).Methods(http.MethodPost)
 }
 
 func (a *application) authRouter(router *mux.Router) {

@@ -89,10 +89,12 @@ func scoreProduct(
 		}
 
 		// Factor 4 — Phrase Order
+		// Each consecutive ordered pair earns scorePhrasePartial points;
+		// a full exact phrase earns scorePhraseExact (always > any partial sum).
 		if isExactPhrase(nameTokens, queryTokens) {
 			score += scorePhraseExact
-		} else if countConsecutivePairs(nameTokens, queryTokens) > 0 {
-			score += scorePhrasePartial
+		} else if pairs := countConsecutivePairs(nameTokens, queryTokens); pairs > 0 {
+			score += pairs * scorePhrasePartial
 		}
 	}
 

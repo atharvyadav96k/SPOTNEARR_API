@@ -132,6 +132,7 @@ func (i *InvProductRepository) searchNoGeo(ctx context.Context, tokenArray strin
 			WHERE p.deleted_at IS NULL
 			  AND elem = ANY(?::text[])
 			GROUP BY p.id
+			ORDER BY COUNT(DISTINCT elem) DESC
 			LIMIT 50
 		)
 		SELECT p.*,
@@ -178,6 +179,7 @@ func (i *InvProductRepository) searchWithGeo(ctx context.Context, tokenArray str
 			WHERE p.deleted_at IS NULL
 			  AND elem = ANY(?::text[])
 			GROUP BY p.id
+			ORDER BY COUNT(DISTINCT elem) DESC
 			LIMIT 50
 		)
 		SELECT p.*,
