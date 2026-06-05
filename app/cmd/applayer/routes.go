@@ -10,6 +10,7 @@ import (
 
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
+	router.Use(middleware.CORS)
 	apiV1 := router.PathPrefix("/api/v1").Subrouter()
 	a.healthRouter(apiV1)
 	a.authRouter(apiV1)
