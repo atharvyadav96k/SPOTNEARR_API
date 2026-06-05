@@ -175,7 +175,9 @@ func (a *application) productRouter(router *mux.Router) {
 	protectedAuth.Use(middleware.BusinessOnly)
 
 	protectedAuth.Handle("/",
-		http.HandlerFunc(a.productHandler.ProductAdd),
+		strictRateLimit(
+			http.HandlerFunc(a.productHandler.ProductAdd),
+		),
 	).Methods(http.MethodPost)
 
 	protectedAuth.Handle("/{productId}",
