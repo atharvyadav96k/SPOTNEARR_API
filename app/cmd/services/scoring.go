@@ -31,7 +31,7 @@ const (
 	// A store's first product is always promoted. Each subsequent product from the
 	// same store is only promoted if it scores above diversityMinRatio × bestScore
 	// and the store hasn't yet filled its per-store cap.
-	diversityMaxPerStore = 2    // max products per store in the promoted window
+	diversityMaxPerStore = 5    // max products per store in the promoted window
 	diversityMinRatio    = 0.60 // n-th product (n>1) must reach this fraction of top score
 )
 

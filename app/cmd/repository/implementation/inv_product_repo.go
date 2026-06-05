@@ -3,6 +3,7 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"strings"
 
@@ -20,6 +21,7 @@ func NewInvProductRepository(db *gorm.DB) *InvProductRepository {
 }
 
 func (i *InvProductRepository) AddProduct(ctx context.Context, invProduct models.InventoryProduct, bizID uint) error {
+	log.Default().Println("db start")
 	var count int64
 	err := i.db.WithContext(ctx).
 		Model(&models.Store{}).
@@ -37,7 +39,7 @@ func (i *InvProductRepository) AddProduct(ctx context.Context, invProduct models
 	if count == 0 {
 		return gorm.ErrRecordNotFound
 	}
-
+	log.Default().Println("db end")
 	return i.db.WithContext(ctx).
 		Create(&invProduct).Error
 }
@@ -149,7 +151,7 @@ func (i *InvProductRepository) searchNoGeo(ctx context.Context, tokens []string,
 			  AND `+tokenFilter+`
 			GROUP BY p.id, mc.cnt
 			ORDER BY mc.cnt DESC
-			LIMIT 500
+			LIMIT 200
 		)
 		SELECT p.*,
 		       loc.id       AS store_id,
@@ -201,7 +203,7 @@ func (i *InvProductRepository) searchWithGeo(ctx context.Context, tokens []strin
 			  AND `+tokenFilter+`
 			GROUP BY p.id, mc.cnt
 			ORDER BY mc.cnt DESC
-			LIMIT 500
+			LIMIT 200
 		)
 		SELECT p.*,
 		       loc.id       AS store_id,

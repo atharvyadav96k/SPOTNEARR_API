@@ -25,14 +25,12 @@ func (s *SearchService) Search(query string, lat, long *float64, rangeKm float64
 	if len(parsed.Tokens) == 0 {
 		return s.ResponseBadRequest("no valid search terms")
 	}
-	log.Default().Println(parsed)
 	ctx := context.Background()
 
 	products, err := s.RepoInvProduct().SearchProduct(ctx, parsed.Tokens, lat, long, rangeKm)
 	if err != nil {
 		return s.ResponseInternalServer("search failed")
 	}
-	log.Default().Println(products)
 	categoryFreqs, _ := s.RepoProductToken().GetTokenCategoryFreqs(ctx, parsed.Tokens)
 
 	productIDs := make([]uint, len(products))
@@ -45,5 +43,6 @@ func (s *SearchService) Search(query string, lat, long *float64, rangeKm float64
 	if len(ranked) > 100 {
 		ranked = ranked[:100]
 	}
+	log.Default().Println("Ranking ended")
 	return s.ResponseOK("search results", ranked)
 }
