@@ -15,14 +15,49 @@ const (
 	scoreCategoryMax   = 300
 	scorePhraseExact   = 200
 	scorePhrasePartial = 50
-	scoreDistanceMax   = 100
+
+	// Distance bucket boundaries in km.
+	// All products within the same bucket are treated as equally proximate;
+	// ranking within a bucket is determined purely by semantic score.
+	bucketKm0 = 0.4 // tier 0: 0–400 m
+	bucketKm1 = 0.8 // tier 1: 400–800 m
+	bucketKm2 = 2.0 // tier 2: 800 m–2 km
+	bucketKm3 = 5.0 // tier 3: 2–5 km
+	// tier 4: 5 km+
+
+	noGeoTier = math.MaxInt32 // assigned when no coordinate data is available
+
+	// Store diversity — prevent a single merchant from monopolising top results.
+	// A store's first product is always promoted. Each subsequent product from the
+	// same store is only promoted if it scores above diversityMinRatio × bestScore
+	// and the store hasn't yet filled its per-store cap.
+	diversityMaxPerStore = 2    // max products per store in the promoted window
+	diversityMinRatio    = 0.60 // n-th product (n>1) must reach this fraction of top score
 )
+
+// distanceTierOf maps a Haversine distance (km) to a discrete tier index.
+// Lower tier = closer bucket = higher priority in sort.
+func distanceTierOf(km float64) int {
+	switch {
+	case km < bucketKm0:
+		return 0
+	case km < bucketKm1:
+		return 1
+	case km < bucketKm2:
+		return 2
+	case km < bucketKm3:
+		return 3
+	default:
+		return 4
+	}
+}
 
 type rankedProduct struct {
 	product    models.ProductResult
 	score      int
 	coverage   float64
 	distanceKm float64
+	tier       int
 }
 
 func rankProducts(
@@ -39,14 +74,19 @@ func rankProducts(
 
 	sort.SliceStable(ranked, func(i, j int) bool {
 		a, b := ranked[i], ranked[j]
+		if a.tier != b.tier {
+			return a.tier < b.tier // closer bucket always wins
+		}
 		if a.score != b.score {
-			return a.score > b.score
+			return a.score > b.score // better semantic match wins within same bucket
 		}
 		if a.coverage != b.coverage {
 			return a.coverage > b.coverage
 		}
-		return a.distanceKm < b.distanceKm
+		return a.distanceKm < b.distanceKm // exact meters as final tiebreaker
 	})
+
+	ranked = diversifyResults(ranked)
 
 	result := make([]models.ProductResult, len(ranked))
 	for i, r := range ranked {
@@ -54,6 +94,50 @@ func rankProducts(
 		result[i] = r.product
 	}
 	return result
+}
+
+// diversifyResults reorders ranked products so that no single store occupies
+// more than diversityMaxPerStore slots in the promoted window.
+//
+// Walk order (tier → score) is preserved: each store's first product is always
+// promoted regardless of score. A store's subsequent products are promoted only
+// if their score is at least diversityMinRatio × bestScore AND the store has not
+// yet filled its cap. Everything else is deferred and appended afterwards in their
+// original relative order.
+//
+// Fallback: if only one store has relevant products, all its products end up in
+// the promoted window naturally — no diversity penalty is applied.
+func diversifyResults(ranked []rankedProduct) []rankedProduct {
+	if len(ranked) <= 1 {
+		return ranked
+	}
+
+	bestScore := ranked[0].score
+	threshold := int(float64(bestScore) * diversityMinRatio)
+
+	promoted := make([]rankedProduct, 0, len(ranked))
+	deferred := make([]rankedProduct, 0)
+	storeCount := make(map[uint]int)
+
+	for _, r := range ranked {
+		sid := r.product.StoreID
+		count := storeCount[sid]
+		switch {
+		case count == 0:
+			// First product from this store — always include for diversity.
+			promoted = append(promoted, r)
+			storeCount[sid]++
+		case count < diversityMaxPerStore && r.score >= threshold:
+			// Within per-store cap and still relevant — include.
+			promoted = append(promoted, r)
+			storeCount[sid]++
+		default:
+			// Store at cap or product below relevance threshold — defer.
+			deferred = append(deferred, r)
+		}
+	}
+
+	return append(promoted, deferred...)
 }
 
 func scoreProduct(
@@ -120,14 +204,12 @@ func scoreProduct(
 		}
 	}
 
-	// Factor 5 — Distance
+	// Factor 5 — Distance tier (no score contribution; shapes the sort key only)
 	var distKm float64
+	tier := noGeoTier
 	if lat != nil && long != nil && (p.Lat != 0 || p.Long != 0) {
 		distKm = haversineKm(*lat, *long, p.Lat, p.Long)
-		bonus := scoreDistanceMax - int(distKm)
-		if bonus > 0 {
-			score += bonus
-		}
+		tier = distanceTierOf(distKm)
 	}
 
 	return rankedProduct{
@@ -135,6 +217,7 @@ func scoreProduct(
 		score:      score,
 		coverage:   coverage,
 		distanceKm: distKm,
+		tier:       tier,
 	}
 }
 

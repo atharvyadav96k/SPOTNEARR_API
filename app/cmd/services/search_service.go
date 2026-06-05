@@ -41,5 +41,9 @@ func (s *SearchService) Search(query string, lat, long *float64, rangeKm float64
 	}
 	productCategories, _ := s.RepoProduct().GetProductCategoryIDs(ctx, productIDs)
 
-	return s.ResponseOK("search results", rankProducts(products, parsed, categoryFreqs, productCategories, lat, long))
+	ranked := rankProducts(products, parsed, categoryFreqs, productCategories, lat, long)
+	if len(ranked) > 100 {
+		ranked = ranked[:100]
+	}
+	return s.ResponseOK("search results", ranked)
 }
