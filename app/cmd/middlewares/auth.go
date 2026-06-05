@@ -29,7 +29,6 @@ func Auth(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
 			return
 		}
-
 		tokenStr := parts[1]
 		claims, err := auth.ValidateToken(tokenStr, config.C.JWTSecret, auth.TypeAccessToken)
 		if err != nil {

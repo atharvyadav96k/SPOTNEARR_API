@@ -3,6 +3,7 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
@@ -31,8 +32,14 @@ func (p *ProductRepository) AddProduct(ctx context.Context, product models.Produ
 			if err := tx.Model(&product).Association("Categories").Append(categories); err != nil {
 				return err
 			}
+			// Sort tokens so every concurrent transaction acquires row locks
+			// in the same order, preventing circular waits (deadlocks).
+			sortedTokens := make([]string, len(product.SearchTokens))
+			copy(sortedTokens, product.SearchTokens)
+			sort.Strings(sortedTokens)
+
 			for _, cat := range categories {
-				for _, tok := range product.SearchTokens {
+				for _, tok := range sortedTokens {
 					if err := tx.Exec(`
 						INSERT INTO product_tokens (token, category_id, count, updated_at)
 						VALUES (?, ?, 1, NOW())
