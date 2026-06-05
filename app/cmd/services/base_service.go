@@ -20,6 +20,7 @@ type repo struct {
 	claimRepo        repository.IClaimRepository
 	categoryRepo     repository.ICategoryRepository
 	productTokenRepo repository.IProductTokenRepository
+	reviewRepo       repository.IReviewRepository
 }
 
 type base_service struct {
@@ -42,6 +43,7 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 			claimRepo:        implementation.NewClaimRepository(db),
 			categoryRepo:     implementation.NewCategoryRepository(db),
 			productTokenRepo: implementation.NewProductTokenRepository(db),
+			reviewRepo:       implementation.NewReviewRepository(db),
 		},
 	}
 }
@@ -84,6 +86,10 @@ func (b *base_service) RepoCategory() repository.ICategoryRepository {
 
 func (b *base_service) RepoProductToken() repository.IProductTokenRepository {
 	return b.repo.productTokenRepo
+}
+
+func (b *base_service) RepoReview() repository.IReviewRepository {
+	return b.repo.reviewRepo
 }
 
 func res(message string, statusCode int, data interface{}) response.Res {

@@ -54,6 +54,10 @@ func (b *BaseHandler) GetCategoryService() *services.CategoryService {
 	return b.services.CategoryService
 }
 
+func (b *BaseHandler) GetReviewService() *services.ReviewService {
+	return b.services.ReviewService
+}
+
 func (b *BaseHandler) Slug(r *http.Request) string {
 	val := request.GetVal(r, "slug")
 	if val == nil {
