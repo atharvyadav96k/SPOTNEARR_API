@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/atharvyadav96k/SPOTNEARR_API/factories/token"
 	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -19,12 +20,12 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (p *ProductRepository) AddProduct(ctx context.Context, product models.Product, bizID uint) error {
+func (p *ProductRepository) AddProduct(ctx context.Context, product models.Product, bizID uint) (models.Product, error) {
 	product.BusinessID = bizID
 	categories := product.Categories
 	product.Categories = nil
 
-	return p.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := p.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit("Categories.*").Create(&product).Error; err != nil {
 			return err
 		}
@@ -32,11 +33,11 @@ func (p *ProductRepository) AddProduct(ctx context.Context, product models.Produ
 			if err := tx.Model(&product).Association("Categories").Append(categories); err != nil {
 				return err
 			}
-			// Sort tokens so every concurrent transaction acquires row locks
-			// in the same order, preventing circular waits (deadlocks).
-			sortedTokens := make([]string, len(product.SearchTokens))
-			copy(sortedTokens, product.SearchTokens)
-			sort.Strings(sortedTokens)
+			// Index only name tokens — desc tokens are for text search, not frequency.
+			// Sort so concurrent transactions acquire row locks in the same order (no deadlock).
+			nameTokens := token.TokenParser(product.Name)
+			sort.Strings(nameTokens)
+			sortedTokens := nameTokens
 
 			for _, cat := range categories {
 				for _, tok := range sortedTokens {
@@ -53,6 +54,10 @@ func (p *ProductRepository) AddProduct(ctx context.Context, product models.Produ
 		}
 		return nil
 	})
+	if err != nil {
+		return models.Product{}, err
+	}
+	return product, nil
 }
 
 func (p *ProductRepository) UpdateProduct(ctx context.Context, product models.Product, bizID uint) (models.Product, error) {
@@ -164,6 +169,40 @@ func (p *ProductRepository) DeleteProduct(ctx context.Context, productID uint, b
 		}
 		return nil
 	})
+}
+
+func (p *ProductRepository) GetProductCategoryIDs(ctx context.Context, productIDs []uint) (map[uint][]uint, error) {
+	if len(productIDs) == 0 {
+		return map[uint][]uint{}, nil
+	}
+
+	idStrs := make([]string, len(productIDs))
+	for i, id := range productIDs {
+		idStrs[i] = fmt.Sprintf("%d", id)
+	}
+	idArray := "{" + strings.Join(idStrs, ",") + "}"
+
+	type row struct {
+		ProductID  uint
+		CategoryID uint
+	}
+	var rows []row
+
+	err := p.db.WithContext(ctx).Raw(`
+		SELECT product_id, category_id
+		FROM product_categories
+		WHERE product_id = ANY(?::int[])
+	`, idArray).Scan(&rows).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint][]uint, len(productIDs))
+	for _, r := range rows {
+		result[r.ProductID] = append(result[r.ProductID], r.CategoryID)
+	}
+	return result, nil
 }
 
 func (p *ProductRepository) SearchProducts(ctx context.Context, tokens []string) ([]models.Product, error) {

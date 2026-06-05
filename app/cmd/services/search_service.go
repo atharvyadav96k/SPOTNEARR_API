@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"log"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/factories/token"
@@ -24,9 +25,21 @@ func (s *SearchService) Search(query string, lat, long *float64, rangeKm float64
 	if len(parsed.Tokens) == 0 {
 		return s.ResponseBadRequest("no valid search terms")
 	}
-	products, err := s.RepoInvProduct().SearchProduct(context.Background(), parsed.Tokens, lat, long, rangeKm)
+	log.Default().Println(parsed)
+	ctx := context.Background()
+
+	products, err := s.RepoInvProduct().SearchProduct(ctx, parsed.Tokens, lat, long, rangeKm)
 	if err != nil {
 		return s.ResponseInternalServer("search failed")
 	}
-	return s.ResponseOK("search results", rankProducts(products, parsed, lat, long))
+	log.Default().Println(products)
+	categoryFreqs, _ := s.RepoProductToken().GetTokenCategoryFreqs(ctx, parsed.Tokens)
+
+	productIDs := make([]uint, len(products))
+	for i, p := range products {
+		productIDs[i] = p.ID
+	}
+	productCategories, _ := s.RepoProduct().GetProductCategoryIDs(ctx, productIDs)
+
+	return s.ResponseOK("search results", rankProducts(products, parsed, categoryFreqs, productCategories, lat, long))
 }

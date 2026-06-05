@@ -40,13 +40,14 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 		p.ResponseBadRequestWithMessage(w, "at least one category is required")
 		return
 	}
+	storeIDs := p.StoreIDs(r)
 	desc := p.Desc(r)
 	searchToken := token.MergeTokens(name, desc)
 	product := models.NewProduct(name, *price, desc, *quantity, searchToken)
 	for _, id := range categoryIDs {
 		product.Categories = append(product.Categories, models.Category{ID: id})
 	}
-	res := p.GetProductService().AddNewProduct(bizID, product)
+	res := p.GetProductService().AddNewProduct(bizID, product, storeIDs)
 	p.Response(w, res)
 }
 

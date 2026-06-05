@@ -70,6 +70,14 @@ func (b *BaseHandler) CategoryIDs(r *http.Request) []uint {
 	return val.ToUintSlice()
 }
 
+func (b *BaseHandler) StoreIDs(r *http.Request) []uint {
+	val := request.GetVal(r, "storeIds")
+	if val == nil {
+		return nil
+	}
+	return val.ToUintSlice()
+}
+
 func (b *BaseHandler) Email(r *http.Request) (string, error) {
 	val := request.GetVal(r, "email")
 	if val == nil {

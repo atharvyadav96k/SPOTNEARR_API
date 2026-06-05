@@ -31,15 +31,30 @@ func (p ProductService) GetProductByID(bizID uint, productID uint) response.Res 
 	return p.ResponseOK("Product", product)
 }
 
-func (p *ProductService) AddNewProduct(bizID uint, product models.Product) response.Res {
-	err := p.RepoProduct().AddProduct(context.Background(), product, bizID)
+func (p *ProductService) AddNewProduct(bizID uint, product models.Product, storeIDs []uint) response.Res {
+	ctx := context.Background()
+	created, err := p.RepoProduct().AddProduct(ctx, product, bizID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrForeignKeyViolated) {
-			return p.ResponseBadRequest("Business does not exists")
+			return p.ResponseBadRequest("Business does not exist")
 		}
 		return p.ResponseInternalServer("Failed to add product")
 	}
-	return p.ResponseCreated("Product added successfully", nil)
+
+	if len(storeIDs) == 0 {
+		stores, storeErr := p.RepoStore().GetStoreByBusinessId(ctx, bizID)
+		if storeErr == nil && len(stores) > 0 {
+			storeIDs = []uint{stores[0].ID}
+		}
+	}
+
+	available := true
+	for _, storeID := range storeIDs {
+		invProduct := models.NewInvProduct(storeID, created.ID, nil, &available)
+		_ = p.RepoInvProduct().AddProduct(ctx, invProduct, bizID)
+	}
+
+	return p.ResponseCreated("Product added successfully", created)
 }
 
 func (p *ProductService) UpdateProduct(bizID uint, product models.Product) response.Res {
