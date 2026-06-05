@@ -21,7 +21,8 @@ type Product struct {
 	BusinessID uint      `gorm:"index;not null" json:"businessId"`
 	Business   *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
 
-	SearchTokens []string `gorm:"serializer:json" json:"-"`
+	SearchTokens []string   `gorm:"serializer:json" json:"-"`
+	Categories   []Category `gorm:"many2many:product_categories;" json:"categories,omitempty"`
 
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`

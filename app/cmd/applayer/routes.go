@@ -21,6 +21,7 @@ func (a *application) NewMux() *mux.Router {
 	a.offerRouter(apiV1)
 	a.reviewRouter(apiV1)
 	a.searchRouter(apiV1)
+	a.categoryRouter(apiV1)
 	return router
 }
 
@@ -30,6 +31,20 @@ func (a *application) healthRouter(router *mux.Router) {
 
 func (a *application) searchRouter(router *mux.Router) {
 	router.HandleFunc("/search", a.searchHandler.Search).Methods(http.MethodGet)
+}
+
+func (a *application) categoryRouter(router *mux.Router) {
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+
+	cat := router.PathPrefix("/categories").Subrouter()
+
+	cat.Handle("", normalRateLimit(http.HandlerFunc(a.categoryHandler.CategoryList))).Methods(http.MethodGet)
+
+	bizOnly := cat.PathPrefix("").Subrouter()
+	bizOnly.Use(middleware.Auth)
+	bizOnly.Use(middleware.BusinessOnly)
+	bizOnly.Handle("", strictRateLimit(http.HandlerFunc(a.categoryHandler.CategoryAdd))).Methods(http.MethodPost)
 }
 
 func (a *application) authRouter(router *mux.Router) {

@@ -40,6 +40,9 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 	log.Default().Println(desc)
 	searchToken := token.MergeTokens(name, desc)
 	product := models.NewProduct(name, *price, desc, *quantity, searchToken)
+	for _, id := range p.CategoryIDs(r) {
+		product.Categories = append(product.Categories, models.Category{ID: id})
+	}
 	res := p.GetProductService().AddNewProduct(bizID, product)
 	p.Response(w, res)
 }

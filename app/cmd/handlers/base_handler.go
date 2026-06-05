@@ -50,6 +50,26 @@ func (b *BaseHandler) GetSearchService() *services.SearchService {
 	return b.services.SearchService
 }
 
+func (b *BaseHandler) GetCategoryService() *services.CategoryService {
+	return b.services.CategoryService
+}
+
+func (b *BaseHandler) Slug(r *http.Request) string {
+	val := request.GetVal(r, "slug")
+	if val == nil {
+		return ""
+	}
+	return strings.TrimSpace(val.ToString())
+}
+
+func (b *BaseHandler) CategoryIDs(r *http.Request) []uint {
+	val := request.GetVal(r, "categoryIds")
+	if val == nil {
+		return nil
+	}
+	return val.ToUintSlice()
+}
+
 func (b *BaseHandler) Email(r *http.Request) (string, error) {
 	val := request.GetVal(r, "email")
 	if val == nil {

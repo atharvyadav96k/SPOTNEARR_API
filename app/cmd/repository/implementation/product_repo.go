@@ -20,7 +20,32 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 
 func (p *ProductRepository) AddProduct(ctx context.Context, product models.Product, bizID uint) error {
 	product.BusinessID = bizID
-	return p.db.WithContext(ctx).Create(&product).Error
+	categories := product.Categories
+	product.Categories = nil
+
+	return p.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("Categories.*").Create(&product).Error; err != nil {
+			return err
+		}
+		if len(categories) > 0 {
+			if err := tx.Model(&product).Association("Categories").Append(categories); err != nil {
+				return err
+			}
+			for _, cat := range categories {
+				for _, tok := range product.SearchTokens {
+					if err := tx.Exec(`
+						INSERT INTO product_tokens (token, category_id, count, updated_at)
+						VALUES (?, ?, 1, NOW())
+						ON CONFLICT (token, category_id) DO UPDATE
+						SET count = product_tokens.count + 1, updated_at = NOW()
+					`, tok, cat.ID).Error; err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	})
 }
 
 func (p *ProductRepository) UpdateProduct(ctx context.Context, product models.Product, bizID uint) (models.Product, error) {
@@ -107,24 +132,31 @@ func (p *ProductRepository) GetProductById(ctx context.Context, id uint, bizID u
 }
 
 func (p *ProductRepository) DeleteProduct(ctx context.Context, productID uint, bizID uint) error {
+	return p.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var product models.Product
+		if err := tx.Preload("Categories").First(&product, "id = ? AND business_id = ?", productID, bizID).Error; err != nil {
+			return err
+		}
 
-	db := p.db.WithContext(ctx).
-		Where(
-			"id = ? AND business_id = ?",
-			productID,
-			bizID,
-		).
-		Delete(&models.Product{})
+		for _, cat := range product.Categories {
+			for _, tok := range product.SearchTokens {
+				tx.Exec(`
+					UPDATE product_tokens
+					SET count = GREATEST(count - 1, 0), updated_at = NOW()
+					WHERE token = ? AND category_id = ?
+				`, tok, cat.ID)
+			}
+		}
 
-	if db.Error != nil {
-		return db.Error
-	}
-
-	if db.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-
-	return nil
+		db := tx.Where("id = ? AND business_id = ?", productID, bizID).Delete(&models.Product{})
+		if db.Error != nil {
+			return db.Error
+		}
+		if db.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
 }
 
 func (p *ProductRepository) SearchProducts(ctx context.Context, tokens []string) ([]models.Product, error) {
