@@ -64,16 +64,18 @@ func (u *UserService) Login(email string, password string) response.Res {
 	}
 
 	var refreshToken string
+	var refreshExpiry time.Time
 
 	cachedToken, err := u.Cache().GetRefreshTokenSession().GetRefreshTokenSession(user.ID)
 	if err == nil {
-		if _, err := auth.ValidateToken(cachedToken, config.C.JWTSecret, auth.TypeRefreshToken); err == nil {
+		if rtClaims, err := auth.ValidateToken(cachedToken, config.C.JWTSecret, auth.TypeRefreshToken); err == nil {
 			refreshToken = cachedToken
+			refreshExpiry = rtClaims.ExpiresAt.Time
 		}
 	}
 
 	if refreshToken == "" {
-		refreshToken, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
+		refreshToken, refreshExpiry, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
 		if err != nil {
 			log.Default().Println("Failed to generate refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
@@ -86,15 +88,17 @@ func (u *UserService) Login(email string, password string) response.Res {
 		}
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
+	accessToken, accessExpiry, err := auth.GenerateAccessToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token:", err)
 		return u.ResponseInternalServer("Failed to login")
 	}
 
 	return u.ResponseOK("Logged in successfully", auth.TokenResponse{
-		RefreshToken: refreshToken,
-		AccessToken:  accessToken,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessExpiry.Unix(),
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshExpiry.Unix(),
 	})
 }
 
@@ -105,15 +109,17 @@ func (u *UserService) Refresh(claims auth.UserClaims, refreshToken string) respo
 		return u.ResponseUnauthorized()
 	}
 
-	accessToken, err := auth.GenerateAccessToken(claims.UserId, claims.BusinessId, config.C.JWTSecret, claims.UserRole)
+	accessToken, accessExpiry, err := auth.GenerateAccessToken(claims.UserId, claims.BusinessId, config.C.JWTSecret, claims.UserRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token")
 		return u.ResponseUnauthorized()
 	}
 
 	return u.ResponseOK("New access token", auth.TokenResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessExpiry.Unix(),
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: claims.ExpiresAt.Time.Unix(),
 	})
 }
 

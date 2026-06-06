@@ -21,20 +21,20 @@ func claimsGenerator(userID uint, businessId *uint, secret string, userRole mode
 	}
 }
 
-func GenerateAccessToken(userID uint, businessId *uint, secret string, userRole models.UserRole) (string, error) {
-	claims := claimsGenerator(userID, businessId, secret, userRole, TypeAccessToken, jwt.NewNumericDate(
-		time.Now().Add(5*time.Minute),
-	))
+func GenerateAccessToken(userID uint, businessId *uint, secret string, userRole models.UserRole) (string, time.Time, error) {
+	expiry := time.Now().Add(5 * time.Minute)
+	claims := claimsGenerator(userID, businessId, secret, userRole, TypeAccessToken, jwt.NewNumericDate(expiry))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	signed, err := token.SignedString([]byte(secret))
+	return signed, expiry, err
 }
 
-func GenerateRefreshToken(userID uint, businessId *uint, secret string, userRole models.UserRole) (string, error) {
-	claims := claimsGenerator(userID, businessId, secret, userRole, TypeRefreshToken, jwt.NewNumericDate(
-		time.Now().Add(30*24*time.Hour),
-	))
+func GenerateRefreshToken(userID uint, businessId *uint, secret string, userRole models.UserRole) (string, time.Time, error) {
+	expiry := time.Now().Add(30 * 24 * time.Hour)
+	claims := claimsGenerator(userID, businessId, secret, userRole, TypeRefreshToken, jwt.NewNumericDate(expiry))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	signed, err := token.SignedString([]byte(secret))
+	return signed, expiry, err
 }
 
 func ValidateToken(tokenString string, secret string, expectedTokenType string) (*UserClaims, error) {
