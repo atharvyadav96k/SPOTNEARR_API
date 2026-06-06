@@ -11,13 +11,16 @@ import (
 )
 
 type repo struct {
-	userRepo       repository.IUserRepository
-	bizRepo        repository.IBusinessesRepository
-	storeRepo      repository.IStoreRepository
-	accessRepo     repository.IAccessRepository
-	invProductRepo repository.IInventoryProduct
-	productRepo    repository.IProductRepository
-	claimRepo      repository.IClaimRepository
+	userRepo         repository.IUserRepository
+	bizRepo          repository.IBusinessesRepository
+	storeRepo        repository.IStoreRepository
+	accessRepo       repository.IAccessRepository
+	invProductRepo   repository.IInventoryProduct
+	productRepo      repository.IProductRepository
+	claimRepo        repository.IClaimRepository
+	categoryRepo     repository.ICategoryRepository
+	productTokenRepo repository.IProductTokenRepository
+	reviewRepo       repository.IReviewRepository
 }
 
 type base_service struct {
@@ -37,7 +40,10 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 			accessRepo:     implementation.NewAccessRepository(db),
 			invProductRepo: implementation.NewInvProductRepository(db),
 			productRepo:    implementation.NewProductRepository(db),
-			claimRepo:      implementation.NewClaimRepository(db),
+			claimRepo:        implementation.NewClaimRepository(db),
+			categoryRepo:     implementation.NewCategoryRepository(db),
+			productTokenRepo: implementation.NewProductTokenRepository(db),
+			reviewRepo:       implementation.NewReviewRepository(db),
 		},
 	}
 }
@@ -72,6 +78,18 @@ func (b *base_service) RepoProduct() repository.IProductRepository {
 
 func (b *base_service) RepoClaim() repository.IClaimRepository {
 	return b.repo.claimRepo
+}
+
+func (b *base_service) RepoCategory() repository.ICategoryRepository {
+	return b.repo.categoryRepo
+}
+
+func (b *base_service) RepoProductToken() repository.IProductTokenRepository {
+	return b.repo.productTokenRepo
+}
+
+func (b *base_service) RepoReview() repository.IReviewRepository {
+	return b.repo.reviewRepo
 }
 
 func res(message string, statusCode int, data interface{}) response.Res {

@@ -9,78 +9,84 @@ import (
 )
 
 const (
-	bonusDistanceVeryClose = 6
-	bonusDistanceClose     = 5
-	bonusDistanceNear      = 4
-	bonusDistanceModerate  = 3
-	bonusDistanceFar       = 2
-	bonusDistanceVeryFar   = 1
+	scoreExactName     = 1000
+	scoreCompleteName  = 800
+	scoreCoverageMax   = 1000
+	scoreCategoryMax   = 300
+	scorePhraseExact   = 200
+	scorePhrasePartial = 50
+
+	// Distance bucket boundaries in km.
+	// All products within the same bucket are treated as equally proximate;
+	// ranking within a bucket is determined purely by semantic score.
+	bucketKm0 = 0.4 // tier 0: 0–400 m
+	bucketKm1 = 0.8 // tier 1: 400–800 m
+	bucketKm2 = 2.0 // tier 2: 800 m–2 km
+	bucketKm3 = 5.0 // tier 3: 2–5 km
+	// tier 4: 5 km+
+
+	noGeoTier = math.MaxInt32 // assigned when no coordinate data is available
+
+	// Store diversity — prevent a single merchant from monopolising top results.
+	// A store's first product is always promoted. Each subsequent product from the
+	// same store is only promoted if it scores above diversityMinRatio × bestScore
+	// and the store hasn't yet filled its per-store cap.
+	diversityMaxPerStore = 5    // max products per store in the promoted window
+	diversityMinRatio    = 0.60 // n-th product (n>1) must reach this fraction of top score
 )
 
-const (
-	scoreNameToken   = 100
-	scoreUnitToken   = 80
-	scoreFilterToken = 60
-	scoreDescToken   = 10
-
-	bonusCoverage100  = 300
-	bonusCoverage90   = 250
-	bonusCoverage80   = 200
-	bonusCoverage70   = 150
-	bonusCoverage60   = 100
-	bonusCoverage50   = 50
-	bonusExactPhrase  = 500
-	bonusConsecutive  = 50
-	bonusPosZero      = 100
-	bonusPosOne       = 80
-	bonusPosTwo       = 60
-	bonusPosThree     = 40
-	bonusPosOther     = 20
-	bonusCompleteName = 400
-	bonusExactUnit    = 150
-	bonusExactFilter  = 100
-	bonusAvailability = 1000
-)
-
-type rankedProduct struct {
-	product        models.ProductResult
-	score          int
-	coverage       float64
-	nameMatchCount int
-	exactPhrase    bool
-	filterMatches  int
-	distanceKm     float64
+// distanceTierOf maps a Haversine distance (km) to a discrete tier index.
+// Lower tier = closer bucket = higher priority in sort.
+func distanceTierOf(km float64) int {
+	switch {
+	case km < bucketKm0:
+		return 0
+	case km < bucketKm1:
+		return 1
+	case km < bucketKm2:
+		return 2
+	case km < bucketKm3:
+		return 3
+	default:
+		return 4
+	}
 }
 
-func rankProducts(products []models.ProductResult, parsed token.ParseResult, lat, long *float64) []models.ProductResult {
+type rankedProduct struct {
+	product    models.ProductResult
+	score      int
+	coverage   float64
+	distanceKm float64
+	tier       int
+}
+
+func rankProducts(
+	products []models.ProductResult,
+	parsed token.ParseResult,
+	categoryFreqs map[uint]int,
+	productCategories map[uint][]uint,
+	lat, long *float64,
+) []models.ProductResult {
 	ranked := make([]rankedProduct, len(products))
 	for i, p := range products {
-		ranked[i] = scoreProduct(p, parsed, lat, long)
+		ranked[i] = scoreProduct(p, parsed, categoryFreqs, productCategories[p.ID], lat, long)
 	}
 
 	sort.SliceStable(ranked, func(i, j int) bool {
 		a, b := ranked[i], ranked[j]
+		if a.tier != b.tier {
+			return a.tier < b.tier // closer bucket always wins
+		}
 		if a.score != b.score {
-			return a.score > b.score
+			return a.score > b.score // better semantic match wins within same bucket
 		}
 		if a.coverage != b.coverage {
 			return a.coverage > b.coverage
 		}
-		if a.nameMatchCount != b.nameMatchCount {
-			return a.nameMatchCount > b.nameMatchCount
-		}
-		if a.exactPhrase != b.exactPhrase {
-			return a.exactPhrase
-		}
-		if a.filterMatches != b.filterMatches {
-			return a.filterMatches > b.filterMatches
-		}
-		// Closer store wins as final tie-breaker (only meaningful when location provided)
-		if a.distanceKm != b.distanceKm {
-			return a.distanceKm < b.distanceKm
-		}
-		return false
+		return a.distanceKm < b.distanceKm // exact meters as final tiebreaker
 	})
+
+	ranked = diversifyResults(ranked)
 
 	result := make([]models.ProductResult, len(ranked))
 	for i, r := range ranked {
@@ -90,114 +96,131 @@ func rankProducts(products []models.ProductResult, parsed token.ParseResult, lat
 	return result
 }
 
-func scoreProduct(p models.ProductResult, parsed token.ParseResult, lat, long *float64) rankedProduct {
-	score := bonusAvailability
+// diversifyResults reorders ranked products so that no single store occupies
+// more than diversityMaxPerStore slots in the promoted window.
+//
+// Walk order (tier → score) is preserved: each store's first product is always
+// promoted regardless of score. A store's subsequent products are promoted only
+// if their score is at least diversityMinRatio × bestScore AND the store has not
+// yet filled its cap. Everything else is deferred and appended afterwards in their
+// original relative order.
+//
+// Fallback: if only one store has relevant products, all its products end up in
+// the promoted window naturally — no diversity penalty is applied.
+func diversifyResults(ranked []rankedProduct) []rankedProduct {
+	if len(ranked) <= 1 {
+		return ranked
+	}
+
+	bestScore := ranked[0].score
+	threshold := int(float64(bestScore) * diversityMinRatio)
+
+	promoted := make([]rankedProduct, 0, len(ranked))
+	deferred := make([]rankedProduct, 0)
+	storeCount := make(map[uint]int)
+
+	for _, r := range ranked {
+		sid := r.product.StoreID
+		count := storeCount[sid]
+		switch {
+		case count == 0:
+			// First product from this store — always include for diversity.
+			promoted = append(promoted, r)
+			storeCount[sid]++
+		case count < diversityMaxPerStore && r.score >= threshold:
+			// Within per-store cap and still relevant — include.
+			promoted = append(promoted, r)
+			storeCount[sid]++
+		default:
+			// Store at cap or product below relevance threshold — defer.
+			deferred = append(deferred, r)
+		}
+	}
+
+	return append(promoted, deferred...)
+}
+
+func scoreProduct(
+	p models.ProductResult,
+	parsed token.ParseResult,
+	categoryFreqs map[uint]int,
+	productCategoryIDs []uint,
+	lat, long *float64,
+) rankedProduct {
+	score := 0
+	coverage := 0.0
 
 	nameTokens := token.TokenParser(p.Name)
-	descTokens := token.TokenParser(p.Desc)
 	nameSet := toSet(nameTokens)
-	descSet := toSet(descTokens)
 	queryTokens := parsed.Tokens
 
-	totalSignals := len(queryTokens) + len(parsed.Units)
-	if parsed.Price.Found {
-		totalSignals++
-	}
+	if len(queryTokens) > 0 {
+		// Factor 1 — Coverage: fraction of query tokens found in product name × 1000
+		nameHits := 0
+		for _, qt := range queryTokens {
+			if _, ok := nameSet[qt]; ok {
+				nameHits++
+			}
+		}
+		coverage = float64(nameHits) / float64(len(queryTokens))
+		score += int(coverage * float64(scoreCoverageMax))
 
-	matched := 0
-	nameMatchCount := 0
+		// Factor 2 — Exact Match
+		if len(nameTokens) == len(queryTokens) && allInSet(queryTokens, nameSet) {
+			score += scoreExactName
+		} else if allInSet(queryTokens, nameSet) {
+			score += scoreCompleteName
+		}
 
-	// Rule 1 — field weights
-	for _, qt := range queryTokens {
-		if _, ok := nameSet[qt]; ok {
-			score += scoreNameToken
-			matched++
-			nameMatchCount++
-		} else if _, ok := descSet[qt]; ok {
-			score += scoreDescToken
-			matched++
+		// Factor 4 — Phrase Order
+		// Each consecutive ordered pair earns scorePhrasePartial points;
+		// a full exact phrase earns scorePhraseExact (always > any partial sum).
+		if isExactPhrase(nameTokens, queryTokens) {
+			score += scorePhraseExact
+		} else if pairs := countConsecutivePairs(nameTokens, queryTokens); pairs > 0 {
+			score += pairs * scorePhrasePartial
 		}
 	}
 
-	// Rule 1 (unit weight) + Rule 7 (exact unit bonus)
-	for _, u := range parsed.Units {
-		if p.QuantityUnit != nil && token.NormalizeUnit(*p.QuantityUnit) == u.RawUnit {
-			score += scoreUnitToken + bonusExactUnit
-			matched++
+	// Factor 3 — Category Intent
+	if len(categoryFreqs) > 0 && len(productCategoryIDs) > 0 {
+		maxFreq := 0
+		for _, v := range categoryFreqs {
+			if v > maxFreq {
+				maxFreq = v
+			}
+		}
+		if maxFreq > 0 {
+			best := 0
+			for _, catID := range productCategoryIDs {
+				if freq, ok := categoryFreqs[catID]; ok {
+					v := int(float64(freq) / float64(maxFreq) * float64(scoreCategoryMax))
+					if v > best {
+						best = v
+					}
+				}
+			}
+			score += best
 		}
 	}
 
-	// Rule 1 (filter weight) + Rule 8 (exact filter bonus)
-	filterMatches := 0
-	if parsed.Price.Found && priceMatchesFilter(p.Price, parsed.Price) {
-		score += scoreFilterToken + bonusExactFilter
-		matched++
-		filterMatches++
-	}
-
-	// Rule 2 — coverage bonus
-	var coverage float64
-	if totalSignals > 0 {
-		coverage = float64(matched) / float64(totalSignals)
-		score += coverageBonus(coverage)
-	}
-
-	// Rule 3 — exact phrase bonus
-	exactPhrase := isExactPhrase(nameTokens, queryTokens)
-	if exactPhrase {
-		score += bonusExactPhrase
-	}
-
-	// Rule 4 — consecutive token bonus
-	score += countConsecutivePairs(nameTokens, queryTokens) * bonusConsecutive
-
-	// Rule 5 — position bonus (first matched query token in product name)
-	score += firstMatchPositionBonus(nameTokens, toSet(queryTokens))
-
-	// Rule 6 — complete name match bonus
-	if len(queryTokens) > 0 && allInSet(queryTokens, nameSet) {
-		score += bonusCompleteName
-	}
-
-	// Distance bonus — only applied when user location is provided
+	// Factor 5 — Distance tier (no score contribution; shapes the sort key only)
 	var distKm float64
+	tier := noGeoTier
 	if lat != nil && long != nil && (p.Lat != 0 || p.Long != 0) {
 		distKm = haversineKm(*lat, *long, p.Lat, p.Long)
-		score += distanceBonus(distKm)
+		tier = distanceTierOf(distKm)
 	}
 
 	return rankedProduct{
-		product:        p,
-		score:          score,
-		coverage:       coverage,
-		nameMatchCount: nameMatchCount,
-		exactPhrase:    exactPhrase,
-		filterMatches:  filterMatches,
-		distanceKm:     distKm,
+		product:    p,
+		score:      score,
+		coverage:   coverage,
+		distanceKm: distKm,
+		tier:       tier,
 	}
 }
 
-func coverageBonus(c float64) int {
-	switch {
-	case c >= 1.0:
-		return bonusCoverage100
-	case c >= 0.9:
-		return bonusCoverage90
-	case c >= 0.8:
-		return bonusCoverage80
-	case c >= 0.7:
-		return bonusCoverage70
-	case c >= 0.6:
-		return bonusCoverage60
-	case c >= 0.5:
-		return bonusCoverage50
-	default:
-		return 0
-	}
-}
-
-// isExactPhrase returns true if all queryTokens appear consecutively and in
-// order anywhere within nameTokens.
 func isExactPhrase(nameTokens, queryTokens []string) bool {
 	if len(queryTokens) == 0 || len(queryTokens) > len(nameTokens) {
 		return false
@@ -217,8 +240,6 @@ func isExactPhrase(nameTokens, queryTokens []string) bool {
 	return false
 }
 
-// countConsecutivePairs returns the number of adjacent query token pairs that
-// also appear adjacent and in the same order in nameTokens.
 func countConsecutivePairs(nameTokens, queryTokens []string) int {
 	if len(queryTokens) < 2 {
 		return 0
@@ -247,28 +268,6 @@ func countConsecutivePairs(nameTokens, queryTokens []string) int {
 	return count
 }
 
-// firstMatchPositionBonus returns the position bonus based on where the first
-// query token match appears in the product name token list.
-func firstMatchPositionBonus(nameTokens []string, querySet map[string]struct{}) int {
-	for i, t := range nameTokens {
-		if _, ok := querySet[t]; ok {
-			switch i {
-			case 0:
-				return bonusPosZero
-			case 1:
-				return bonusPosOne
-			case 2:
-				return bonusPosTwo
-			case 3:
-				return bonusPosThree
-			default:
-				return bonusPosOther
-			}
-		}
-	}
-	return 0
-}
-
 func allInSet(tokens []string, set map[string]struct{}) bool {
 	for _, t := range tokens {
 		if _, ok := set[t]; !ok {
@@ -276,22 +275,6 @@ func allInSet(tokens []string, set map[string]struct{}) bool {
 		}
 	}
 	return true
-}
-
-func priceMatchesFilter(price float64, pf token.PriceFilter) bool {
-	if pf.Approximate > 0 {
-		return math.Abs(price-float64(pf.Approximate))/float64(pf.Approximate) <= 0.1
-	}
-	if pf.Min > 0 && pf.Max > 0 {
-		return price >= float64(pf.Min) && price <= float64(pf.Max)
-	}
-	if pf.Max > 0 {
-		return price <= float64(pf.Max)
-	}
-	if pf.Min > 0 {
-		return price >= float64(pf.Min)
-	}
-	return false
 }
 
 func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
@@ -302,25 +285,6 @@ func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {
 		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
 			math.Sin(dLon/2)*math.Sin(dLon/2)
 	return R * 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-}
-
-func distanceBonus(km float64) int {
-	switch {
-	case km < 0.5:
-		return bonusDistanceVeryClose
-	case km < 1:
-		return bonusDistanceClose
-	case km < 2:
-		return bonusDistanceNear
-	case km < 5:
-		return bonusDistanceModerate
-	case km < 10:
-		return bonusDistanceFar
-	case km < 20:
-		return bonusDistanceVeryFar
-	default:
-		return 0
-	}
 }
 
 func toSet(tokens []string) map[string]struct{} {

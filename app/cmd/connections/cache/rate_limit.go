@@ -24,7 +24,7 @@ func (r *rate_limit) key(userID any, route string) string {
 }
 
 func (r *rate_limit) Allow(ctx context.Context, userID any, route string, limit int, window time.Duration) (bool, error) {
-	key := r.key(userID, route)
+	key := r.pk(r.key(userID, route))
 
 	count, err := r.getClient().Incr(ctx, key).Result()
 	if err != nil {

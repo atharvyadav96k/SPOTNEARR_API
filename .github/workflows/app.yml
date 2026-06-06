@@ -12,9 +12,10 @@ on:
       captcha_url:
         required: true
         type: string
-      captcha_secret_key:
+      environment:
         required: true
         type: string
+        description: 'Deployment environment: dev or prod'
 
     secrets:
       GCP_PROJECT_ID:
@@ -29,12 +30,20 @@ on:
         required: true
       DATABASE_URL:
         required: true
+      DEV_DATABASE_URL:
+        required: true
       CACHE_URL:
         required: true
       JWT_SECRET:
         required: true
+      DEV_JWT_SECRET:
+        required: true
       CACHE_PASSWORD:
         required: false
+      DEV_CAPTCHA_SECRET_KEY:
+        required: true
+      PROD_CAPTCHA_SECRET_KEY:
+        required: true
 
 jobs:
   deploy:
@@ -72,35 +81,38 @@ jobs:
           terraform init \
             -input=false \
             -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
-            -backend-config="prefix=cloud-run/app"
+            -backend-config="prefix=cloud-run/app-${{ inputs.environment }}"
 
       - name: Terraform Plan
         run: terraform plan -input=false
         env:
-          TF_VAR_project_id:      ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_project_number:  ${{ secrets.GCP_PROJECT_NUMBER }}
-          TF_VAR_region:          ${{ inputs.gcp_region }}
-          TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
-          TF_VAR_image:           ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
-          TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
-          TF_VAR_captcha_secret_key: ${{ inputs.captcha_secret_key }}
-          TF_VAR_captcha_url:     ${{ inputs.captcha_url }}
-          TF_VAR_jwt_secret:      ${{ secrets.JWT_SECRET }}
-          TF_VAR_cache_password:  ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_project_id:         ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:     ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_region:             ${{ inputs.gcp_region }}
+          TF_VAR_service_account:    ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_image:              ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          TF_VAR_environment:        ${{ inputs.environment }}
+          TF_VAR_database_url:       ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
+          TF_VAR_cache_url:          ${{ secrets.CACHE_URL }}
+          TF_VAR_captcha_secret_key: ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
+          TF_VAR_captcha_url:        ${{ inputs.captcha_url }}
+          TF_VAR_jwt_secret:         ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
+          TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_artifact_repo:      ${{ inputs.environment == 'dev' && 'dev' || 'gcf-artifacts' }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
         env:
-          TF_VAR_project_id:      ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_project_number:  ${{ secrets.GCP_PROJECT_NUMBER }}
-          TF_VAR_region:          ${{ inputs.gcp_region }}
-          TF_VAR_service_account: ${{ secrets.GCP_SA_EMAIL }}
-          TF_VAR_image:           ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          TF_VAR_database_url:    ${{ secrets.DATABASE_URL }}
-          TF_VAR_cache_url:       ${{ secrets.CACHE_URL }}
-          TF_VAR_captcha_secret_key: ${{ inputs.captcha_secret_key }}
-          TF_VAR_captcha_url:     ${{ inputs.captcha_url }}
-          TF_VAR_jwt_secret:      ${{ secrets.JWT_SECRET }}
-          TF_VAR_cache_password:  ${{ secrets.CACHE_PASSWORD }}
-          TF_VAR_port:            ${{ secrets.PORT }}
+          TF_VAR_project_id:         ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:     ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_region:             ${{ inputs.gcp_region }}
+          TF_VAR_service_account:    ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_image:              ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          TF_VAR_environment:        ${{ inputs.environment }}
+          TF_VAR_database_url:       ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
+          TF_VAR_cache_url:          ${{ secrets.CACHE_URL }}
+          TF_VAR_captcha_secret_key: ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
+          TF_VAR_captcha_url:        ${{ inputs.captcha_url }}
+          TF_VAR_jwt_secret:         ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
+          TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_artifact_repo:      ${{ inputs.environment == 'dev' && 'dev' || 'gcf-artifacts' }}

@@ -3,6 +3,7 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"strings"
 
@@ -20,6 +21,7 @@ func NewInvProductRepository(db *gorm.DB) *InvProductRepository {
 }
 
 func (i *InvProductRepository) AddProduct(ctx context.Context, invProduct models.InventoryProduct, bizID uint) error {
+	log.Default().Println("db start")
 	var count int64
 	err := i.db.WithContext(ctx).
 		Model(&models.Store{}).
@@ -37,7 +39,7 @@ func (i *InvProductRepository) AddProduct(ctx context.Context, invProduct models
 	if count == 0 {
 		return gorm.ErrRecordNotFound
 	}
-
+	log.Default().Println("db end")
 	return i.db.WithContext(ctx).
 		Create(&invProduct).Error
 }
@@ -106,33 +108,50 @@ func (i *InvProductRepository) UpdateProduct(ctx context.Context, invProduct mod
 	return updatedInvProduct, nil
 }
 
+// buildTokenFilter returns a SQL fragment that matches products whose search_tokens jsonb
+// array contains at least one of the given tokens, using the @> (contains) operator so the
+// GIN (jsonb_path_ops) index is used. Tokens are embedded directly — they are safe because
+// token.TokenParser normalises them to lowercase alphanumeric before this is called.
+func buildTokenFilter(tokens []string) string {
+	parts := make([]string, len(tokens))
+	for i, tok := range tokens {
+		parts[i] = fmt.Sprintf(`p.search_tokens @> '["%s"]'::jsonb`, tok)
+	}
+	return "(" + strings.Join(parts, " OR ") + ")"
+}
+
 func (i *InvProductRepository) SearchProduct(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64) ([]models.ProductResult, error) {
 	if len(tokens) == 0 {
 		return []models.ProductResult{}, nil
 	}
 	tokenArray := "{" + strings.Join(tokens, ",") + "}"
 	if lat == nil || long == nil {
-		return i.searchNoGeo(ctx, tokenArray)
+		return i.searchNoGeo(ctx, tokens, tokenArray)
 	}
-	return i.searchWithGeo(ctx, tokenArray, *lat, *long, rangeKm)
+	return i.searchWithGeo(ctx, tokens, tokenArray, *lat, *long, rangeKm)
 }
 
-func (i *InvProductRepository) searchNoGeo(ctx context.Context, tokenArray string) ([]models.ProductResult, error) {
+func (i *InvProductRepository) searchNoGeo(ctx context.Context, tokens []string, tokenArray string) ([]models.ProductResult, error) {
+	tokenFilter := buildTokenFilter(tokens)
 	var results []models.ProductResult
 	err := i.db.WithContext(ctx).Raw(`
 		WITH matching AS (
-			SELECT p.id
+			SELECT p.id, mc.cnt
 			FROM products p
 			JOIN inventory_products ip ON ip.product_id = p.id
 			                           AND ip.deleted_at IS NULL
 			                           AND ip.available  = true
-			JOIN stores s              ON s.id = ip.store_id
-			                           AND s.deleted_at IS NULL,
-			jsonb_array_elements_text(p.search_tokens::jsonb) AS elem
+			JOIN stores s ON s.id = ip.store_id AND s.deleted_at IS NULL
+			CROSS JOIN LATERAL (
+				SELECT COUNT(DISTINCT v)::int AS cnt
+				FROM jsonb_array_elements_text(p.search_tokens) t(v)
+				WHERE v = ANY(?::text[])
+			) mc
 			WHERE p.deleted_at IS NULL
-			  AND elem = ANY(?::text[])
-			GROUP BY p.id
-			LIMIT 50
+			  AND `+tokenFilter+`
+			GROUP BY p.id, mc.cnt
+			ORDER BY mc.cnt DESC
+			LIMIT 200
 		)
 		SELECT p.*,
 		       loc.id       AS store_id,
@@ -155,30 +174,36 @@ func (i *InvProductRepository) searchNoGeo(ctx context.Context, tokenArray strin
 	return results, err
 }
 
-func (i *InvProductRepository) searchWithGeo(ctx context.Context, tokenArray string, lat, long, rangeKm float64) ([]models.ProductResult, error) {
+func (i *InvProductRepository) searchWithGeo(ctx context.Context, tokens []string, tokenArray string, lat, long, rangeKm float64) ([]models.ProductResult, error) {
 	// Bounding box pre-filter (index-friendly); Haversine in LATERAL for closest-store ordering.
 	latDelta := rangeKm / 111.32
 	lonDelta := rangeKm / (111.32 * math.Cos(lat*math.Pi/180))
 	minLat, maxLat := lat-latDelta, lat+latDelta
 	minLon, maxLon := long-lonDelta, long+lonDelta
 
+	tokenFilter := buildTokenFilter(tokens)
 	var results []models.ProductResult
 	err := i.db.WithContext(ctx).Raw(`
 		WITH matching AS (
-			SELECT p.id
+			SELECT p.id, mc.cnt
 			FROM products p
 			JOIN inventory_products ip ON ip.product_id = p.id
 			                           AND ip.deleted_at IS NULL
 			                           AND ip.available  = true
-			JOIN stores s              ON s.id = ip.store_id
-			                           AND s.deleted_at IS NULL
-			                           AND s.lat  BETWEEN ? AND ?
-			                           AND s.long BETWEEN ? AND ?,
-			jsonb_array_elements_text(p.search_tokens::jsonb) AS elem
+			JOIN stores s ON s.id = ip.store_id
+			              AND s.deleted_at IS NULL
+			              AND s.lat  BETWEEN ? AND ?
+			              AND s.long BETWEEN ? AND ?
+			CROSS JOIN LATERAL (
+				SELECT COUNT(DISTINCT v)::int AS cnt
+				FROM jsonb_array_elements_text(p.search_tokens) t(v)
+				WHERE v = ANY(?::text[])
+			) mc
 			WHERE p.deleted_at IS NULL
-			  AND elem = ANY(?::text[])
-			GROUP BY p.id
-			LIMIT 50
+			  AND `+tokenFilter+`
+			GROUP BY p.id, mc.cnt
+			ORDER BY mc.cnt DESC
+			LIMIT 200
 		)
 		SELECT p.*,
 		       loc.id       AS store_id,
@@ -204,7 +229,8 @@ func (i *InvProductRepository) searchWithGeo(ctx context.Context, tokenArray str
 		) loc ON TRUE
 		WHERE p.id IN (SELECT id FROM matching)
 	`,
-		minLat, maxLat, minLon, maxLon, tokenArray,
+		minLat, maxLat, minLon, maxLon,
+		tokenArray,
 		minLat, maxLat, minLon, maxLon,
 		lat, lat, long,
 	).Scan(&results).Error

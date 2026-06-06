@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -45,6 +46,8 @@ func Load() error {
 		CachePassword:    optional("CACHE_PASSWORD", ""),
 		Port:             optional("PORT", "8080"),
 	}
+
+	log.Default().Println(*C)
 
 	if len(missing) > 0 {
 		return fmt.Errorf("missing required environment variables: %s", strings.Join(missing, ", "))

@@ -15,6 +15,9 @@ func (a *App) InitDb() error {
 	if err := database.AutoMigrate(a.db); err != nil {
 		return err
 	}
+	if err := database.RunIndexes(a.db); err != nil {
+		return err
+	}
 	return nil
 }
 

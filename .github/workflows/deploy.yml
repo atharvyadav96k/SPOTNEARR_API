@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
     paths:
       - 'bridge-service/**'
       - 'app/**'
@@ -13,11 +14,21 @@ jobs:
   detect-domains:
     runs-on: ubuntu-latest
     outputs:
-      bridge: ${{ steps.changes.outputs.bridge }}
-      app:    ${{ steps.changes.outputs.app }}
-      gateway: ${{ steps.changes.outputs.gateway }}
+      bridge:      ${{ steps.changes.outputs.bridge }}
+      app:         ${{ steps.changes.outputs.app }}
+      gateway:     ${{ steps.changes.outputs.gateway }}
+      environment: ${{ steps.env.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Detect environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          fi
 
       - uses: dorny/paths-filter@v3
         id: changes
@@ -49,8 +60,8 @@ jobs:
     with:
       working-directory: app
       gcp_region: ${{ vars.GCP_REGION }}
-      captcha_url: ${{ vars.CAPTCHA_URL }}       
-      captcha_secret_key: ${{ vars.CAPTCHA_SECRET_KEY }}
+      captcha_url: ${{ vars.CAPTCHA_URL }}
+      environment: ${{ needs.detect-domains.outputs.environment }}
     secrets: inherit
     
   gateway:

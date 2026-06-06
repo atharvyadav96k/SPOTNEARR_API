@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/factories/token"
@@ -36,11 +35,19 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 		p.ResponseBadRequestWithMessage(w, "Quantity is required")
 		return
 	}
+	categoryIDs := p.CategoryIDs(r)
+	if len(categoryIDs) == 0 {
+		p.ResponseBadRequestWithMessage(w, "at least one category is required")
+		return
+	}
+	storeIDs := p.StoreIDs(r)
 	desc := p.Desc(r)
-	log.Default().Println(desc)
 	searchToken := token.MergeTokens(name, desc)
 	product := models.NewProduct(name, *price, desc, *quantity, searchToken)
-	res := p.GetProductService().AddNewProduct(bizID, product)
+	for _, id := range categoryIDs {
+		product.Categories = append(product.Categories, models.Category{ID: id})
+	}
+	res := p.GetProductService().AddNewProduct(bizID, product, storeIDs)
 	p.Response(w, res)
 }
 

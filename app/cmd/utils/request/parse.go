@@ -105,6 +105,23 @@ func (b Body) ToFloat64() float64 {
 	}
 }
 
+func (b Body) ToUintSlice() []uint {
+	if b.value == nil {
+		return nil
+	}
+	slice, ok := b.value.([]interface{})
+	if !ok {
+		return nil
+	}
+	result := make([]uint, 0, len(slice))
+	for _, v := range slice {
+		if n := (Body{value: v}).ToInt(); n > 0 {
+			result = append(result, uint(n))
+		}
+	}
+	return result
+}
+
 func GetVal(r *http.Request, key string) *Body {
 	rawMap, err := parseBodyToMap(r)
 	if err != nil {

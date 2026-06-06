@@ -23,7 +23,7 @@ func (r *refresh_token_session) key(key any) string {
 }
 
 func (r *refresh_token_session) NewRefreshToken(key any, token string, expireTime time.Duration) error {
-	cache := r.getClient().Set(context.Background(), r.key(key), token, expireTime)
+	cache := r.getClient().Set(context.Background(), r.pk(r.key(key)), token, expireTime)
 	if cache.Err() != nil {
 		return cache.Err()
 	}
@@ -31,7 +31,7 @@ func (r *refresh_token_session) NewRefreshToken(key any, token string, expireTim
 }
 
 func (r *refresh_token_session) InvalidateRefreshToken(key any) error {
-	cache := r.getClient().Del(context.Background(), r.key(key))
+	cache := r.getClient().Del(context.Background(), r.pk(r.key(key)))
 	if cache.Err() != nil {
 		return cache.Err()
 	}
@@ -39,7 +39,7 @@ func (r *refresh_token_session) InvalidateRefreshToken(key any) error {
 }
 
 func (r *refresh_token_session) GetRefreshTokenSession(key any) (string, error) {
-	cache := r.getClient().Get(context.Background(), r.key(key))
+	cache := r.getClient().Get(context.Background(), r.pk(r.key(key)))
 	if cache.Err() != nil {
 		return "", cache.Err()
 	}
