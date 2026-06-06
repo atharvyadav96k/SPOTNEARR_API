@@ -84,7 +84,9 @@ Content-Type: application/json
   "message": "...",
   "data": {
     "access_token": "<jwt>",
-    "refresh_token": "<jwt>"
+    "access_token_expires_at": 1749259500,
+    "refresh_token": "<jwt>",
+    "refresh_token_expires_at": 1751847900
   }
 }
 ```
@@ -115,7 +117,9 @@ Content-Type: application/json
   "message": "...",
   "data": {
     "access_token": "<jwt>",
-    "refresh_token": "<jwt>"
+    "access_token_expires_at": 1749259500,
+    "refresh_token": "<jwt>",
+    "refresh_token_expires_at": 1751847900
   }
 }
 ```
@@ -200,10 +204,13 @@ Exchange a valid refresh token for a new access/refresh token pair.
   "message": "...",
   "data": {
     "access_token": "<new_jwt>",
-    "refresh_token": "<new_jwt>"
+    "access_token_expires_at": 1749259500,
+    "refresh_token": "<jwt>",
+    "refresh_token_expires_at": 1751847900
   }
 }
 ```
+> Note: `refresh_token` is unchanged (same token passed in). `refresh_token_expires_at` reflects its original expiry from its JWT claims.
 
 ---
 
@@ -974,12 +981,14 @@ All offer endpoints require **JWT**. Business write operations also require **Bu
 ```json
 {
   "access_token": "<jwt>",
-  "refresh_token": "<jwt>"
+  "access_token_expires_at": 1749259500,
+  "refresh_token": "<jwt>",
+  "refresh_token_expires_at": 1751847900
 }
 ```
-- **Access token** — expires in **5 minutes**
-- **Refresh token** — expires in **30 days**
-- Use `POST /auth/refresh` to exchange a refresh token for a new pair
+- **`access_token_expires_at`** — Unix timestamp (seconds) when the access token expires (~5 minutes from issuance)
+- **`refresh_token_expires_at`** — Unix timestamp (seconds) when the refresh token expires (~30 days from issuance)
+- Use `POST /auth/refresh` to exchange a refresh token for a new access token before expiry
 
 ### JWT Claims (decoded)
 ```json
@@ -1121,18 +1130,21 @@ All offer endpoints require **JWT**. Business write operations also require **Bu
 
 ```
 1. Register       POST /auth/users/register  (requires Captcha)
-                  → receives { access_token, refresh_token }
+                  → receives { access_token, access_token_expires_at,
+                               refresh_token, refresh_token_expires_at }
 
 2. Login          POST /auth/users/login      (requires Captcha)
-                  → receives { access_token, refresh_token }
+                  → receives { access_token, access_token_expires_at,
+                               refresh_token, refresh_token_expires_at }
 
 3. API calls      Authorization: Bearer <access_token>
-                  (access token valid for 5 minutes)
+                  (access token valid for 5 min; check access_token_expires_at)
 
 4. Refresh        POST /auth/refresh          (no auth required)
                   body: { access_token, refresh_token }
-                  → receives new { access_token, refresh_token }
-                  (refresh token valid for 30 days)
+                  → receives new { access_token, access_token_expires_at,
+                                   refresh_token, refresh_token_expires_at }
+                  (refresh token valid for 30 days; check refresh_token_expires_at)
 
 5. Register biz   POST /businesses/register   (requires JWT)
                   → creates business linked to user
