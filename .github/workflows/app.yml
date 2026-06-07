@@ -15,7 +15,7 @@ on:
       environment:
         required: true
         type: string
-        description: 'Deployment environment: dev or prod'
+        description: 'Deployment environment: dev, staging, or prod'
 
     secrets:
       GCP_PROJECT_ID:
@@ -52,17 +52,13 @@ on:
 jobs:
   deploy-cloud:
     runs-on: ubuntu-latest
-
     if: ${{ inputs.environment == 'dev' || inputs.environment == 'prod' }}
-
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
-
     env:
       IMAGE_NAME: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/app
       IMAGE_TAG: ${{ github.sha }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -123,7 +119,7 @@ jobs:
           TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
           TF_VAR_artifact_repo:      ${{ inputs.environment == 'dev' && 'dev' || 'gcf-artifacts' }}
 
-# ==================== LOCAL SERVER DEPLOYMENT (STAGING) ====================
+  # ==================== LOCAL SERVER DEPLOYMENT (STAGING) ====================
   deploy-local-staging:
     runs-on: ubuntu-latest
     if: ${{ inputs.environment == 'staging' }}
@@ -131,24 +127,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Connects securely to your private Tailscale network
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
-      # Authenticates and authorizes the host signature
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Clean key scanning for your active machine
           ssh-keyscan -H 100.73.67.35 >> ~/.ssh/known_hosts
 
       - name: Push to Staging Server and Run Systemd Automation
         run: |
-          # Use the exact machine IP from your dashboard screen
           ssh atharv96k@100.73.67.35 \
             "JWT_SECRET='${{ secrets.DEV_JWT_SECRET }}' \
              DATABASE_URL='${{ secrets.DEV_DATABASE_URL }}' \
