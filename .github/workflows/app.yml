@@ -141,13 +141,14 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Clean key scanning for your active machine
           ssh-keyscan -H 100.73.67.35 >> ~/.ssh/known_hosts
 
       - name: Push to Staging Server and Run Systemd Automation
         run: |
-          # Pass GitHub secrets safely into the remote SSH shell environment
+          # Use the exact machine IP from your dashboard screen
           ssh atharv96k@100.73.67.35 \
             "JWT_SECRET='${{ secrets.DEV_JWT_SECRET }}' \
              DATABASE_URL='${{ secrets.DEV_DATABASE_URL }}' \
@@ -157,17 +158,12 @@ jobs:
              CAPTCHA_SECRET_KEY='${{ secrets.DEV_CAPTCHA_SECRET_KEY }}' \
              bash -s" << 'EOF'
             
-            # 1. Move to the main project root
             cd ~/SPOTNEARR_API
-            
-            # 2. Sync the codebase cleanly with your latest staging branch code
             git fetch --all
             git reset --hard origin/staging
             
-            # 3. Copy the script out to the home directory and make sure it's executable
             cp app/start_server.sh /home/atharv96k/start_server.sh
             chmod +x /home/atharv96k/start_server.sh
 
-            # 4. Safely reload and cycle the tracking systemd process
             sudo systemctl restart spotnearr.service
           EOF
