@@ -136,9 +136,8 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # 🎯 FIXED: Forces keyscan to register the ed25519 signature of your staging server
+          # 🎯 FIXED: Forces keyscan to grab the exact ED25519 signature type your server uses
           ssh-keyscan -t ed25519 -H 100.73.67.35 >> ~/.ssh/known_hosts
-
       - name: Push to Staging Server and Run Systemd Automation
         run: |
           ssh atharv96k@100.73.67.35 \
