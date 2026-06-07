@@ -2,21 +2,24 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /workspace
 
-# Copy workspace files first for better layer caching
+# Copy workspace descriptor
 COPY go.work go.work.sum ./
 
-# Copy module manifests so `go work download` can pull external deps
+# Copy go.mod + go.sum for every module listed in go.work.
+# go mod download fails if any module referenced in go.work is missing its go.mod.
 COPY pkg/go.mod pkg/go.sum ./pkg/
+COPY app/cmd/go.mod app/cmd/go.sum ./app/cmd/
 COPY services/vendor/go.mod services/vendor/go.sum ./services/vendor/
+COPY services/search/go.mod services/search/go.sum ./services/search/
 
-# Download all external dependencies declared across the workspace
-RUN go work download
+# Download external deps (pkg is a local workspace replace, not downloaded)
+RUN cd /workspace/pkg && go mod download && \
+    cd /workspace/services/vendor && go mod download
 
-# Copy source
+# Copy only the source needed for this binary
 COPY pkg/ ./pkg/
 COPY services/vendor/ ./services/vendor/
 
-# Build
 WORKDIR /workspace/services/vendor
 RUN go build -o server ./cmd/
 
