@@ -44,10 +44,16 @@ on:
         required: true
       PROD_CAPTCHA_SECRET_KEY:
         required: true
+      TAILSCALE_AUTH_KEY:
+        required: false
+      SSH_PRIVATE_KEY:
+        required: false
 
 jobs:
-  deploy:
+  deploy-cloud:
     runs-on: ubuntu-latest
+
+    if: ${{ inputs.environment == 'dev' || inputs.environment == 'prod' }}
 
     defaults:
       run:
@@ -116,3 +122,52 @@ jobs:
           TF_VAR_jwt_secret:         ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
           TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
           TF_VAR_artifact_repo:      ${{ inputs.environment == 'dev' && 'dev' || 'gcf-artifacts' }}
+
+# ==================== LOCAL SERVER DEPLOYMENT (STAGING) ====================
+deploy-local-staging:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.environment == 'staging' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Connects securely to your private Tailscale network
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+
+      # Authenticates and authorizes the host signature
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 100.73.67.35 >> ~/.ssh/known_hosts
+
+      - name: Push to Staging Server and Run Systemd Automation
+        run: |
+          # Pass GitHub secrets safely into the remote SSH shell environment
+          ssh atharv96k@100.73.67.35 \
+            "JWT_SECRET='${{ secrets.DEV_JWT_SECRET }}' \
+             DATABASE_URL='${{ secrets.DEV_DATABASE_URL }}' \
+             CACHE_URL='${{ secrets.CACHE_URL }}' \
+             CACHE_PASSWORD='${{ secrets.CACHE_PASSWORD }}' \
+             CAPTCHA_URL='${{ inputs.captcha_url }}' \
+             CAPTCHA_SECRET_KEY='${{ secrets.DEV_CAPTCHA_SECRET_KEY }}' \
+             bash -s" << 'EOF'
+            
+            # 1. Move to the main project root
+            cd ~/SPOTNEARR_API
+            
+            # 2. Sync the codebase cleanly with your latest staging branch code
+            git fetch --all
+            git reset --hard origin/staging
+            
+            # 3. Copy the script out to the home directory and make sure it's executable
+            cp app/start_server.sh /home/atharv96k/start_server.sh
+            chmod +x /home/atharv96k/start_server.sh
+
+            # 4. Safely reload and cycle the tracking systemd process
+            sudo systemctl restart spotnearr.service
+          EOF
