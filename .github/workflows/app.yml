@@ -124,7 +124,7 @@ jobs:
           TF_VAR_artifact_repo:      ${{ inputs.environment == 'dev' && 'dev' || 'gcf-artifacts' }}
 
 # ==================== LOCAL SERVER DEPLOYMENT (STAGING) ====================
-deploy-local-staging:
+  deploy-local-staging:
     runs-on: ubuntu-latest
     if: ${{ inputs.environment == 'staging' }}
     steps:
