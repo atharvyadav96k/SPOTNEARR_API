@@ -15,6 +15,7 @@ type Config struct {
 	CaptchaURL       string
 	CaptchaSecretKey string
 	Port             string
+	VendorServiceURL string
 }
 
 var C *Config
@@ -22,13 +23,13 @@ var C *Config
 func Load() error {
 	var missing []string
 
-	required := func(key string) string {
-		v := strings.TrimSpace(os.Getenv(key))
-		if v == "" {
-			missing = append(missing, key)
-		}
-		return v
-	}
+	// required := func(key string) string {
+	// 	v := strings.TrimSpace(os.Getenv(key))
+	// 	if v == "" {
+	// 		missing = append(missing, key)
+	// 	}
+	// 	return v
+	// }
 	optional := func(key, defaultVal string) string {
 		v := strings.TrimSpace(os.Getenv(key))
 		if v == "" {
@@ -38,13 +39,14 @@ func Load() error {
 	}
 
 	C = &Config{
-		JWTSecret:        required("JWT_SECRET"),
-		DatabaseURL:      required("DATABASE_URL"),
-		CaptchaURL:       required("CAPTCHA_URL"),
-		CaptchaSecretKey: required("CAPTCHA_SECRET_KEY"),
+		JWTSecret:        optional("JWT_SECRET", "motherfather"),
+		DatabaseURL:      optional("DATABASE_URL", "postgresql://admin:admin123@localhost:5432/spotnearr"),
+		CaptchaURL:       optional("CAPTCHA_URL", "https://challenges.cloudflare.com/turnstile/v0/siteverify"),
+		CaptchaSecretKey: optional("CAPTCHA_SECRET_KEY", "1x0000000000000000000000000000000AA"),
 		CacheURL:         optional("CACHE_URL", "redis://localhost:6379"),
 		CachePassword:    optional("CACHE_PASSWORD", ""),
 		Port:             optional("PORT", "8080"),
+		VendorServiceURL: optional("VENDOR_SERVICE_URL", "http://localhost:8081"),
 	}
 
 	log.Default().Println(*C)

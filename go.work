@@ -1,8 +1,8 @@
 go 1.25.5
 
 use (
-	./pkg
 	./app/cmd
-	./services/vendor
+	./pkg
 	./services/search
+	./services/vendor
 )

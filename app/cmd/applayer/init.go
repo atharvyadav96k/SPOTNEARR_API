@@ -33,5 +33,6 @@ func Init() application {
 	a.spotlightHandler = handlers.NewSpotlightHandler()
 	a.offerHandler = handlers.NewOfferHandler()
 	a.reviewHandler = handlers.NewReviewHandler(services)
+	a.internalHandler = handlers.NewInternalHandler(services)
 	return a
 }

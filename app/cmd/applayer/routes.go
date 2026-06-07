@@ -23,7 +23,15 @@ func (a *application) NewMux() *mux.Router {
 	a.reviewRouter(apiV1)
 	a.searchRouter(apiV1)
 	a.categoryRouter(apiV1)
+	// Internal routes — network-isolated, no auth middleware.
+	internal := router.PathPrefix("/internal").Subrouter()
+	a.internalRouter(internal)
 	return router
+}
+
+func (a *application) internalRouter(router *mux.Router) {
+	router.HandleFunc("/users/{userId}/invalidate-refresh",
+		a.internalHandler.InvalidateRefresh).Methods(http.MethodPost)
 }
 
 func (a *application) healthRouter(router *mux.Router) {
@@ -35,8 +43,8 @@ func (a *application) searchRouter(router *mux.Router) {
 }
 
 func (a *application) categoryRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 3000, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5000, time.Minute)
 
 	cat := router.PathPrefix("/categories").Subrouter()
 	cat.Use(middleware.Auth)
@@ -48,7 +56,6 @@ func (a *application) categoryRouter(router *mux.Router) {
 }
 
 func (a *application) authRouter(router *mux.Router) {
-	// This creates the base path: /api/v1/auth
 	authBase := router.PathPrefix("/auth").Subrouter()
 
 	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)
@@ -69,13 +76,12 @@ func (a *application) authRouter(router *mux.Router) {
 
 	protectedAuth := authBase.PathPrefix("").Subrouter()
 	protectedAuth.Use(middleware.Auth)
-
 	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet)
 	protectedAuth.HandleFunc("/logout-all-devices", a.authHandler.LogoutFromAllDevices).Methods(http.MethodPost)
 }
 func (a *application) userRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 10, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 1000, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/users").Subrouter()
 	protectedAuth.Use(middleware.Auth)
@@ -94,8 +100,8 @@ func (a *application) userRouter(router *mux.Router) {
 }
 
 func (a *application) businessRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 300, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 500, time.Minute)
 
 	biz := router.PathPrefix("/businesses").Subrouter()
 	protectedAuth := biz.PathPrefix("").Subrouter()
@@ -136,8 +142,8 @@ func (a *application) businessRouter(router *mux.Router) {
 }
 
 func (a *application) inventoryRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 100000, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 100000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/inventory").Subrouter()
 	protectedAuth.Use(middleware.Auth)
@@ -181,9 +187,9 @@ func (a *application) inventoryRouter(router *mux.Router) {
 }
 
 func (a *application) productRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
-	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 3000, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5000, time.Minute)
+	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/products").Subrouter()
 	protectedAuth.Use(middleware.Auth)
@@ -221,7 +227,7 @@ func (a *application) productRouter(router *mux.Router) {
 }
 
 func (a *application) claimRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 10, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 10000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/claims").Subrouter()
 	protectedAuth.Use(middleware.Auth)
@@ -246,9 +252,9 @@ func (a *application) claimRouter(router *mux.Router) {
 }
 
 func (a *application) offerRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 30, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5, time.Minute)
-	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 30000, time.Minute)
+	strictRateLimit := middleware.RateLimit(a.GetCache(), 5000, time.Minute)
+	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/offers").Subrouter()
 	protectedAuth.Use(middleware.Auth)
@@ -282,8 +288,8 @@ func (a *application) offerRouter(router *mux.Router) {
 }
 
 func (a *application) reviewRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 10, time.Minute)
-	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 60, time.Minute)
+	normalRateLimit := middleware.RateLimit(a.GetCache(), 1000, time.Minute)
+	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 6000, time.Minute)
 
 	r := router.PathPrefix("/review").Subrouter()
 	r.Use(middleware.Auth)

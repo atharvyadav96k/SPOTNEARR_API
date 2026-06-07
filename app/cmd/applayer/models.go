@@ -19,4 +19,5 @@ type application struct {
 	reviewHandler    *handlers.ReviewHandler
 	searchHandler    *handlers.SearchHandler
 	categoryHandler  *handlers.CategoryHandler
+	internalHandler  *handlers.InternalHandler
 }
