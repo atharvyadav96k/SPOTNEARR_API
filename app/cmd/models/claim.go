@@ -21,8 +21,7 @@ type Claim struct {
 	UserID uint  `gorm:"index;not null" json:"userId"`
 	User   *User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;" json:"user,omitempty"`
 
-	InventoryProductID uint              `gorm:"index;not null" json:"inventoryProductId"`
-	InventoryProduct   *InventoryProduct `gorm:"foreignKey:InventoryProductID;constraint:OnDelete:CASCADE;" json:"inventoryProduct,omitempty"`
+	InventoryProductID uint `gorm:"index;not null" json:"inventoryProductId"`
 
 	Status ClaimStatus `gorm:"type:varchar(20);default:'pending';not null" json:"status"`
 

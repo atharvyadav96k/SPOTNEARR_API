@@ -11,16 +11,9 @@ import (
 )
 
 type repo struct {
-	userRepo         repository.IUserRepository
-	bizRepo          repository.IBusinessesRepository
-	storeRepo        repository.IStoreRepository
-	accessRepo       repository.IAccessRepository
-	invProductRepo   repository.IInventoryProduct
-	productRepo      repository.IProductRepository
-	claimRepo        repository.IClaimRepository
-	categoryRepo     repository.ICategoryRepository
-	productTokenRepo repository.IProductTokenRepository
-	reviewRepo       repository.IReviewRepository
+	userRepo   repository.IUserRepository
+	claimRepo  repository.IClaimRepository
+	reviewRepo repository.IReviewRepository
 }
 
 type base_service struct {
@@ -34,16 +27,9 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 		db:    db,
 		cache: cache,
 		repo: repo{
-			userRepo:       implementation.NewUserRepository(db),
-			bizRepo:        implementation.NewBusinessRepository(db),
-			storeRepo:      implementation.NewStoreRepository(db),
-			accessRepo:     implementation.NewAccessRepository(db),
-			invProductRepo: implementation.NewInvProductRepository(db),
-			productRepo:    implementation.NewProductRepository(db),
-			claimRepo:        implementation.NewClaimRepository(db),
-			categoryRepo:     implementation.NewCategoryRepository(db),
-			productTokenRepo: implementation.NewProductTokenRepository(db),
-			reviewRepo:       implementation.NewReviewRepository(db),
+			userRepo:   implementation.NewUserRepository(db),
+			claimRepo:  implementation.NewClaimRepository(db),
+			reviewRepo: implementation.NewReviewRepository(db),
 		},
 	}
 }
@@ -52,40 +38,12 @@ func (b *base_service) Cache() *cache.Cache {
 	return b.cache
 }
 
-func (b *base_service) RepoBusiness() repository.IBusinessesRepository {
-	return b.repo.bizRepo
-}
-
 func (b *base_service) RepoUser() repository.IUserRepository {
 	return b.repo.userRepo
 }
 
-func (b *base_service) RepoStore() repository.IStoreRepository {
-	return b.repo.storeRepo
-}
-
-func (b *base_service) RepoAccess() repository.IAccessRepository {
-	return b.repo.accessRepo
-}
-
-func (b *base_service) RepoInvProduct() repository.IInventoryProduct {
-	return b.repo.invProductRepo
-}
-
-func (b *base_service) RepoProduct() repository.IProductRepository {
-	return b.repo.productRepo
-}
-
 func (b *base_service) RepoClaim() repository.IClaimRepository {
 	return b.repo.claimRepo
-}
-
-func (b *base_service) RepoCategory() repository.ICategoryRepository {
-	return b.repo.categoryRepo
-}
-
-func (b *base_service) RepoProductToken() repository.IProductTokenRepository {
-	return b.repo.productTokenRepo
 }
 
 func (b *base_service) RepoReview() repository.IReviewRepository {

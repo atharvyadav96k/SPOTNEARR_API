@@ -8,6 +8,11 @@ import (
 
 type UserRole string
 
+const (
+	RoleUser  UserRole = "user"
+	RoleOwner UserRole = "owner"
+)
+
 type User struct {
 	ID       uint   `gorm:"primaryKey;autoIncrement" json:"id"`
 	FullName string `gorm:"type:varchar(255);not null" json:"fullName"`

@@ -26,32 +26,12 @@ func NewBaserHandler(services *services.Services) *BaseHandler {
 	}
 }
 
-func (b *BaseHandler) GetBizService() *services.BusinessService {
-	return b.services.BusinessService
-}
-
 func (b *BaseHandler) GetUserService() *services.UserService {
 	return b.services.UserService
 }
 
-func (b *BaseHandler) GetInvService() *services.InventoryService {
-	return b.services.InventoryService
-}
-
-func (b *BaseHandler) GetProductService() *services.ProductService {
-	return b.services.ProductService
-}
-
 func (b *BaseHandler) GetClaimService() *services.ClaimService {
 	return b.services.ClaimService
-}
-
-func (b *BaseHandler) GetSearchService() *services.SearchService {
-	return b.services.SearchService
-}
-
-func (b *BaseHandler) GetCategoryService() *services.CategoryService {
-	return b.services.CategoryService
 }
 
 func (b *BaseHandler) GetReviewService() *services.ReviewService {

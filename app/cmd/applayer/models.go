@@ -7,17 +7,10 @@ import (
 
 type application struct {
 	app.App
-	healthHandler    *handlers.Health
-	authHandler      *handlers.AuthHandler
-	businessHandler  *handlers.BusinessHandler
-	userHandler      *handlers.UserHandler
-	productHandler   *handlers.ProductHandler
-	inventoryHandler *handlers.InventoryHandler
-	claimHandler     *handlers.ClaimHandler
-	spotlightHandler *handlers.SpotlightHandler
-	offerHandler     *handlers.OfferHandler
-	reviewHandler    *handlers.ReviewHandler
-	searchHandler    *handlers.SearchHandler
-	categoryHandler  *handlers.CategoryHandler
-	internalHandler  *handlers.InternalHandler
+	healthHandler   *handlers.Health
+	authHandler     *handlers.AuthHandler
+	userHandler     *handlers.UserHandler
+	claimHandler    *handlers.ClaimHandler
+	reviewHandler   *handlers.ReviewHandler
+	internalHandler *handlers.InternalHandler
 }
