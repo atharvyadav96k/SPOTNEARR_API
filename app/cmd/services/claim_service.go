@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"gorm.io/gorm"
 )
 
@@ -28,8 +28,6 @@ func NewClaimService(b base_service) *ClaimService {
 	}
 }
 
-// fetchInvProduct calls the Vendor Service internal endpoint to validate the
-// inventory product and return its snapshot. Returns 503 if unreachable.
 func (c *ClaimService) fetchInvProduct(invProductID uint) (json.RawMessage, bool, error) {
 	url := fmt.Sprintf("%s/internal/inventory-products/%d", config.C.VendorServiceURL, invProductID)
 	resp, err := c.httpClient.Get(url)
@@ -39,7 +37,7 @@ func (c *ClaimService) fetchInvProduct(invProductID uint) (json.RawMessage, bool
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, false, nil // product doesn't exist
+		return nil, false, nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, false, fmt.Errorf("vendor service returned %d", resp.StatusCode)
@@ -82,7 +80,7 @@ func (c *ClaimService) ClaimProduct(userID uint, invProductID uint) response.Res
 		return c.ResponseInternalServer("Failed to process claim")
 	}
 
-	claim := models.NewClaim(userID, invProductID, snapshot)
+	claim := usermodel.NewClaim(userID, invProductID, snapshot)
 	created, err := c.RepoClaim().Create(ctx, claim)
 	if err != nil {
 		return c.ResponseInternalServer("Failed to create claim")

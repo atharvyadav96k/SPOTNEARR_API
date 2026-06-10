@@ -3,12 +3,12 @@ package database
 import (
 	"log"
 
-	"gorm.io/driver/postgres"
+	dbmod "github.com/Developer-Aadesh/spotnearr-database"
 	"gorm.io/gorm"
 )
 
 func InitDB(url string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(url), &gorm.Config{TranslateError: true})
+	db, err := dbmod.Connect(url)
 	if err != nil {
 		return nil, err
 	}

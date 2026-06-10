@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/atharvyadav96k/spotnearr/search-svc/models"
-	"github.com/atharvyadav96k/spotnearr/search-svc/repository"
+	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
+	searchpostgres "github.com/Developer-Aadesh/spotnearr-database/search/postgres"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +20,7 @@ type outboxRow struct {
 	CreatedAt time.Time `gorm:"column:created_at"`
 }
 
-// outboxPayload mirrors models.OutboxPayload from the vendor service.
+// outboxPayload mirrors searchdb.OutboxPayload from the vendor service.
 type outboxPayload struct {
 	EventType     string   `json:"event_type"`
 	InvProductID  uint     `json:"inv_product_id"`
@@ -51,14 +51,14 @@ type outboxPayload struct {
 type Poller struct {
 	vendorDB *gorm.DB
 	searchDB *gorm.DB
-	repo     *repository.SearchRepository
+	repo     *searchpostgres.SearchRepository
 }
 
 func NewPoller(vendorDB, searchDB *gorm.DB) *Poller {
 	return &Poller{
 		vendorDB: vendorDB,
 		searchDB: searchDB,
-		repo:     repository.NewSearchRepository(searchDB),
+		repo:     searchpostgres.NewSearchRepository(searchDB),
 	}
 }
 
@@ -122,7 +122,7 @@ func (p *Poller) applyRow(ctx context.Context, row outboxRow) error {
 		for i, c := range payload.Categories {
 			catIDs[i] = c.ID
 		}
-		entry := models.SearchEntry{
+		entry := searchdb.SearchEntry{
 			ID:            payload.InvProductID,
 			ProductID:     payload.ProductID,
 			BusinessID:    payload.BusinessID,

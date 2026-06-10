@@ -6,7 +6,7 @@ import (
 
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +17,7 @@ func NewCategoryService(db *gorm.DB, c *cache.Cache) *CategoryService {
 }
 
 func (c *CategoryService) AddCategory(name, slug string) httputil.Res {
-	cat := models.Category{Name: name, Slug: slug}
+	cat := vendormodel.Category{Name: name, Slug: slug}
 	created, err := c.RepoCategory().CreateCategory(context.Background(), cat)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {

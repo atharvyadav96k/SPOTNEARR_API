@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -11,10 +11,10 @@ const (
 )
 
 type UserClaims struct {
-	UserId     uint            `json:"user_id"`
-	BusinessId *uint           `json:"business_id"`
-	TokenType  string          `json:"token_type"`
-	UserRole   models.UserRole `json:"role"`
+	UserId     uint                `json:"user_id"`
+	BusinessId *uint               `json:"business_id"`
+	TokenType  string              `json:"token_type"`
+	UserRole   usermodel.UserRole  `json:"role"`
 	jwt.RegisteredClaims
 }
 

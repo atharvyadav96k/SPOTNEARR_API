@@ -8,20 +8,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/repository/implementation"
+	vendorpostgres "github.com/Developer-Aadesh/spotnearr-database/vendordb/postgres"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
 type InternalHandler struct {
-	invProductRepo *implementation.InvProductRepository
-	accessRepo     *implementation.AccessRepository
+	invProductRepo *vendorpostgres.InvProductRepository
+	accessRepo     *vendorpostgres.AccessRepository
 }
 
 func NewInternalHandler(db *gorm.DB) *InternalHandler {
 	return &InternalHandler{
-		invProductRepo: implementation.NewInvProductRepository(db),
-		accessRepo:     implementation.NewAccessRepository(db),
+		invProductRepo: vendorpostgres.NewInvProductRepository(db),
+		accessRepo:     vendorpostgres.NewAccessRepository(db),
 	}
 }
 

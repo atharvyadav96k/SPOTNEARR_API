@@ -13,9 +13,9 @@ import (
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -34,45 +34,45 @@ func NewUserService(db *gorm.DB, cache *cache.Cache) *UserService {
 
 // fetchBusinessAccess calls the Vendor Service to get the user's business_id + role.
 // Returns nil, RoleUser if the user has no business or if the call fails.
-func (u *UserService) fetchBusinessAccess(userID uint) (*uint, models.UserRole) {
+func (u *UserService) fetchBusinessAccess(userID uint) (*uint, usermodel.UserRole) {
 	url := fmt.Sprintf("%s/internal/users/%d/access", config.C.VendorServiceURL, userID)
 	resp, err := u.httpClient.Get(url)
 	if err != nil {
 		log.Printf("user: vendor access lookup failed for user %d: %v", userID, err)
-		return nil, models.RoleUser
+		return nil, usermodel.RoleUser
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, models.RoleUser // user has no business yet
+		return nil, usermodel.RoleUser
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("user: vendor access returned %d for user %d", resp.StatusCode, userID)
-		return nil, models.RoleUser
+		return nil, usermodel.RoleUser
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, models.RoleUser
+		return nil, usermodel.RoleUser
 	}
 	var result struct {
-		BusinessID uint             `json:"business_id"`
-		Role       models.UserRole  `json:"role"`
+		BusinessID uint               `json:"business_id"`
+		Role       usermodel.UserRole `json:"role"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, models.RoleUser
+		return nil, usermodel.RoleUser
 	}
 	return &result.BusinessID, result.Role
 }
 
-func (u *UserService) RegisterUser(user *models.User) response.Res {
-	if user == nil {
+func (u *UserService) RegisterUser(usr *usermodel.User) response.Res {
+	if usr == nil {
 		return u.ResponseBadRequest("Failed to get user")
 	}
-	hashedPassword, err := auth.GenerateHashedPassword(*user.PasswordHash)
+	hashedPassword, err := auth.GenerateHashedPassword(*usr.PasswordHash)
 	if err != nil {
 		return u.ResponseBadRequest("Failed to process password")
 	}
-	user.PasswordHash = &hashedPassword
-	if err := u.RepoUser().Register(context.Background(), user); err != nil {
+	usr.PasswordHash = &hashedPassword
+	if err := u.RepoUser().Register(context.Background(), usr); err != nil {
 		return u.ResponseBadRequest(err.Error())
 	}
 	return u.ResponseCreated("User registered successfully", nil)
@@ -80,23 +80,23 @@ func (u *UserService) RegisterUser(user *models.User) response.Res {
 
 func (u *UserService) Login(email string, password string) response.Res {
 	ctx := context.Background()
-	user, err := u.RepoUser().GetByEmail(ctx, email)
+	usr, err := u.RepoUser().GetByEmail(ctx, email)
 	if err != nil {
 		return u.ResponseBadRequest("Invalid email or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(*usr.PasswordHash), []byte(password))
 	if err != nil {
 		log.Default().Println(err)
 		return u.ResponseBadRequest("Invalid email or password")
 	}
 
-	currentBusinessID, userRole := u.fetchBusinessAccess(user.ID)
+	currentBusinessID, userRole := u.fetchBusinessAccess(usr.ID)
 
 	var refreshToken string
 	var refreshExpiry time.Time
 
-	cachedToken, err := u.Cache().GetRefreshTokenSession().GetRefreshTokenSession(user.ID)
+	cachedToken, err := u.Cache().GetRefreshTokenSession().GetRefreshTokenSession(usr.ID)
 	if err == nil {
 		if rtClaims, err := auth.ValidateToken(cachedToken, config.C.JWTSecret, auth.TypeRefreshToken); err == nil {
 			refreshToken = cachedToken
@@ -105,20 +105,20 @@ func (u *UserService) Login(email string, password string) response.Res {
 	}
 
 	if refreshToken == "" {
-		refreshToken, refreshExpiry, err = auth.GenerateRefreshToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
+		refreshToken, refreshExpiry, err = auth.GenerateRefreshToken(usr.ID, currentBusinessID, config.C.JWTSecret, userRole)
 		if err != nil {
 			log.Default().Println("Failed to generate refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
 		}
 
-		err = u.Cache().GetRefreshTokenSession().NewRefreshToken(user.ID, refreshToken, 30*24*time.Hour)
+		err = u.Cache().GetRefreshTokenSession().NewRefreshToken(usr.ID, refreshToken, 30*24*time.Hour)
 		if err != nil {
 			log.Default().Println("Failed to save refresh token:", err)
 			return u.ResponseInternalServer("Failed to login")
 		}
 	}
 
-	accessToken, accessExpiry, err := auth.GenerateAccessToken(user.ID, currentBusinessID, config.C.JWTSecret, userRole)
+	accessToken, accessExpiry, err := auth.GenerateAccessToken(usr.ID, currentBusinessID, config.C.JWTSecret, userRole)
 	if err != nil {
 		log.Default().Println("Failed to generate access token:", err)
 		return u.ResponseInternalServer("Failed to login")
@@ -161,26 +161,23 @@ func (u *UserService) DismissRefreshToken(id uint) response.Res {
 	return u.ResponseOK("Successfully logged out from all devices", nil)
 }
 
-// InvalidateRefreshToken drops the stored refresh token for a user.
-// Used by the internal endpoint called by the Vendor Service after business registration.
 func (u *UserService) InvalidateRefreshToken(id uint) error {
 	return u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(id)
 }
 
 func (u *UserService) AddUserToBusiness(userID uint, businessId uint, ownerId uint) response.Res {
-	// if err := u.RepoUser().
 	return response.Res{}
 }
 
 func (u *UserService) GetUserProfile(userId uint) response.Res {
-	user, err := u.RepoUser().GetById(context.Background(), userId)
+	usr, err := u.RepoUser().GetById(context.Background(), userId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return u.ResponseNotFound("User not found")
 		}
 		return u.ResponseBadRequest("Failed to get user profile")
 	}
-	return u.ResponseOK("User profile", user)
+	return u.ResponseOK("User profile", usr)
 }
 
 func (u *UserService) SessionNotification(email string) response.Res {
@@ -208,7 +205,7 @@ func (u *UserService) UpdatePassword(password string, session string) response.R
 	if email == "" {
 		return u.ResponseBadRequest("Invalid URL")
 	}
-	user, err := u.RepoUser().GetByEmail(ctx, email)
+	usr, err := u.RepoUser().GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return u.ResponseNotFound("User not found with this email")
@@ -227,7 +224,7 @@ func (u *UserService) UpdatePassword(password string, session string) response.R
 		}
 		return u.ResponseInternalServer("Failed to update the password")
 	}
-	if err := u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(user.ID); err != nil {
+	if err := u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(usr.ID); err != nil {
 		log.Default().Println("Failed to invalidate refresh token after password update:", err)
 	}
 

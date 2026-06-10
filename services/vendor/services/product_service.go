@@ -6,7 +6,7 @@ import (
 
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"gorm.io/gorm"
 )
 
@@ -35,7 +35,7 @@ func (p *ProductService) GetAllProducts(bizID uint) httputil.Res {
 	return p.ResponseOK("Products", products)
 }
 
-func (p *ProductService) AddNewProduct(bizID uint, product models.Product, storeIDs []uint) httputil.Res {
+func (p *ProductService) AddNewProduct(bizID uint, product vendormodel.Product, storeIDs []uint) httputil.Res {
 	ctx := context.Background()
 	created, err := p.RepoProduct().AddProduct(ctx, product, bizID)
 	if err != nil {
@@ -55,14 +55,14 @@ func (p *ProductService) AddNewProduct(bizID uint, product models.Product, store
 
 	available := true
 	for _, storeID := range storeIDs {
-		invProduct := models.NewInvProduct(storeID, created.ID, nil, &available)
+		invProduct := vendormodel.NewInvProduct(storeID, created.ID, nil, &available)
 		_ = p.RepoInvProduct().AddProduct(ctx, invProduct, bizID)
 	}
 
 	return p.ResponseCreated("Product added successfully", created)
 }
 
-func (p *ProductService) UpdateProduct(bizID uint, product models.Product) httputil.Res {
+func (p *ProductService) UpdateProduct(bizID uint, product vendormodel.Product) httputil.Res {
 	updated, err := p.RepoProduct().UpdateProduct(context.Background(), product, bizID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

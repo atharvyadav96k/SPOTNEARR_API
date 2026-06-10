@@ -4,16 +4,16 @@ import (
 	"net/http"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
-	"github.com/atharvyadav96k/SPOTNEARR_API/repository"
-	"github.com/atharvyadav96k/SPOTNEARR_API/repository/implementation"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
+	userpostgres "github.com/Developer-Aadesh/spotnearr-database/user/postgres"
 	"gorm.io/gorm"
 )
 
 type repo struct {
-	userRepo   repository.IUserRepository
-	claimRepo  repository.IClaimRepository
-	reviewRepo repository.IReviewRepository
+	userRepo   usermodel.IUserRepository
+	claimRepo  usermodel.IClaimRepository
+	reviewRepo usermodel.IReviewRepository
 }
 
 type base_service struct {
@@ -27,9 +27,9 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 		db:    db,
 		cache: cache,
 		repo: repo{
-			userRepo:   implementation.NewUserRepository(db),
-			claimRepo:  implementation.NewClaimRepository(db),
-			reviewRepo: implementation.NewReviewRepository(db),
+			userRepo:   userpostgres.NewUserRepository(db),
+			claimRepo:  userpostgres.NewClaimRepository(db),
+			reviewRepo: userpostgres.NewReviewRepository(db),
 		},
 	}
 }
@@ -38,15 +38,15 @@ func (b *base_service) Cache() *cache.Cache {
 	return b.cache
 }
 
-func (b *base_service) RepoUser() repository.IUserRepository {
+func (b *base_service) RepoUser() usermodel.IUserRepository {
 	return b.repo.userRepo
 }
 
-func (b *base_service) RepoClaim() repository.IClaimRepository {
+func (b *base_service) RepoClaim() usermodel.IClaimRepository {
 	return b.repo.claimRepo
 }
 
-func (b *base_service) RepoReview() repository.IReviewRepository {
+func (b *base_service) RepoReview() usermodel.IReviewRepository {
 	return b.repo.reviewRepo
 }
 

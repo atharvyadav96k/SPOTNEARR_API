@@ -5,7 +5,7 @@ import (
 
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
 
@@ -26,9 +26,9 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	searchTokens := tokenizer.MergeTokens(dto.Name, dto.Desc)
-	product := models.NewProduct(dto.Name, dto.Price, dto.Desc, dto.Quantity, searchTokens)
+	product := vendormodel.NewProduct(dto.Name, dto.Price.Value, dto.Price.Unit, dto.Desc, &dto.Quantity.Value, &dto.Quantity.Unit, searchTokens)
 	for _, id := range dto.CategoryIDs {
-		product.Categories = append(product.Categories, models.Category{ID: id})
+		product.Categories = append(product.Categories, vendormodel.Category{ID: id})
 	}
 	p.Response(w, p.svc.AddNewProduct(bizID, product, dto.StoreIDs))
 }
@@ -46,7 +46,7 @@ func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	searchTokens := tokenizer.MergeTokens(dto.Name, dto.Desc)
-	product := models.NewProduct(dto.Name, dto.Price, dto.Desc, dto.Quantity, searchTokens)
+	product := vendormodel.NewProduct(dto.Name, dto.Price.Value, dto.Price.Unit, dto.Desc, &dto.Quantity.Value, &dto.Quantity.Unit, searchTokens)
 	product.ID = productID
 	p.Response(w, p.svc.UpdateProduct(bizID, product))
 }

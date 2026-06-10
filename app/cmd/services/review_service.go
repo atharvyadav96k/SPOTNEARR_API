@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +17,7 @@ func NewReviewService(b base_service) *ReviewService {
 	return &ReviewService{base_service: b}
 }
 
-func (s *ReviewService) AddReview(userID uint, targetType models.ReviewTarget, targetID uint, stars uint8, comment string) response.Res {
+func (s *ReviewService) AddReview(userID uint, targetType usermodel.ReviewTarget, targetID uint, stars uint8, comment string) response.Res {
 	if stars < 1 || stars > 5 {
 		return s.ResponseBadRequest("Stars must be between 1 and 5")
 	}
@@ -35,7 +35,7 @@ func (s *ReviewService) AddReview(userID uint, targetType models.ReviewTarget, t
 		return s.ResponseInternalServer("Failed to check existing review")
 	}
 
-	review := models.Review{
+	review := usermodel.Review{
 		UserID:     userID,
 		TargetType: targetType,
 		TargetID:   targetID,
@@ -49,7 +49,7 @@ func (s *ReviewService) AddReview(userID uint, targetType models.ReviewTarget, t
 	return s.ResponseCreated("Review added successfully", created)
 }
 
-func (s *ReviewService) UpdateReview(userID uint, targetType models.ReviewTarget, targetID uint, stars uint8, comment string) response.Res {
+func (s *ReviewService) UpdateReview(userID uint, targetType usermodel.ReviewTarget, targetID uint, stars uint8, comment string) response.Res {
 	if stars < 1 || stars > 5 {
 		return s.ResponseBadRequest("Stars must be between 1 and 5")
 	}
@@ -67,7 +67,7 @@ func (s *ReviewService) UpdateReview(userID uint, targetType models.ReviewTarget
 	return s.ResponseOK("Review updated successfully", updated)
 }
 
-func (s *ReviewService) DeleteReview(userID uint, targetType models.ReviewTarget, targetID uint) response.Res {
+func (s *ReviewService) DeleteReview(userID uint, targetType usermodel.ReviewTarget, targetID uint) response.Res {
 	if targetID == 0 {
 		return s.ResponseBadRequest("Target ID is required")
 	}
@@ -82,7 +82,7 @@ func (s *ReviewService) DeleteReview(userID uint, targetType models.ReviewTarget
 	return s.ResponseOK("Review deleted successfully", nil)
 }
 
-func (s *ReviewService) GetReviews(targetType models.ReviewTarget, targetID uint) response.Res {
+func (s *ReviewService) GetReviews(targetType usermodel.ReviewTarget, targetID uint) response.Res {
 	if targetID == 0 {
 		return s.ResponseBadRequest("Target ID is required")
 	}

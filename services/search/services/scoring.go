@@ -5,8 +5,7 @@ import (
 	"sort"
 
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
-	"github.com/atharvyadav96k/spotnearr/search-svc/models"
-	"github.com/atharvyadav96k/spotnearr/search-svc/repository"
+	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
 )
 
 const (
@@ -44,7 +43,7 @@ func distanceTierOf(km float64) int {
 }
 
 type rankedProduct struct {
-	product    models.ProductResult
+	product    searchdb.ProductResult
 	score      int
 	coverage   float64
 	distanceKm float64
@@ -53,7 +52,7 @@ type rankedProduct struct {
 
 // buildCategoryFreqs approximates the monolith's product_tokens frequency table by
 // distributing each search row's token_match_cnt across its category_ids.
-func buildCategoryFreqs(rows []repository.SearchRow) map[uint]int {
+func buildCategoryFreqs(rows []searchdb.SearchRow) map[uint]int {
 	freqs := make(map[uint]int)
 	for _, r := range rows {
 		for _, catID := range r.CategoryIDs {
@@ -64,15 +63,15 @@ func buildCategoryFreqs(rows []repository.SearchRow) map[uint]int {
 }
 
 func rankProducts(
-	rows []repository.SearchRow,
+	rows []searchdb.SearchRow,
 	parsed tokenizer.ParseResult,
 	lat, long *float64,
-) []models.ProductResult {
+) []searchdb.ProductResult {
 	categoryFreqs := buildCategoryFreqs(rows)
 
 	ranked := make([]rankedProduct, len(rows))
 	for i, r := range rows {
-		pr := models.ProductResult{
+		pr := searchdb.ProductResult{
 			ID:            r.ID,
 			ProductID:     r.ProductID,
 			BusinessID:    r.BusinessID,
@@ -108,7 +107,7 @@ func rankProducts(
 
 	ranked = diversifyResults(ranked)
 
-	result := make([]models.ProductResult, len(ranked))
+	result := make([]searchdb.ProductResult, len(ranked))
 	for i, r := range ranked {
 		r.product.DistanceKm = r.distanceKm
 		result[i] = r.product
@@ -144,7 +143,7 @@ func diversifyResults(ranked []rankedProduct) []rankedProduct {
 }
 
 func scoreProduct(
-	p models.ProductResult,
+	p searchdb.ProductResult,
 	parsed tokenizer.ParseResult,
 	categoryFreqs map[uint]int,
 	productCategoryIDs []uint,

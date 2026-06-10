@@ -4,12 +4,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func claimsGenerator(userID uint, businessId *uint, secret string, userRole models.UserRole, tokenType string, expire *jwt.NumericDate) UserClaims {
+func claimsGenerator(userID uint, businessId *uint, secret string, userRole usermodel.UserRole, tokenType string, expire *jwt.NumericDate) UserClaims {
 	return UserClaims{
 		UserId:     userID,
 		BusinessId: businessId,
@@ -21,7 +21,7 @@ func claimsGenerator(userID uint, businessId *uint, secret string, userRole mode
 	}
 }
 
-func GenerateAccessToken(userID uint, businessId *uint, secret string, userRole models.UserRole) (string, time.Time, error) {
+func GenerateAccessToken(userID uint, businessId *uint, secret string, userRole usermodel.UserRole) (string, time.Time, error) {
 	expiry := time.Now().Add(5 * time.Minute)
 	claims := claimsGenerator(userID, businessId, secret, userRole, TypeAccessToken, jwt.NewNumericDate(expiry))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -29,7 +29,7 @@ func GenerateAccessToken(userID uint, businessId *uint, secret string, userRole 
 	return signed, expiry, err
 }
 
-func GenerateRefreshToken(userID uint, businessId *uint, secret string, userRole models.UserRole) (string, time.Time, error) {
+func GenerateRefreshToken(userID uint, businessId *uint, secret string, userRole usermodel.UserRole) (string, time.Time, error) {
 	expiry := time.Now().Add(30 * 24 * time.Hour)
 	claims := claimsGenerator(userID, businessId, secret, userRole, TypeRefreshToken, jwt.NewNumericDate(expiry))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -51,7 +51,6 @@ func ValidateToken(tokenString string, secret string, expectedTokenType string) 
 	if err != nil {
 		return nil, err
 	}
-
 	claims, ok := token.Claims.(*UserClaims)
 	if !ok || !token.Valid {
 		return nil, jwt.ErrSignatureInvalid

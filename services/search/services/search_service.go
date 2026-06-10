@@ -8,16 +8,16 @@ import (
 
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
-	"github.com/atharvyadav96k/spotnearr/search-svc/repository"
+	searchpostgres "github.com/Developer-Aadesh/spotnearr-database/search/postgres"
 	"gorm.io/gorm"
 )
 
 type SearchService struct {
-	repo *repository.SearchRepository
+	repo *searchpostgres.SearchRepository
 }
 
 func NewSearchService(db *gorm.DB) *SearchService {
-	return &SearchService{repo: repository.NewSearchRepository(db)}
+	return &SearchService{repo: searchpostgres.NewSearchRepository(db)}
 }
 
 func (s *SearchService) Search(query string, lat, long *float64, rangeKm float64) httputil.Res {

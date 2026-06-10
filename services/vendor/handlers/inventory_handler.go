@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
 
@@ -28,7 +28,7 @@ func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Reques
 		i.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	store := models.NewStore(dto.Name, dto.StreetAddress, dto.Lat, dto.Long)
+	store := vendormodel.NewStore(dto.Name, dto.StreetAddress, dto.Lat, dto.Long)
 	i.Response(w, i.svc.CreateInventory(bizID, &store))
 }
 

@@ -5,19 +5,19 @@ import (
 
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/repository"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/repository/implementation"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
+	vendorpostgres "github.com/Developer-Aadesh/spotnearr-database/vendordb/postgres"
 	"gorm.io/gorm"
 )
 
 type repos struct {
-	bizRepo          repository.IBusinessesRepository
-	storeRepo        repository.IStoreRepository
-	accessRepo       repository.IAccessRepository
-	invProductRepo   repository.IInventoryProduct
-	productRepo      repository.IProductRepository
-	categoryRepo     repository.ICategoryRepository
-	productTokenRepo repository.IProductTokenRepository
+	bizRepo          vendormodel.IBusinessesRepository
+	storeRepo        vendormodel.IStoreRepository
+	accessRepo       vendormodel.IAccessRepository
+	invProductRepo   vendormodel.IInventoryProduct
+	productRepo      vendormodel.IProductRepository
+	categoryRepo     vendormodel.ICategoryRepository
+	productTokenRepo vendormodel.IProductTokenRepository
 }
 
 type baseService struct {
@@ -29,24 +29,24 @@ func newBaseService(db *gorm.DB, c *cache.Cache) baseService {
 	return baseService{
 		cache: c,
 		repo: repos{
-			bizRepo:          implementation.NewBusinessRepository(db),
-			storeRepo:        implementation.NewStoreRepository(db),
-			accessRepo:       implementation.NewAccessRepository(db),
-			invProductRepo:   implementation.NewInvProductRepository(db),
-			productRepo:      implementation.NewProductRepository(db),
-			categoryRepo:     implementation.NewCategoryRepository(db),
-			productTokenRepo: implementation.NewProductTokenRepository(db),
+			bizRepo:          vendorpostgres.NewBusinessRepository(db),
+			storeRepo:        vendorpostgres.NewStoreRepository(db),
+			accessRepo:       vendorpostgres.NewAccessRepository(db),
+			invProductRepo:   vendorpostgres.NewInvProductRepository(db),
+			productRepo:      vendorpostgres.NewProductRepository(db),
+			categoryRepo:     vendorpostgres.NewCategoryRepository(db),
+			productTokenRepo: vendorpostgres.NewProductTokenRepository(db),
 		},
 	}
 }
 
-func (b *baseService) Cache() *cache.Cache        { return b.cache }
-func (b *baseService) RepoBusiness() repository.IBusinessesRepository { return b.repo.bizRepo }
-func (b *baseService) RepoStore() repository.IStoreRepository         { return b.repo.storeRepo }
-func (b *baseService) RepoAccess() repository.IAccessRepository       { return b.repo.accessRepo }
-func (b *baseService) RepoInvProduct() repository.IInventoryProduct   { return b.repo.invProductRepo }
-func (b *baseService) RepoProduct() repository.IProductRepository     { return b.repo.productRepo }
-func (b *baseService) RepoCategory() repository.ICategoryRepository   { return b.repo.categoryRepo }
+func (b *baseService) Cache() *cache.Cache                                { return b.cache }
+func (b *baseService) RepoBusiness() vendormodel.IBusinessesRepository   { return b.repo.bizRepo }
+func (b *baseService) RepoStore() vendormodel.IStoreRepository           { return b.repo.storeRepo }
+func (b *baseService) RepoAccess() vendormodel.IAccessRepository         { return b.repo.accessRepo }
+func (b *baseService) RepoInvProduct() vendormodel.IInventoryProduct     { return b.repo.invProductRepo }
+func (b *baseService) RepoProduct() vendormodel.IProductRepository       { return b.repo.productRepo }
+func (b *baseService) RepoCategory() vendormodel.ICategoryRepository     { return b.repo.categoryRepo }
 
 func res(message string, statusCode int, data interface{}) httputil.Res {
 	return httputil.NewResponse(message, statusCode, data)

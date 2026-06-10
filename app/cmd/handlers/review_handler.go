@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 )
 
@@ -58,7 +58,7 @@ func (rev *ReviewHandler) reviewDelete(w http.ResponseWriter, r *http.Request, s
 }
 
 func (rev *ReviewHandler) ReviewGetByBusiness(w http.ResponseWriter, r *http.Request) {
-	rev.Response(w, rev.GetReviewService().GetReviews(models.ReviewTargetBusiness, idFromQuery(r)))
+	rev.Response(w, rev.GetReviewService().GetReviews(usermodel.ReviewTargetBusiness, idFromQuery(r)))
 }
 
 func (rev *ReviewHandler) ReviewBusiness(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +72,7 @@ func (rev *ReviewHandler) ReviewBusiness(w http.ResponseWriter, r *http.Request)
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().AddReview(userID, models.ReviewTargetBusiness, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().AddReview(userID, usermodel.ReviewTargetBusiness, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewBusinessUpdate(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func (rev *ReviewHandler) ReviewBusinessUpdate(w http.ResponseWriter, r *http.Re
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().UpdateReview(userID, models.ReviewTargetBusiness, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().UpdateReview(userID, usermodel.ReviewTargetBusiness, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewBusinessDelete(w http.ResponseWriter, r *http.Request) {
@@ -100,11 +100,11 @@ func (rev *ReviewHandler) ReviewBusinessDelete(w http.ResponseWriter, r *http.Re
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().DeleteReview(userID, models.ReviewTargetBusiness, dto.TargetID))
+	rev.Response(w, rev.GetReviewService().DeleteReview(userID, usermodel.ReviewTargetBusiness, dto.TargetID))
 }
 
 func (rev *ReviewHandler) ReviewGetByProduct(w http.ResponseWriter, r *http.Request) {
-	rev.Response(w, rev.GetReviewService().GetReviews(models.ReviewTargetProduct, idFromQuery(r)))
+	rev.Response(w, rev.GetReviewService().GetReviews(usermodel.ReviewTargetProduct, idFromQuery(r)))
 }
 
 func (rev *ReviewHandler) ReviewProduct(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +118,7 @@ func (rev *ReviewHandler) ReviewProduct(w http.ResponseWriter, r *http.Request) 
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().AddReview(userID, models.ReviewTargetProduct, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().AddReview(userID, usermodel.ReviewTargetProduct, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewProductUpdate(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +132,7 @@ func (rev *ReviewHandler) ReviewProductUpdate(w http.ResponseWriter, r *http.Req
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().UpdateReview(userID, models.ReviewTargetProduct, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().UpdateReview(userID, usermodel.ReviewTargetProduct, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewProductDelete(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +146,7 @@ func (rev *ReviewHandler) ReviewProductDelete(w http.ResponseWriter, r *http.Req
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().DeleteReview(userID, models.ReviewTargetProduct, dto.TargetID))
+	rev.Response(w, rev.GetReviewService().DeleteReview(userID, usermodel.ReviewTargetProduct, dto.TargetID))
 }
 
 func (rev *ReviewHandler) ReviewGetByOffer(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (rev *ReviewHandler) ReviewGetByOffer(w http.ResponseWriter, r *http.Reques
 		rev.ResponseBadRequestWithMessage(w, "invalid offer ID")
 		return
 	}
-	rev.Response(w, rev.GetReviewService().GetReviews(models.ReviewTargetOffer, offerID))
+	rev.Response(w, rev.GetReviewService().GetReviews(usermodel.ReviewTargetOffer, offerID))
 }
 
 func (rev *ReviewHandler) ReviewOffer(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +169,7 @@ func (rev *ReviewHandler) ReviewOffer(w http.ResponseWriter, r *http.Request) {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().AddReview(userID, models.ReviewTargetOffer, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().AddReview(userID, usermodel.ReviewTargetOffer, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewOfferUpdate(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +183,7 @@ func (rev *ReviewHandler) ReviewOfferUpdate(w http.ResponseWriter, r *http.Reque
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().UpdateReview(userID, models.ReviewTargetOffer, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().UpdateReview(userID, usermodel.ReviewTargetOffer, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewOfferDelete(w http.ResponseWriter, r *http.Request) {
@@ -197,7 +197,7 @@ func (rev *ReviewHandler) ReviewOfferDelete(w http.ResponseWriter, r *http.Reque
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().DeleteReview(userID, models.ReviewTargetOffer, dto.TargetID))
+	rev.Response(w, rev.GetReviewService().DeleteReview(userID, usermodel.ReviewTargetOffer, dto.TargetID))
 }
 
 func (rev *ReviewHandler) ReviewGetBySpotlight(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +206,7 @@ func (rev *ReviewHandler) ReviewGetBySpotlight(w http.ResponseWriter, r *http.Re
 		rev.ResponseBadRequestWithMessage(w, "invalid spotlight ID")
 		return
 	}
-	rev.Response(w, rev.GetReviewService().GetReviews(models.ReviewTargetSpotlight, spotlightID))
+	rev.Response(w, rev.GetReviewService().GetReviews(usermodel.ReviewTargetSpotlight, spotlightID))
 }
 
 func (rev *ReviewHandler) ReviewSpotlight(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +220,7 @@ func (rev *ReviewHandler) ReviewSpotlight(w http.ResponseWriter, r *http.Request
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().AddReview(userID, models.ReviewTargetSpotlight, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().AddReview(userID, usermodel.ReviewTargetSpotlight, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewSpotlightUpdate(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +234,7 @@ func (rev *ReviewHandler) ReviewSpotlightUpdate(w http.ResponseWriter, r *http.R
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().UpdateReview(userID, models.ReviewTargetSpotlight, dto.TargetID, dto.Stars, dto.Comment))
+	rev.Response(w, rev.GetReviewService().UpdateReview(userID, usermodel.ReviewTargetSpotlight, dto.TargetID, dto.Stars, dto.Comment))
 }
 
 func (rev *ReviewHandler) ReviewSpotlightDelete(w http.ResponseWriter, r *http.Request) {
@@ -248,5 +248,5 @@ func (rev *ReviewHandler) ReviewSpotlightDelete(w http.ResponseWriter, r *http.R
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	rev.Response(w, rev.GetReviewService().DeleteReview(userID, models.ReviewTargetSpotlight, dto.TargetID))
+	rev.Response(w, rev.GetReviewService().DeleteReview(userID, usermodel.ReviewTargetSpotlight, dto.TargetID))
 }
