@@ -1,26 +1,21 @@
-name: Deploy Cloud Functions
+name: Deploy
 
 on:
   push:
-    branches:
-      - main
-      - staging
-    paths:
-      - 'bridge-service/**'
-      - 'app/**'
-      - 'gateway/**'
+    branches: [main, staging]
 
 jobs:
-  detect-domains:
+  detect:
     runs-on: ubuntu-latest
     outputs:
-      bridge:      ${{ steps.changes.outputs.bridge }}
       app:         ${{ steps.changes.outputs.app }}
+      vendor:      ${{ steps.changes.outputs.vendor }}
+      search:      ${{ steps.changes.outputs.search }}
       environment: ${{ steps.env.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Detect environment
+      - name: Set environment
         id: env
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
@@ -33,32 +28,63 @@ jobs:
         id: changes
         with:
           filters: |
-            bridge:
-              - 'bridge-service/**'
             app:
-              - 'app/**'
-            gateway:
-              - 'gateway/**'
-
-  bridge:
-    needs: detect-domains
-    if: needs.detect-domains.outputs.bridge == 'true'
-    uses: ./.github/workflows/bridge.yml
-    permissions:
-      id-token: write
-      contents: read
-    secrets: inherit
+              - 'app/cmd/**'
+              - 'pkg/**'
+              - 'database/**'
+              - 'Dockerfile.app'
+            vendor:
+              - 'services/vendor/**'
+              - 'pkg/**'
+              - 'database/**'
+              - 'Dockerfile.vendor'
+            search:
+              - 'services/search/**'
+              - 'pkg/**'
+              - 'database/**'
+              - 'Dockerfile.search'
 
   app:
-    needs: detect-domains
-    if: needs.detect-domains.outputs.app == 'true'
-    uses: ./.github/workflows/app.yml
+    needs: detect
+    if: needs.detect.outputs.app == 'true'
+    uses: ./.github/workflows/service.yml
     permissions:
       id-token: write
       contents: read
     with:
-      working-directory: app
-      gcp_region: ${{ vars.GCP_REGION }}
-      captcha_url: ${{ vars.CAPTCHA_URL }}
-      environment: ${{ needs.detect-domains.outputs.environment }}
+      service_name:      app
+      dockerfile:        Dockerfile.app
+      cloud_run_service: user-service-${{ needs.detect.outputs.environment }}
+      gcp_region:        ${{ vars.GCP_REGION }}
+      environment:       ${{ needs.detect.outputs.environment }}
+    secrets: inherit
+
+  vendor:
+    needs: detect
+    if: needs.detect.outputs.vendor == 'true'
+    uses: ./.github/workflows/service.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      service_name:      vendor
+      dockerfile:        Dockerfile.vendor
+      cloud_run_service: vendor-service-${{ needs.detect.outputs.environment }}
+      gcp_region:        ${{ vars.GCP_REGION }}
+      environment:       ${{ needs.detect.outputs.environment }}
+    secrets: inherit
+
+  search:
+    needs: detect
+    if: needs.detect.outputs.search == 'true'
+    uses: ./.github/workflows/service.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      service_name:      search
+      dockerfile:        Dockerfile.search
+      cloud_run_service: search-service-${{ needs.detect.outputs.environment }}
+      gcp_region:        ${{ vars.GCP_REGION }}
+      environment:       ${{ needs.detect.outputs.environment }}
     secrets: inherit

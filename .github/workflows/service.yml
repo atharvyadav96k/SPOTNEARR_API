@@ -1,0 +1,61 @@
+name: Build and Deploy Service
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Short name used for the image tag (app, vendor, search)'
+        type: string
+        required: true
+      dockerfile:
+        description: 'Dockerfile at the workspace root (e.g. Dockerfile.app)'
+        type: string
+        required: true
+      cloud_run_service:
+        description: 'Cloud Run service name to deploy to'
+        type: string
+        required: true
+      gcp_region:
+        type: string
+        required: true
+      environment:
+        type: string
+        required: true
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+      GCP_SA_EMAIL:
+        required: true
+      GCP_WIF_PROVIDER:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/${{ inputs.service_name }}:${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ inputs.gcp_region }}-docker.pkg.dev --quiet
+
+      - name: Build and push
+        run: |
+          docker build -f ${{ inputs.dockerfile }} -t ${{ env.IMAGE }} .
+          docker push ${{ env.IMAGE }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ inputs.cloud_run_service }} \
+            --image ${{ env.IMAGE }} \
+            --region ${{ inputs.gcp_region }} \
+            --platform managed \
+            --quiet
