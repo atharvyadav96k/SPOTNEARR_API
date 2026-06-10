@@ -9,11 +9,8 @@ terraform {
       version = "~> 3.0"
     }
   }
-  
-
   backend "gcs" {}
 }
-
 
 variable "project_id"      {}
 variable "project_number"  {}
