@@ -2,6 +2,7 @@ package applayer
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/atharvyadav96k/spotnearr/search-svc/config"
@@ -9,13 +10,13 @@ import (
 	"github.com/atharvyadav96k/spotnearr/search-svc/handlers"
 	"github.com/atharvyadav96k/spotnearr/search-svc/services"
 	syncsvc "github.com/atharvyadav96k/spotnearr/search-svc/sync"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type application struct {
-	searchDB      *gorm.DB
+	searchDB    *gorm.DB
 	searchHandler *handlers.SearchHandler
+	syncTrigger   http.HandlerFunc
 }
 
 func Init() application {
@@ -36,26 +37,19 @@ func Init() application {
 		panic(err)
 	}
 
-	redisOpt, err := redis.ParseURL(config.C.CacheURL)
-	if err != nil {
-		panic(err)
-	}
-	if config.C.CachePassword != "" {
-		redisOpt.Password = config.C.CachePassword
-	}
-	redisClient := redis.NewClient(redisOpt)
-
 	poller := syncsvc.NewPoller(vendorDB, searchDB)
-	subscriber := syncsvc.NewSubscriber(redisClient, poller)
 
 	ctx := context.Background()
-	go subscriber.Run(ctx)
 	go poller.Run(ctx, 30*time.Second)
 
 	searchSvc := services.NewSearchService(searchDB)
 
 	return application{
-		searchDB:      searchDB,
+		searchDB:    searchDB,
 		searchHandler: handlers.NewSearchHandler(searchSvc),
+		syncTrigger: func(w http.ResponseWriter, r *http.Request) {
+			go poller.ProcessPending(context.Background())
+			w.WriteHeader(http.StatusAccepted)
+		},
 	}
 }

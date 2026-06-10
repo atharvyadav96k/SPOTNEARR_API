@@ -18,18 +18,14 @@ variable "cache_url"            {}
 variable "captcha_url"          {}
 variable "captcha_secret_key"   {}
 variable "jwt_secret"           {}
-variable "cache_password"       { default = "" }
-variable "environment"          { default = "prod" }
+variable "cache_password"        { default = "" }
+variable "environment"           { default = "prod" }
+variable "user_service_url"      { default = "" }
+variable "search_service_url"    { default = "" }
 
 provider "google" {
   project = var.project_id
   region  = var.region
-}
-
-data "google_cloud_run_v2_service" "user" {
-  name     = "app-${var.environment}"
-  location = var.region
-  project  = var.project_id
 }
 
 resource "google_cloud_run_v2_service" "vendor" {
@@ -73,7 +69,11 @@ resource "google_cloud_run_v2_service" "vendor" {
       }
       env {
         name  = "USER_SERVICE_URL"
-        value = data.google_cloud_run_v2_service.user.uri
+        value = var.user_service_url
+      }
+      env {
+        name  = "SEARCH_SERVICE_URL"
+        value = var.search_service_url
       }
 
       resources {

@@ -1,27 +1,37 @@
 package events
 
 import (
+	"bytes"
 	"context"
 	"log"
-
-	"github.com/redis/go-redis/v9"
+	"net/http"
+	"time"
 )
 
-const SearchSyncChannel = "search:sync"
-
-// Publisher sends lightweight notifications to the Search Service after
-// outbox rows are committed. The Search Service Redis subscriber picks these
-// up immediately; the 30s outbox poller is the fallback when this fails.
-type Publisher struct{ client *redis.Client }
-
-func NewPublisher(client *redis.Client) *Publisher {
-	return &Publisher{client: client}
+// Notifier triggers the Search Service to process pending outbox rows via HTTP
+// POST instead of Redis pub/sub. Call as go notifier.Notify(context.Background()).
+type Notifier struct {
+	url    string
+	client *http.Client
 }
 
-// Notify publishes a ping on the search:sync channel. Content is ignored by
-// the subscriber — it just wakes up the poller immediately.
-func (p *Publisher) Notify(ctx context.Context) {
-	if err := p.client.Publish(ctx, SearchSyncChannel, "sync").Err(); err != nil {
-		log.Printf("events: redis publish search:sync: %v", err)
+func NewNotifier(searchServiceURL string) *Notifier {
+	return &Notifier{
+		url:    searchServiceURL + "/internal/sync",
+		client: &http.Client{Timeout: 3 * time.Second},
 	}
+}
+
+func (n *Notifier) Notify(ctx context.Context) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.url, bytes.NewReader(nil))
+	if err != nil {
+		log.Printf("notifier: build request: %v", err)
+		return
+	}
+	resp, err := n.client.Do(req)
+	if err != nil {
+		log.Printf("notifier: POST %s: %v", n.url, err)
+		return
+	}
+	resp.Body.Close()
 }

@@ -16,6 +16,7 @@ type Config struct {
 	CaptchaSecretKey string
 	Port             string
 	UserServiceURL   string
+	SearchServiceURL string
 }
 
 var C *Config
@@ -40,6 +41,7 @@ func Load() error {
 		CachePassword:    optional("CACHE_PASSWORD", ""),
 		Port:             optional("PORT", "8081"),
 		UserServiceURL:   optional("USER_SERVICE_URL", "http://localhost:8080"),
+		SearchServiceURL: optional("SEARCH_SERVICE_URL", "http://localhost:8082"),
 	}
 
 	log.Default().Println(*C)
