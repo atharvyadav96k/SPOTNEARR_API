@@ -16,7 +16,6 @@ jobs:
     outputs:
       bridge:      ${{ steps.changes.outputs.bridge }}
       app:         ${{ steps.changes.outputs.app }}
-      gateway:     ${{ steps.changes.outputs.gateway }}
       environment: ${{ steps.env.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
@@ -64,16 +63,4 @@ jobs:
       gcp_region: ${{ vars.GCP_REGION }}
       captcha_url: ${{ vars.CAPTCHA_URL }}
       environment: ${{ needs.detect-domains.outputs.environment }}
-    secrets: inherit
-    
-  gateway:
-    needs: detect-domains
-    if: needs.detect-domains.outputs.gateway == 'true'
-    uses: ./.github/workflows/api-gateway.yml
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      working-directory: gateway
-      gcp_region: ${{ vars.GCP_REGION }}
     secrets: inherit
