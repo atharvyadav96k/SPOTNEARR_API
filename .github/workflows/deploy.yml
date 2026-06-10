@@ -52,11 +52,12 @@ jobs:
       id-token: write
       contents: read
     with:
-      service_name:      app
-      dockerfile:        Dockerfile.app
-      cloud_run_service: user-service-${{ needs.detect.outputs.environment }}
-      gcp_region:        ${{ vars.GCP_REGION }}
-      environment:       ${{ needs.detect.outputs.environment }}
+      service_name:  app
+      dockerfile:    Dockerfile.app
+      terraform_dir: app
+      gcp_region:    ${{ vars.GCP_REGION }}
+      environment:   ${{ needs.detect.outputs.environment }}
+      captcha_url:   https://challenges.cloudflare.com/turnstile/v0/siteverify
     secrets: inherit
 
   vendor:
@@ -67,11 +68,12 @@ jobs:
       id-token: write
       contents: read
     with:
-      service_name:      vendor
-      dockerfile:        Dockerfile.vendor
-      cloud_run_service: vendor-service-${{ needs.detect.outputs.environment }}
-      gcp_region:        ${{ vars.GCP_REGION }}
-      environment:       ${{ needs.detect.outputs.environment }}
+      service_name:  vendor
+      dockerfile:    Dockerfile.vendor
+      terraform_dir: services/vendor
+      gcp_region:    ${{ vars.GCP_REGION }}
+      environment:   ${{ needs.detect.outputs.environment }}
+      captcha_url:   https://challenges.cloudflare.com/turnstile/v0/siteverify
     secrets: inherit
 
   search:
@@ -82,9 +84,9 @@ jobs:
       id-token: write
       contents: read
     with:
-      service_name:      search
-      dockerfile:        Dockerfile.search
-      cloud_run_service: search-service-${{ needs.detect.outputs.environment }}
-      gcp_region:        ${{ vars.GCP_REGION }}
-      environment:       ${{ needs.detect.outputs.environment }}
+      service_name:  search
+      dockerfile:    Dockerfile.search
+      terraform_dir: services/search
+      gcp_region:    ${{ vars.GCP_REGION }}
+      environment:   ${{ needs.detect.outputs.environment }}
     secrets: inherit

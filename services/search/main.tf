@@ -8,27 +8,25 @@ terraform {
   backend "gcs" {}
 }
 
-variable "project_id"         {}
-variable "project_number"     {}
-variable "region"             {}
-variable "service_account"    {}
-variable "image"              {}
-variable "database_url"       {}
-variable "cache_url"          {}
-variable "captcha_url"        {}
-variable "captcha_secret_key" {}
-variable "jwt_secret"         {}
-variable "cache_password"     { default = "" }
-variable "environment"        { default = "prod" }
-variable "vendor_service_url" { default = "" }
+variable "project_id"          {}
+variable "project_number"      {}
+variable "region"              {}
+variable "service_account"     {}
+variable "image"               {}
+variable "search_database_url" {}
+variable "vendor_db_url"       {}
+variable "cache_url"           {}
+variable "jwt_secret"          {}
+variable "cache_password"      { default = "" }
+variable "environment"         { default = "prod" }
 
 provider "google" {
   project = var.project_id
   region  = var.region
 }
 
-resource "google_cloud_run_v2_service" "app" {
-  name     = "app-${var.environment}"
+resource "google_cloud_run_v2_service" "search" {
+  name     = "search-${var.environment}"
   location = var.region
   project  = var.project_id
 
@@ -40,19 +38,15 @@ resource "google_cloud_run_v2_service" "app" {
 
       env {
         name  = "DATABASE_URL"
-        value = var.database_url
+        value = var.search_database_url
+      }
+      env {
+        name  = "VENDOR_DB_URL"
+        value = var.vendor_db_url
       }
       env {
         name  = "CACHE_URL"
         value = var.cache_url
-      }
-      env {
-        name  = "CAPTCHA_URL"
-        value = var.captcha_url
-      }
-      env {
-        name  = "CAPTCHA_SECRET_KEY"
-        value = var.captcha_secret_key
       }
       env {
         name  = "JWT_SECRET"
@@ -65,10 +59,6 @@ resource "google_cloud_run_v2_service" "app" {
       env {
         name  = "APP_ENV"
         value = var.environment
-      }
-      env {
-        name  = "VENDOR_SERVICE_URL"
-        value = var.vendor_service_url
       }
 
       resources {
@@ -89,11 +79,11 @@ resource "google_cloud_run_v2_service" "app" {
 resource "google_cloud_run_v2_service_iam_member" "public" {
   project  = var.project_id
   location = var.region
-  name     = google_cloud_run_v2_service.app.name
+  name     = google_cloud_run_v2_service.search.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "service_url" {
-  value = google_cloud_run_v2_service.app.uri
+  value = google_cloud_run_v2_service.search.uri
 }
