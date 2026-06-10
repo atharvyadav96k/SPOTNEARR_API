@@ -22,12 +22,12 @@ func (b *BusinessHandler) BusinessRegister(w http.ResponseWriter, r *http.Reques
 		b.ResponseBadRequest(w)
 		return
 	}
-	dto, err := ParseBody[dtos.RegisterBusiness](r)
-	if err != nil || dto == nil {
-		b.ResponseBadRequest(w)
+	var dto dtos.RegisterBusiness
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		b.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	b.Response(w, b.svc.RegisterBusiness(dto, userID))
+	b.Response(w, b.svc.RegisterBusiness(&dto, userID))
 }
 
 func (b *BusinessHandler) BusinessProfile(w http.ResponseWriter, r *http.Request) {
@@ -45,10 +45,10 @@ func (b *BusinessHandler) BusinessUpdate(w http.ResponseWriter, r *http.Request)
 		b.ResponseBadRequest(w)
 		return
 	}
-	dto, err := ParseBody[dtos.UpdateBusiness](r)
-	if err != nil || dto == nil {
-		b.ResponseBadRequest(w)
+	var dto dtos.UpdateBusiness
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		b.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	b.Response(w, b.svc.UpdateBusiness(bizID, dto))
+	b.Response(w, b.svc.UpdateBusiness(bizID, &dto))
 }

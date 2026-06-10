@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"net/http"
-	"strings"
 
+	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
 
@@ -21,15 +21,10 @@ func (c *CategoryHandler) CategoryList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CategoryHandler) CategoryAdd(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimSpace(c.Name(r))
-	if name == "" {
-		c.ResponseBadRequestWithMessage(w, "name is required")
+	var dto dtos.CategoryAddRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		c.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	slug := strings.TrimSpace(c.Slug(r))
-	if slug == "" {
-		c.ResponseBadRequestWithMessage(w, "slug is required")
-		return
-	}
-	c.Response(w, c.svc.AddCategory(name, slug))
+	c.Response(w, c.svc.AddCategory(dto.Name, dto.Slug))
 }

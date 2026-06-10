@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - develop
+      - staging
     paths:
       - 'bridge-service/**'
       - 'app/**'
@@ -23,9 +23,7 @@ jobs:
       - name: Detect environment
         id: env
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
             echo "environment=staging" >> $GITHUB_OUTPUT
           else
             echo "environment=prod" >> $GITHUB_OUTPUT
