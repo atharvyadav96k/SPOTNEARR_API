@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
-	"github.com/atharvyadav96k/spotnearr/search-svc/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	"github.com/atharvyadav96k/spotnearr/search-svc/services"
 )
 
@@ -19,7 +19,7 @@ func NewSearchHandler(svc *services.SearchService) *SearchHandler {
 
 func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	dto := dtos.NewSearchQuery(q.Get("q"), q.Get("lat"), q.Get("long"), q.Get("range"))
+	dto := pkgdtos.NewSearchQuery(q.Get("q"), q.Get("lat"), q.Get("long"), q.Get("range"))
 	if err := dto.Validate(); err != nil {
 		respond(w, http.StatusBadRequest, httputil.Res{Message: err.Error()})
 		return

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
-	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
+	"github.com/atharvyadav96k/spotnearr/pkg/validate"
 )
 
 type RegisterRequest struct {
@@ -19,21 +18,17 @@ func (r *RegisterRequest) Validate() error {
 	if strings.TrimSpace(r.Name) == "" {
 		return fmt.Errorf("name is required")
 	}
-	if !utils.ValidateEmail(r.Email) {
+	if !validate.Email(r.Email) {
 		return fmt.Errorf("invalid email address")
 	}
-	if !utils.ValidatePhone(r.Phone) {
+	if !validate.Phone(r.Phone) {
 		return fmt.Errorf("invalid phone number")
 	}
-	ok, msg := utils.ValidatePassword(r.Password)
+	ok, msg := validate.Password(r.Password)
 	if !ok {
 		return fmt.Errorf("%s", msg)
 	}
 	return nil
-}
-
-func (r *RegisterRequest) ToModel() *usermodel.User {
-	return usermodel.NewUser(r.Name, r.Email, r.Phone, r.Password)
 }
 
 type LoginRequest struct {
@@ -56,7 +51,7 @@ type SessionRequest struct {
 }
 
 func (s *SessionRequest) Validate() error {
-	if !utils.ValidateEmail(s.Email) {
+	if !validate.Email(s.Email) {
 		return fmt.Errorf("invalid email address")
 	}
 	return nil
@@ -67,7 +62,7 @@ type ResetPasswordRequest struct {
 }
 
 func (r *ResetPasswordRequest) Validate() error {
-	ok, msg := utils.ValidatePassword(r.Password)
+	ok, msg := validate.Password(r.Password)
 	if !ok {
 		return fmt.Errorf("%s", msg)
 	}

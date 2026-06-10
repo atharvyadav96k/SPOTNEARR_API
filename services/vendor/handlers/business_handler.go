@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
 
@@ -22,7 +22,7 @@ func (b *BusinessHandler) BusinessRegister(w http.ResponseWriter, r *http.Reques
 		b.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.RegisterBusiness
+	var dto pkgdtos.RegisterBusiness
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		b.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -45,7 +45,7 @@ func (b *BusinessHandler) BusinessUpdate(w http.ResponseWriter, r *http.Request)
 		b.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.UpdateBusiness
+	var dto pkgdtos.UpdateBusiness
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		b.ResponseBadRequestWithMessage(w, err.Error())
 		return

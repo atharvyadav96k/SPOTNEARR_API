@@ -3,17 +3,20 @@ package dtos
 import (
 	"fmt"
 	"strings"
-
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/utils/request"
 )
 
+type ValueUnit struct {
+	Value float64 `json:"value"`
+	Unit  string  `json:"unit"`
+}
+
 type ProductAddRequest struct {
-	Name        string            `json:"name"`
-	Price       request.ValueUnit `json:"price"`
-	Quantity    request.ValueUnit `json:"quantity"`
-	Desc        string            `json:"desc"`
-	CategoryIDs []uint            `json:"categoryIds"`
-	StoreIDs    []uint            `json:"storeIds"`
+	Name        string    `json:"name"`
+	Price       ValueUnit `json:"price"`
+	Quantity    ValueUnit `json:"quantity"`
+	Desc        string    `json:"desc"`
+	CategoryIDs []uint    `json:"categoryIds"`
+	StoreIDs    []uint    `json:"storeIds"`
 }
 
 func (p *ProductAddRequest) Validate() error {
@@ -33,10 +36,10 @@ func (p *ProductAddRequest) Validate() error {
 }
 
 type ProductUpdateRequest struct {
-	Name     string            `json:"name"`
-	Price    request.ValueUnit `json:"price"`
-	Quantity request.ValueUnit `json:"quantity"`
-	Desc     string            `json:"desc"`
+	Name     string    `json:"name"`
+	Price    ValueUnit `json:"price"`
+	Quantity ValueUnit `json:"quantity"`
+	Desc     string    `json:"desc"`
 }
 
 func (p *ProductUpdateRequest) Validate() error {

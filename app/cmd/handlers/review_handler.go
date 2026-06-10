@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 )
@@ -35,7 +35,7 @@ func (rev *ReviewHandler) reviewWrite(w http.ResponseWriter, r *http.Request, sv
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -49,7 +49,7 @@ func (rev *ReviewHandler) reviewDelete(w http.ResponseWriter, r *http.Request, s
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -67,7 +67,7 @@ func (rev *ReviewHandler) ReviewBusiness(w http.ResponseWriter, r *http.Request)
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -81,7 +81,7 @@ func (rev *ReviewHandler) ReviewBusinessUpdate(w http.ResponseWriter, r *http.Re
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -95,7 +95,7 @@ func (rev *ReviewHandler) ReviewBusinessDelete(w http.ResponseWriter, r *http.Re
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -113,7 +113,7 @@ func (rev *ReviewHandler) ReviewProduct(w http.ResponseWriter, r *http.Request) 
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -127,7 +127,7 @@ func (rev *ReviewHandler) ReviewProductUpdate(w http.ResponseWriter, r *http.Req
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -141,7 +141,7 @@ func (rev *ReviewHandler) ReviewProductDelete(w http.ResponseWriter, r *http.Req
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -164,7 +164,7 @@ func (rev *ReviewHandler) ReviewOffer(w http.ResponseWriter, r *http.Request) {
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -178,7 +178,7 @@ func (rev *ReviewHandler) ReviewOfferUpdate(w http.ResponseWriter, r *http.Reque
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -192,7 +192,7 @@ func (rev *ReviewHandler) ReviewOfferDelete(w http.ResponseWriter, r *http.Reque
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -215,7 +215,7 @@ func (rev *ReviewHandler) ReviewSpotlight(w http.ResponseWriter, r *http.Request
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -229,7 +229,7 @@ func (rev *ReviewHandler) ReviewSpotlightUpdate(w http.ResponseWriter, r *http.R
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -243,7 +243,7 @@ func (rev *ReviewHandler) ReviewSpotlightDelete(w http.ResponseWriter, r *http.R
 		rev.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.ReviewRequest
+	var dto pkgdtos.ReviewRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		rev.ResponseBadRequestWithMessage(w, err.Error())
 		return

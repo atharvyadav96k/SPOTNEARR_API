@@ -12,7 +12,7 @@ import (
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/pkg/jwtutil"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"gorm.io/gorm"
 )
@@ -31,7 +31,7 @@ func NewBusinessService(db *gorm.DB, c *cache.Cache, userServiceURL string) *Bus
 	}
 }
 
-func (b *BusinessService) RegisterBusiness(dto *dtos.RegisterBusiness, userID uint) httputil.Res {
+func (b *BusinessService) RegisterBusiness(dto *pkgdtos.RegisterBusiness, userID uint) httputil.Res {
 	biz, err := b.RepoBusiness().Create(context.Background(), vendormodel.NewBusiness(dto.Name, dto.Email, dto.Phone, dto.Desc))
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
@@ -86,7 +86,7 @@ func (b *BusinessService) GetBusinessByID(id uint) httputil.Res {
 	return b.ResponseOK("Business info", business)
 }
 
-func (b *BusinessService) UpdateBusiness(businessID uint, dto *dtos.UpdateBusiness) httputil.Res {
+func (b *BusinessService) UpdateBusiness(businessID uint, dto *pkgdtos.UpdateBusiness) httputil.Res {
 	updated, err := b.RepoBusiness().Update(context.Background(), businessID, dto.Name, dto.Desc)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
