@@ -104,7 +104,7 @@ jobs:
             -backend-config="prefix=cloud-run/${{ inputs.service_name }}-${{ inputs.environment }}"
 
       - name: Terraform Plan
-        run: terraform plan -input=false
+        run: terraform plan -input=false -lock=false
         env:
           TF_VAR_project_id:          ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_project_number:      ${{ secrets.GCP_PROJECT_NUMBER }}
