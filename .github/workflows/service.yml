@@ -4,15 +4,15 @@ on:
   workflow_call:
     inputs:
       service_name:
-        description: 'Short name used for the image tag (app, vendor, search)'
+        description: 'Short name for image tag (app, vendor, search)'
         type: string
         required: true
       dockerfile:
-        description: 'Dockerfile at the workspace root (e.g. Dockerfile.app)'
+        description: 'Dockerfile at workspace root (e.g. Dockerfile.app)'
         type: string
         required: true
-      cloud_run_service:
-        description: 'Cloud Run service name to deploy to'
+      terraform_dir:
+        description: 'Directory containing main.tf (e.g. app, services/vendor)'
         type: string
         required: true
       gcp_region:
@@ -21,17 +21,54 @@ on:
       environment:
         type: string
         required: true
+      captcha_url:
+        type: string
+        required: false
+        default: 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
     secrets:
       GCP_PROJECT_ID:
+        required: true
+      GCP_PROJECT_NUMBER:
         required: true
       GCP_SA_EMAIL:
         required: true
       GCP_WIF_PROVIDER:
         required: true
+      GCP_BUCKET_NAME:
+        required: true
+      DATABASE_URL:
+        required: false
+      DEV_DATABASE_URL:
+        required: false
+      VENDOR_DATABASE_URL:
+        required: false
+      DEV_VENDOR_DATABASE_URL:
+        required: false
+      SEARCH_DATABASE_URL:
+        required: false
+      DEV_SEARCH_DATABASE_URL:
+        required: false
+      VENDOR_DB_URL:
+        required: false
+      CACHE_URL:
+        required: false
+      CACHE_PASSWORD:
+        required: false
+      JWT_SECRET:
+        required: false
+      DEV_JWT_SECRET:
+        required: false
+      DEV_CAPTCHA_SECRET_KEY:
+        required: false
+      PROD_CAPTCHA_SECRET_KEY:
+        required: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.terraform_dir }}
     env:
       IMAGE: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/${{ inputs.service_name }}:${{ github.sha }}
 
@@ -47,15 +84,55 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ inputs.gcp_region }}-docker.pkg.dev --quiet
 
-      - name: Build and push
+      - name: Build and push image
+        working-directory: ${{ github.workspace }}
         run: |
           docker build -f ${{ inputs.dockerfile }} -t ${{ env.IMAGE }} .
           docker push ${{ env.IMAGE }}
 
-      - name: Deploy to Cloud Run
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
         run: |
-          gcloud run deploy ${{ inputs.cloud_run_service }} \
-            --image ${{ env.IMAGE }} \
-            --region ${{ inputs.gcp_region }} \
-            --platform managed \
-            --quiet
+          terraform init \
+            -input=false \
+            -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
+            -backend-config="prefix=cloud-run/${{ inputs.service_name }}-${{ inputs.environment }}"
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+        env:
+          TF_VAR_project_id:          ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:      ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_region:              ${{ inputs.gcp_region }}
+          TF_VAR_service_account:     ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_image:               ${{ env.IMAGE }}
+          TF_VAR_environment:         ${{ inputs.environment }}
+          TF_VAR_database_url:        ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
+          TF_VAR_vendor_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_VENDOR_DATABASE_URL || secrets.VENDOR_DATABASE_URL }}
+          TF_VAR_search_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_SEARCH_DATABASE_URL || secrets.SEARCH_DATABASE_URL }}
+          TF_VAR_vendor_db_url:       ${{ secrets.VENDOR_DB_URL }}
+          TF_VAR_cache_url:           ${{ secrets.CACHE_URL }}
+          TF_VAR_cache_password:      ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_jwt_secret:          ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
+          TF_VAR_captcha_url:         ${{ inputs.captcha_url }}
+          TF_VAR_captcha_secret_key:  ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_project_id:          ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_project_number:      ${{ secrets.GCP_PROJECT_NUMBER }}
+          TF_VAR_region:              ${{ inputs.gcp_region }}
+          TF_VAR_service_account:     ${{ secrets.GCP_SA_EMAIL }}
+          TF_VAR_image:               ${{ env.IMAGE }}
+          TF_VAR_environment:         ${{ inputs.environment }}
+          TF_VAR_database_url:        ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
+          TF_VAR_vendor_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_VENDOR_DATABASE_URL || secrets.VENDOR_DATABASE_URL }}
+          TF_VAR_search_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_SEARCH_DATABASE_URL || secrets.SEARCH_DATABASE_URL }}
+          TF_VAR_vendor_db_url:       ${{ secrets.VENDOR_DB_URL }}
+          TF_VAR_cache_url:           ${{ secrets.CACHE_URL }}
+          TF_VAR_cache_password:      ${{ secrets.CACHE_PASSWORD }}
+          TF_VAR_jwt_secret:          ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
+          TF_VAR_captcha_url:         ${{ inputs.captcha_url }}
+          TF_VAR_captcha_secret_key:  ${{ inputs.environment == 'dev' && secrets.DEV_CAPTCHA_SECRET_KEY || secrets.PROD_CAPTCHA_SECRET_KEY }}
