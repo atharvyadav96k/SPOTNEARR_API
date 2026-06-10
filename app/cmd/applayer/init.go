@@ -20,18 +20,12 @@ func Init() application {
 	if err := a.InitCaptcha(); err != nil {
 		panic(err)
 	}
-	services := services.Init(a.GetDb(), a.GetCache())
+	svcs := services.Init(a.GetDb(), a.GetCache())
 	a.healthHandler = handlers.NewHealthHandler()
-	a.authHandler = handlers.NewAuthHandler(services)
-	a.businessHandler = handlers.NewBusinessHandler(services)
-	a.userHandler = handlers.NewUserHandler(services)
-	a.inventoryHandler = handlers.NewInventoryHandler(services)
-	a.productHandler = handlers.NewProductHandler(services)
-	a.claimHandler = handlers.NewClaimHandler(services)
-	a.searchHandler = handlers.NewSearchHandler(services)
-	a.categoryHandler = handlers.NewCategoryHandler(services)
-	a.spotlightHandler = handlers.NewSpotlightHandler()
-	a.offerHandler = handlers.NewOfferHandler()
-	a.reviewHandler = handlers.NewReviewHandler(services)
+	a.authHandler = handlers.NewAuthHandler(svcs)
+	a.userHandler = handlers.NewUserHandler(svcs)
+	a.claimHandler = handlers.NewClaimHandler(svcs)
+	a.reviewHandler = handlers.NewReviewHandler(svcs)
+	a.internalHandler = handlers.NewInternalHandler(svcs)
 	return a
 }

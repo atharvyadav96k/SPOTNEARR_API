@@ -15,7 +15,7 @@ on:
       environment:
         required: true
         type: string
-        description: 'Deployment environment: dev or prod'
+        description: 'Deployment environment: dev, staging, or prod'
 
     secrets:
       GCP_PROJECT_ID:
@@ -44,19 +44,21 @@ on:
         required: true
       PROD_CAPTCHA_SECRET_KEY:
         required: true
+      TAILSCALE_AUTH_KEY:
+        required: false
+      SSH_PRIVATE_KEY:
+        required: false
 
 jobs:
-  deploy:
+  deploy-cloud:
     runs-on: ubuntu-latest
-
+    if: ${{ inputs.environment == 'dev' || inputs.environment == 'prod' }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
-
     env:
       IMAGE_NAME: ${{ inputs.gcp_region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gcf-artifacts/app
       IMAGE_TAG: ${{ github.sha }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -116,3 +118,43 @@ jobs:
           TF_VAR_jwt_secret:         ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
           TF_VAR_cache_password:     ${{ secrets.CACHE_PASSWORD }}
           TF_VAR_artifact_repo:      ${{ inputs.environment == 'dev' && 'dev' || 'gcf-artifacts' }}
+
+  deploy-local-staging:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.environment == 'staging' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # 🎯 FORCE keyscan to fetch the ed25519 signature type your server uses!
+          ssh-keyscan -t ed25519 -H 100.73.67.35 >> ~/.ssh/known_hosts
+      - name: Push to Staging Server and Run Systemd Automation
+        run: |
+          ssh atharv96k@100.73.67.35 \
+            "JWT_SECRET='${{ secrets.DEV_JWT_SECRET }}' \
+             DATABASE_URL='${{ secrets.DEV_DATABASE_URL }}' \
+             CACHE_URL='${{ secrets.CACHE_URL }}' \
+             CACHE_PASSWORD='${{ secrets.CACHE_PASSWORD }}' \
+             CAPTCHA_URL='${{ inputs.captcha_url }}' \
+             CAPTCHA_SECRET_KEY='${{ secrets.DEV_CAPTCHA_SECRET_KEY }}' \
+             bash -s" << 'EOF'
+            
+            cd ~/SPOTNEARR_API
+            git fetch --all
+            git reset --hard origin/staging
+            
+            cp app/start_server.sh /home/atharv96k/start_server.sh
+            chmod +x /home/atharv96k/start_server.sh
+
+            sudo systemctl restart spotnearr.service
+          EOF

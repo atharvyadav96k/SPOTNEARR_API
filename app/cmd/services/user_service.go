@@ -2,9 +2,12 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
@@ -19,12 +22,45 @@ import (
 
 type UserService struct {
 	base_service
+	httpClient *http.Client
 }
 
 func NewUserService(db *gorm.DB, cache *cache.Cache) *UserService {
 	return &UserService{
 		base_service: NewBaseService(db, cache),
+		httpClient:   &http.Client{Timeout: 500 * time.Millisecond},
 	}
+}
+
+// fetchBusinessAccess calls the Vendor Service to get the user's business_id + role.
+// Returns nil, RoleUser if the user has no business or if the call fails.
+func (u *UserService) fetchBusinessAccess(userID uint) (*uint, models.UserRole) {
+	url := fmt.Sprintf("%s/internal/users/%d/access", config.C.VendorServiceURL, userID)
+	resp, err := u.httpClient.Get(url)
+	if err != nil {
+		log.Printf("user: vendor access lookup failed for user %d: %v", userID, err)
+		return nil, models.RoleUser
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, models.RoleUser // user has no business yet
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("user: vendor access returned %d for user %d", resp.StatusCode, userID)
+		return nil, models.RoleUser
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, models.RoleUser
+	}
+	var result struct {
+		BusinessID uint             `json:"business_id"`
+		Role       models.UserRole  `json:"role"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, models.RoleUser
+	}
+	return &result.BusinessID, result.Role
 }
 
 func (u *UserService) RegisterUser(user *models.User) response.Res {
@@ -55,13 +91,7 @@ func (u *UserService) Login(email string, password string) response.Res {
 		return u.ResponseBadRequest("Invalid email or password")
 	}
 
-	var currentBusinessID *uint
-	var userRole = models.RoleUser
-	access, err := u.RepoAccess().GetAccessByUserId(ctx, user.ID)
-	if err == nil {
-		currentBusinessID = &access.BusinessID
-		userRole = access.Role
-	}
+	currentBusinessID, userRole := u.fetchBusinessAccess(user.ID)
 
 	var refreshToken string
 	var refreshExpiry time.Time
@@ -129,6 +159,12 @@ func (u *UserService) DismissRefreshToken(id uint) response.Res {
 		return u.ResponseInternalServer("Failed to logout")
 	}
 	return u.ResponseOK("Successfully logged out from all devices", nil)
+}
+
+// InvalidateRefreshToken drops the stored refresh token for a user.
+// Used by the internal endpoint called by the Vendor Service after business registration.
+func (u *UserService) InvalidateRefreshToken(id uint) error {
+	return u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(id)
 }
 
 func (u *UserService) AddUserToBusiness(userID uint, businessId uint, ownerId uint) response.Res {

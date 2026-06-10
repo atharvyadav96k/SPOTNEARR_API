@@ -11,6 +11,5 @@ type IClaimRepository interface {
 	GetByID(ctx context.Context, claimID uint) (models.Claim, error)
 	GetByUserID(ctx context.Context, userID uint) ([]models.Claim, error)
 	GetByUserAndInvProduct(ctx context.Context, userID uint, invProductID uint) (models.Claim, error)
-	GetInvProductForClaim(ctx context.Context, invProductID uint) (models.InventoryProduct, error)
 	Delete(ctx context.Context, claimID uint, userID uint) error
 }
