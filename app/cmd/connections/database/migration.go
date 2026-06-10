@@ -1,14 +1,10 @@
 package database
 
 import (
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	userdb "github.com/Developer-Aadesh/spotnearr-database/user"
 	"gorm.io/gorm"
 )
 
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&models.User{},
-		&models.Claim{},
-		&models.Review{},
-	)
+	return userdb.AutoMigrate(db)
 }

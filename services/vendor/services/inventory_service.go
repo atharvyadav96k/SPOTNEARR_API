@@ -6,7 +6,7 @@ import (
 
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"gorm.io/gorm"
 )
 
@@ -27,7 +27,7 @@ func (i *InventoryService) GetBusinessInventory(bizID uint) httputil.Res {
 	return i.ResponseOK("Business inventories", stores)
 }
 
-func (i *InventoryService) CreateInventory(bizID uint, store *models.Store) httputil.Res {
+func (i *InventoryService) CreateInventory(bizID uint, store *vendormodel.Store) httputil.Res {
 	store.BusinessID = bizID
 	if err := i.RepoStore().CreateStoreByBusinessId(context.Background(), store); err != nil {
 		if errors.Is(err, gorm.ErrForeignKeyViolated) {
@@ -39,7 +39,7 @@ func (i *InventoryService) CreateInventory(bizID uint, store *models.Store) http
 }
 
 func (i *InventoryService) UpdateInventory(bizID uint, storeID uint, name string, address string, lat float64, long float64) httputil.Res {
-	store := models.NewStore(name, address, lat, long)
+	store := vendormodel.NewStore(name, address, lat, long)
 	store.ID = storeID
 	store.BusinessID = bizID
 	updated, err := i.RepoStore().UpdateStoreByBusinessId(context.Background(), store)
@@ -61,7 +61,7 @@ func (i *InventoryService) GetInvProducts(bizID uint, storeID uint) httputil.Res
 }
 
 func (i *InventoryService) AddInvProduct(bizID uint, storeID uint, productID uint, count *int, available *bool) httputil.Res {
-	product := models.NewInvProduct(storeID, productID, count, available)
+	product := vendormodel.NewInvProduct(storeID, productID, count, available)
 	if err := i.RepoInvProduct().AddProduct(context.Background(), product, bizID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return i.ResponseNotFound("Store not found")
@@ -72,7 +72,7 @@ func (i *InventoryService) AddInvProduct(bizID uint, storeID uint, productID uin
 }
 
 func (i *InventoryService) UpdateInvProduct(bizID uint, invProdID uint, count *int, available *bool) httputil.Res {
-	invProd := models.InventoryProduct{
+	invProd := vendormodel.InventoryProduct{
 		ID:        invProdID,
 		Count:     count,
 		Available: available,

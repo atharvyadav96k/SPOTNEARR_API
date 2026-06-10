@@ -13,7 +13,7 @@ import (
 	"github.com/atharvyadav96k/spotnearr/pkg/jwtutil"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
+	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +32,7 @@ func NewBusinessService(db *gorm.DB, c *cache.Cache, userServiceURL string) *Bus
 }
 
 func (b *BusinessService) RegisterBusiness(dto *dtos.RegisterBusiness, userID uint) httputil.Res {
-	biz, err := b.RepoBusiness().Create(context.Background(), models.NewBusiness(dto.Name, dto.Email, dto.Phone, dto.Desc))
+	biz, err := b.RepoBusiness().Create(context.Background(), vendormodel.NewBusiness(dto.Name, dto.Email, dto.Phone, dto.Desc))
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return b.ResponseConflict("Phone number or email is already in use")
@@ -44,7 +44,7 @@ func (b *BusinessService) RegisterBusiness(dto *dtos.RegisterBusiness, userID ui
 	}
 
 	if err := b.RepoAccess().CreateNewAccess(context.Background(),
-		models.NewBusinessAccess(userID, biz.ID, jwtutil.RoleAdmin)); err != nil {
+		vendormodel.NewBusinessAccess(userID, biz.ID, jwtutil.RoleAdmin)); err != nil {
 		log.Default().Println(err)
 		b.RepoBusiness().HardDelete(context.Background(), biz.ID)
 		if errors.Is(err, gorm.ErrDuplicatedKey) {

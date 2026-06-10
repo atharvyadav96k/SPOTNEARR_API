@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 )
 
 type RegisterRequest struct {
@@ -32,8 +32,8 @@ func (r *RegisterRequest) Validate() error {
 	return nil
 }
 
-func (r *RegisterRequest) ToModel() *models.User {
-	return models.NewUser(r.Name, r.Email, r.Phone, r.Password)
+func (r *RegisterRequest) ToModel() *usermodel.User {
+	return usermodel.NewUser(r.Name, r.Email, r.Phone, r.Password)
 }
 
 type LoginRequest struct {
