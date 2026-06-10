@@ -99,6 +99,11 @@ jobs:
             -backend-config="bucket=${{ secrets.GCP_BUCKET_NAME }}" \
             -backend-config="prefix=cloud-run/${{ inputs.service_name }}-${{ inputs.environment }}"
 
+      - name: Remove stale docker state
+        run: |
+          terraform state rm docker_registry_image.app || true
+          terraform state rm docker_image.app || true
+
       - name: Terraform Plan
         run: terraform plan -input=false
         env:
