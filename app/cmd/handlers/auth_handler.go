@@ -7,9 +7,8 @@ import (
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
-	"github.com/atharvyadav96k/SPOTNEARR_API/models"
+	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
-	"github.com/atharvyadav96k/SPOTNEARR_API/utils/request"
 )
 
 type AuthHandler struct {
@@ -17,66 +16,43 @@ type AuthHandler struct {
 }
 
 func NewAuthHandler(services *services.Services) *AuthHandler {
-	return &AuthHandler{
-		BaseHandler: *NewBaserHandler(services),
-	}
+	return &AuthHandler{BaseHandler: *NewBaserHandler(services)}
 }
 
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	email, err := a.Email(r)
-	if err != nil {
+	var dto dtos.RegisterRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	password, err := a.Password(r)
-	if err != nil {
-		a.ResponseBadRequestWithMessage(w, err.Error())
-		return
-	}
-	phone, err := a.Phone(r)
-	if err != nil {
-		a.ResponseBadRequestWithMessage(w, err.Error())
-		return
-	}
-	user := models.NewUser(a.Name(r), email, phone, password)
-	res := a.GetUserService().RegisterUser(user)
-	a.Response(w, res)
+	a.Response(w, a.GetUserService().RegisterUser(dto.ToModel()))
 }
 
 func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	email, err := a.Email(r)
-	if err != nil {
+	var dto dtos.LoginRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	password := request.GetVal(r, "password").ToString()
-	if strings.TrimSpace(password) == "" {
-		a.ResponseBadRequestWithMessage(w, "missing password field")
-		return
-	}
-	res := a.GetUserService().Login(email, password)
-	a.Response(w, res)
+	a.Response(w, a.GetUserService().Login(dto.Email, dto.Password))
 }
 
 func (a *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
-	email, err := a.Email(r)
-	if err != nil {
+	var dto dtos.SessionRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	res := a.GetUserService().SessionNotification(email)
-	a.Response(w, res)
+	a.Response(w, a.GetUserService().SessionNotification(dto.Email))
 }
 
 func (a *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	session := a.QuerySession(r)
-	password, err := a.Password(r)
-	if err != nil {
+	var dto dtos.ResetPasswordRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	res := a.GetUserService().UpdatePassword(password, session)
-	a.Response(w, res)
+	a.Response(w, a.GetUserService().UpdatePassword(dto.Password, a.QuerySession(r)))
 }
 
 func (a *AuthHandler) Auth(w http.ResponseWriter, r *http.Request) {
@@ -87,11 +63,7 @@ func (a *AuthHandler) Auth(w http.ResponseWriter, r *http.Request) {
 
 func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	userTokens, err := ParseBody[auth.TokenResponse](r)
-	if err != nil {
-		a.ResponseBadRequest(w)
-		return
-	}
-	if strings.TrimSpace(userTokens.RefreshToken) == "" {
+	if err != nil || strings.TrimSpace(userTokens.RefreshToken) == "" {
 		a.ResponseBadRequest(w)
 		return
 	}
@@ -100,17 +72,14 @@ func (a *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		a.ResponseBadRequest(w)
 		return
 	}
-	res := a.GetUserService().Refresh(*claims, userTokens.RefreshToken)
-	a.Response(w, res)
+	a.Response(w, a.GetUserService().Refresh(*claims, userTokens.RefreshToken))
 }
 
 func (a *AuthHandler) LogoutFromAllDevices(w http.ResponseWriter, r *http.Request) {
 	userId := a.ClaimGetUserId(r)
 	if userId == 0 {
-		log.Default().Println("User Id: ", userId)
 		a.ResponseBadRequest(w)
 		return
 	}
-	res := a.GetUserService().DismissRefreshToken(userId)
-	a.Response(w, res)
+	a.Response(w, a.GetUserService().DismissRefreshToken(userId))
 }

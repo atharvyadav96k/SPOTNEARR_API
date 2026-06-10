@@ -19,9 +19,6 @@ func NewInternalHandler(s *services.Services) *InternalHandler {
 	return &InternalHandler{userService: s.UserService}
 }
 
-// InvalidateRefresh handles POST /internal/users/{id}/invalidate-refresh.
-// Called by the Vendor Service (fire-and-forget) after business registration so
-// the user's next login generates a JWT that contains business_id.
 func (h *InternalHandler) InvalidateRefresh(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimSpace(mux.Vars(r)["userId"])
 	id, err := strconv.Atoi(idStr)
@@ -31,7 +28,6 @@ func (h *InternalHandler) InvalidateRefresh(w http.ResponseWriter, r *http.Reque
 	}
 	if err := h.userService.InvalidateRefreshToken(uint(id)); err != nil {
 		log.Printf("internal: invalidate-refresh user %d: %v", id, err)
-		// Still return 200 — this is fire-and-forget; the vendor side ignores failures.
 	}
 	w.WriteHeader(http.StatusOK)
 }
