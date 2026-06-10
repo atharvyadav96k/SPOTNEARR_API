@@ -1,13 +1,12 @@
 services:
 
-
   postgres:
     image: postgres:16-alpine
     container_name: spotnearr_postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: spotnearr_user       # primary DB (User Service)
+      POSTGRES_DB: spotnearr_user
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
@@ -36,13 +35,13 @@ services:
 
   user-service:
     build:
-      context: ./app
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.app
     container_name: spotnearr_user_svc
     environment:
       PORT: "8080"
       JWT_SECRET: ${JWT_SECRET:-motherfather}
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/spotnearr_user
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/spotnearr_user?sslmode=disable
       CACHE_URL: redis://redis:6379
       CACHE_PASSWORD: ""
       CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-1x0000000000000000000000000000000AA}
@@ -62,12 +61,12 @@ services:
   vendor-service:
     build:
       context: .
-      dockerfile: services/vendor/Dockerfile
+      dockerfile: Dockerfile.vendor
     container_name: spotnearr_vendor_svc
     environment:
       PORT: "8081"
       JWT_SECRET: ${JWT_SECRET:-motherfather}
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/spotnearr_vendor
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/spotnearr_vendor?sslmode=disable
       CACHE_URL: redis://redis:6379
       CACHE_PASSWORD: ""
       CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-1x0000000000000000000000000000000AA}
@@ -87,13 +86,13 @@ services:
   search-service:
     build:
       context: .
-      dockerfile: services/search/Dockerfile
+      dockerfile: Dockerfile.search
     container_name: spotnearr_search_svc
     environment:
       PORT: "8082"
       JWT_SECRET: ${JWT_SECRET:-motherfather}
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/spotnearr_search
-      VENDOR_DB_URL: postgresql://admin:admin123@postgres:5432/spotnearr_vendor
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/spotnearr_search?sslmode=disable
+      VENDOR_DB_URL: postgresql://admin:admin123@postgres:5432/spotnearr_vendor?sslmode=disable
       CACHE_URL: redis://redis:6379
       CACHE_PASSWORD: ""
     ports:
@@ -108,8 +107,6 @@ services:
     networks:
       - spotnearr-network
     restart: unless-stopped
-
-# ── Shared resources ──────────────────────────────────────────────────────
 
 networks:
   spotnearr-network:
