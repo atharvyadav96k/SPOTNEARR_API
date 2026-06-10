@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
@@ -20,7 +20,7 @@ func NewProductHandler(svc *services.ProductService) *ProductHandler {
 
 func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 	bizID := p.ClaimGetBusinessID(r)
-	var dto dtos.ProductAddRequest
+	var dto pkgdtos.ProductAddRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		p.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -40,7 +40,7 @@ func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
 		p.ResponseBadRequestWithMessage(w, "Invalid product ID")
 		return
 	}
-	var dto dtos.ProductUpdateRequest
+	var dto pkgdtos.ProductUpdateRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		p.ResponseBadRequestWithMessage(w, err.Error())
 		return

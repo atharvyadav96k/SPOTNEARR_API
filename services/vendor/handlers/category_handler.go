@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
 
@@ -21,7 +21,7 @@ func (c *CategoryHandler) CategoryList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CategoryHandler) CategoryAdd(w http.ResponseWriter, r *http.Request) {
-	var dto dtos.CategoryAddRequest
+	var dto pkgdtos.CategoryAddRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		c.ResponseBadRequestWithMessage(w, err.Error())
 		return

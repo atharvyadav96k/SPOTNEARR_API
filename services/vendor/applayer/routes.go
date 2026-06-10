@@ -4,20 +4,25 @@ import (
 	"net/http"
 	"time"
 
-	middleware "github.com/atharvyadav96k/spotnearr/vendor-svc/middlewares"
+	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
+	"github.com/atharvyadav96k/spotnearr/vendor-svc/config"
 	"github.com/gorilla/mux"
 )
 
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
-	router.Use(middleware.CORS)
+	router.Use(pkgmid.CORS)
+
+	auth := pkgmid.Auth(config.C.JWTSecret)
+	bizOnly := pkgmid.BusinessOnly(config.C.JWTSecret)
+	rl := a.cache.GetRateLimit()
 
 	apiV1 := router.PathPrefix("/api/v1").Subrouter()
 	a.healthRouter(apiV1)
-	a.businessRouter(apiV1)
-	a.inventoryRouter(apiV1)
-	a.productRouter(apiV1)
-	a.categoryRouter(apiV1)
+	a.businessRouter(apiV1, auth, bizOnly, rl)
+	a.inventoryRouter(apiV1, auth, bizOnly, rl)
+	a.productRouter(apiV1, auth, bizOnly, rl)
+	a.categoryRouter(apiV1, auth, bizOnly, rl)
 
 	// Internal routes — no auth middleware, expected to be network-isolated.
 	internal := router.PathPrefix("/internal").Subrouter()
@@ -33,12 +38,12 @@ func (a *application) healthRouter(router *mux.Router) {
 	}).Methods(http.MethodGet)
 }
 
-func (a *application) businessRouter(router *mux.Router) {
-	normalRL := middleware.RateLimit(a.cache, 300, time.Minute)
-	strictRL := middleware.RateLimit(a.cache, 500, time.Minute)
+func (a *application) businessRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 300, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 500, time.Minute)
 
 	biz := router.PathPrefix("/businesses").Subrouter()
-	biz.Use(middleware.Auth)
+	biz.Use(auth)
 
 	biz.Handle("/register",
 		strictRL(http.HandlerFunc(a.bizHandler.BusinessRegister)),
@@ -48,21 +53,21 @@ func (a *application) businessRouter(router *mux.Router) {
 		normalRL(http.HandlerFunc(a.bizHandler.BusinessProfile)),
 	).Methods(http.MethodGet)
 
-	bizOnly := biz.PathPrefix("").Subrouter()
-	bizOnly.Use(middleware.BusinessOnly)
+	bizOnlySub := biz.PathPrefix("").Subrouter()
+	bizOnlySub.Use(bizOnly)
 
-	bizOnly.Handle("/",
+	bizOnlySub.Handle("/",
 		normalRL(http.HandlerFunc(a.bizHandler.BusinessUpdate)),
 	).Methods(http.MethodPatch)
 }
 
-func (a *application) inventoryRouter(router *mux.Router) {
-	normalRL := middleware.RateLimit(a.cache, 100000, time.Minute)
-	strictRL := middleware.RateLimit(a.cache, 100000, time.Minute)
+func (a *application) inventoryRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 100000, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 100000, time.Minute)
 
 	inv := router.PathPrefix("/inventory").Subrouter()
-	inv.Use(middleware.Auth)
-	inv.Use(middleware.BusinessOnly)
+	inv.Use(auth)
+	inv.Use(bizOnly)
 
 	inv.Handle("/",
 		strictRL(http.HandlerFunc(a.invHandler.InventoryCreate)),
@@ -89,14 +94,14 @@ func (a *application) inventoryRouter(router *mux.Router) {
 	).Methods(http.MethodDelete)
 }
 
-func (a *application) productRouter(router *mux.Router) {
-	normalRL := middleware.RateLimit(a.cache, 3000, time.Minute)
-	strictRL := middleware.RateLimit(a.cache, 5000, time.Minute)
-	relaxedRL := middleware.RateLimit(a.cache, 60000, time.Minute)
+func (a *application) productRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
+	relaxedRL := pkgmid.RateLimit(rl, 60000, time.Minute)
 
 	products := router.PathPrefix("/products").Subrouter()
-	products.Use(middleware.Auth)
-	products.Use(middleware.BusinessOnly)
+	products.Use(auth)
+	products.Use(bizOnly)
 
 	products.Handle("/",
 		strictRL(http.HandlerFunc(a.productHandler.ProductAdd)),
@@ -119,21 +124,21 @@ func (a *application) productRouter(router *mux.Router) {
 	).Methods(http.MethodDelete)
 }
 
-func (a *application) categoryRouter(router *mux.Router) {
-	normalRL := middleware.RateLimit(a.cache, 3000, time.Minute)
-	strictRL := middleware.RateLimit(a.cache, 5000, time.Minute)
+func (a *application) categoryRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
 
 	cat := router.PathPrefix("/categories").Subrouter()
-	cat.Use(middleware.Auth)
+	cat.Use(auth)
 
 	cat.Handle("/",
 		normalRL(http.HandlerFunc(a.categoryHandler.CategoryList)),
 	).Methods(http.MethodGet)
 
-	bizOnly := cat.PathPrefix("").Subrouter()
-	bizOnly.Use(middleware.BusinessOnly)
+	bizOnlySub := cat.PathPrefix("").Subrouter()
+	bizOnlySub.Use(bizOnly)
 
-	bizOnly.Handle("/",
+	bizOnlySub.Handle("/",
 		strictRL(http.HandlerFunc(a.categoryHandler.CategoryAdd)),
 	).Methods(http.MethodPost)
 }

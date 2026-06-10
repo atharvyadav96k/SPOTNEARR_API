@@ -7,8 +7,9 @@ import (
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
-	"github.com/atharvyadav96k/SPOTNEARR_API/dtos"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
+	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 )
 
 type AuthHandler struct {
@@ -20,16 +21,16 @@ func NewAuthHandler(services *services.Services) *AuthHandler {
 }
 
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var dto dtos.RegisterRequest
+	var dto pkgdtos.RegisterRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	a.Response(w, a.GetUserService().RegisterUser(dto.ToModel()))
+	a.Response(w, a.GetUserService().RegisterUser(usermodel.NewUser(dto.Name, dto.Email, dto.Phone, dto.Password)))
 }
 
 func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var dto dtos.LoginRequest
+	var dto pkgdtos.LoginRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -38,7 +39,7 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
-	var dto dtos.SessionRequest
+	var dto pkgdtos.SessionRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -47,7 +48,7 @@ func (a *AuthHandler) Session(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	var dto dtos.ResetPasswordRequest
+	var dto pkgdtos.ResetPasswordRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		a.ResponseBadRequestWithMessage(w, err.Error())
 		return

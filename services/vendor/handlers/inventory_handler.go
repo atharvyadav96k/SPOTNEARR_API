@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
@@ -23,7 +23,7 @@ func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Reques
 		i.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.InventoryCreateRequest
+	var dto pkgdtos.InventoryCreateRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		i.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -43,7 +43,7 @@ func (i *InventoryHandler) InventoryUpdate(w http.ResponseWriter, r *http.Reques
 		i.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.InventoryUpdateRequest
+	var dto pkgdtos.InventoryUpdateRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		i.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -68,7 +68,7 @@ func (i *InventoryHandler) InventoryAddProduct(w http.ResponseWriter, r *http.Re
 		i.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.InventoryAddProductRequest
+	var dto pkgdtos.InventoryAddProductRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		i.ResponseBadRequestWithMessage(w, err.Error())
 		return
@@ -83,7 +83,7 @@ func (i *InventoryHandler) InventoryUpdateProduct(w http.ResponseWriter, r *http
 		i.ResponseBadRequest(w)
 		return
 	}
-	var dto dtos.InventoryUpdateProductRequest
+	var dto pkgdtos.InventoryUpdateProductRequest
 	if err := parseAndValidateBody(r, &dto); err != nil {
 		i.ResponseBadRequestWithMessage(w, err.Error())
 		return

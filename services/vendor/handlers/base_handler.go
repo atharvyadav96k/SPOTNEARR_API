@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/pkg/jwtutil"
-	middleware "github.com/atharvyadav96k/spotnearr/vendor-svc/middlewares"
 	"github.com/gorilla/mux"
 )
 
@@ -59,8 +59,8 @@ func ParseBody[T any](r *http.Request) (*T, error) {
 }
 
 func (h *BaseHandler) getClaims(r *http.Request) (*jwtutil.UserClaims, error) {
-	claims, ok := r.Context().Value(middleware.ClaimsKey).(*jwtutil.UserClaims)
-	if !ok || claims == nil {
+	claims, ok := pkgmid.ClaimsFromContext(r)
+	if !ok {
 		return nil, fmt.Errorf("unauthorized")
 	}
 	return claims, nil

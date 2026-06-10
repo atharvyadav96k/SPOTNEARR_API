@@ -4,22 +4,31 @@ import (
 	"net/http"
 	"time"
 
-	middleware "github.com/atharvyadav96k/SPOTNEARR_API/middlewares"
+	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
+	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/gorilla/mux"
 )
 
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
-	router.Use(middleware.CORS)
+	router.Use(pkgmid.CORS)
+
+	auth := pkgmid.Auth(config.C.JWTSecret)
+	captcha := pkgmid.CaptchaValidation(config.C.CaptchaURL, config.C.CaptchaSecretKey)
+	session := pkgmid.SessionValidation(config.C.JWTSecret)
+	rl := a.GetCache().GetRateLimit()
+
 	apiV1 := router.PathPrefix("/api/v1").Subrouter()
 	a.healthRouter(apiV1)
-	a.authRouter(apiV1)
-	a.userRouter(apiV1)
-	a.claimRouter(apiV1)
-	a.reviewRouter(apiV1)
+	a.authRouter(apiV1, auth, captcha, session, rl)
+	a.userRouter(apiV1, auth, rl)
+	a.claimRouter(apiV1, auth, rl)
+	a.reviewRouter(apiV1, auth, rl)
+
 	// Internal routes — network-isolated, no auth middleware.
 	internal := router.PathPrefix("/internal").Subrouter()
 	a.internalRouter(internal)
+
 	return router
 }
 
@@ -32,82 +41,68 @@ func (a *application) healthRouter(router *mux.Router) {
 	router.HandleFunc("/health", a.healthHandler.HealthOK).Methods(http.MethodGet)
 }
 
-func (a *application) authRouter(router *mux.Router) {
+func (a *application) authRouter(router *mux.Router, auth, captcha, session mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
 	authBase := router.PathPrefix("/auth").Subrouter()
 
 	authBase.HandleFunc("/refresh", a.authHandler.RefreshToken).Methods(http.MethodPost)
 
 	captchaRoutes := authBase.PathPrefix("").Subrouter()
-	captchaRoutes.Use(middleware.CaptchaValidation)
+	captchaRoutes.Use(captcha)
 	captchaRoutes.HandleFunc("/users/register", a.authHandler.Register).Methods(http.MethodPost)
 	captchaRoutes.HandleFunc("/users/login", a.authHandler.Login).Methods(http.MethodPost)
 	captchaRoutes.HandleFunc("/reset-request", a.authHandler.Session).Methods(http.MethodPost)
 
 	authBase.Handle("/reset-password",
-		middleware.SessionValidation(
-			middleware.CaptchaValidation(
-				http.HandlerFunc(a.authHandler.ResetPassword),
-			),
-		),
+		session(captcha(http.HandlerFunc(a.authHandler.ResetPassword))),
 	).Methods(http.MethodPost)
 
 	protectedAuth := authBase.PathPrefix("").Subrouter()
-	protectedAuth.Use(middleware.Auth)
+	protectedAuth.Use(auth)
 	protectedAuth.HandleFunc("/", a.authHandler.Auth).Methods(http.MethodGet)
 	protectedAuth.HandleFunc("/logout-all-devices", a.authHandler.LogoutFromAllDevices).Methods(http.MethodPost)
 }
 
-func (a *application) userRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 1000, time.Minute)
-	strictRateLimit := middleware.RateLimit(a.GetCache(), 5000, time.Minute)
+func (a *application) userRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRateLimit := pkgmid.RateLimit(rl, 1000, time.Minute)
+	strictRateLimit := pkgmid.RateLimit(rl, 5000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/users").Subrouter()
-	protectedAuth.Use(middleware.Auth)
+	protectedAuth.Use(auth)
 
 	protectedAuth.Handle("/{userId}/profile",
-		normalRateLimit(
-			http.HandlerFunc(a.userHandler.Profile),
-		),
+		normalRateLimit(http.HandlerFunc(a.userHandler.Profile)),
 	).Methods(http.MethodGet)
 
 	protectedAuth.Handle("/{userId}/ban",
-		strictRateLimit(
-			http.HandlerFunc(a.userHandler.BanUser),
-		),
+		strictRateLimit(http.HandlerFunc(a.userHandler.BanUser)),
 	)
 }
 
-func (a *application) claimRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 10000, time.Minute)
+func (a *application) claimRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRateLimit := pkgmid.RateLimit(rl, 10000, time.Minute)
 
 	protectedAuth := router.PathPrefix("/claims").Subrouter()
-	protectedAuth.Use(middleware.Auth)
+	protectedAuth.Use(auth)
 
 	protectedAuth.Handle("",
-		normalRateLimit(
-			http.HandlerFunc(a.claimHandler.GetUserClaims),
-		),
+		normalRateLimit(http.HandlerFunc(a.claimHandler.GetUserClaims)),
 	).Methods(http.MethodGet)
 
 	protectedAuth.Handle("/{invProductId}",
-		normalRateLimit(
-			http.HandlerFunc(a.claimHandler.ClaimProduct),
-		),
+		normalRateLimit(http.HandlerFunc(a.claimHandler.ClaimProduct)),
 	).Methods(http.MethodPost)
 
 	protectedAuth.Handle("/{claimId}",
-		normalRateLimit(
-			http.HandlerFunc(a.claimHandler.ClaimRemove),
-		),
+		normalRateLimit(http.HandlerFunc(a.claimHandler.ClaimRemove)),
 	).Methods(http.MethodDelete)
 }
 
-func (a *application) reviewRouter(router *mux.Router) {
-	normalRateLimit := middleware.RateLimit(a.GetCache(), 1000, time.Minute)
-	relaxedRateLimit := middleware.RateLimit(a.GetCache(), 6000, time.Minute)
+func (a *application) reviewRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRateLimit := pkgmid.RateLimit(rl, 1000, time.Minute)
+	relaxedRateLimit := pkgmid.RateLimit(rl, 6000, time.Minute)
 
 	r := router.PathPrefix("/review").Subrouter()
-	r.Use(middleware.Auth)
+	r.Use(auth)
 
 	// Offer reviews
 	r.Handle("/offers/{offerId}",
