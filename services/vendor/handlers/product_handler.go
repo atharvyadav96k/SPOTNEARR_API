@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
+	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
@@ -19,34 +20,17 @@ func NewProductHandler(svc *services.ProductService) *ProductHandler {
 
 func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 	bizID := p.ClaimGetBusinessID(r)
-	name := p.Name(r)
-	if name == "" {
-		p.ResponseBadRequestWithMessage(w, "Product name is required")
+	var dto dtos.ProductAddRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		p.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	price := p.Price(r)
-	if price == nil {
-		p.ResponseBadRequestWithMessage(w, "Price is required")
-		return
-	}
-	quantity := p.Quantity(r)
-	if quantity == nil {
-		p.ResponseBadRequestWithMessage(w, "Quantity is required")
-		return
-	}
-	categoryIDs := p.CategoryIDs(r)
-	if len(categoryIDs) == 0 {
-		p.ResponseBadRequestWithMessage(w, "At least one category is required")
-		return
-	}
-	desc := p.Desc(r)
-	storeIDs := p.StoreIDs(r)
-	searchTokens := tokenizer.MergeTokens(name, desc)
-	product := models.NewProduct(name, *price, desc, *quantity, searchTokens)
-	for _, id := range categoryIDs {
+	searchTokens := tokenizer.MergeTokens(dto.Name, dto.Desc)
+	product := models.NewProduct(dto.Name, dto.Price, dto.Desc, dto.Quantity, searchTokens)
+	for _, id := range dto.CategoryIDs {
 		product.Categories = append(product.Categories, models.Category{ID: id})
 	}
-	p.Response(w, p.svc.AddNewProduct(bizID, product, storeIDs))
+	p.Response(w, p.svc.AddNewProduct(bizID, product, dto.StoreIDs))
 }
 
 func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
@@ -56,20 +40,13 @@ func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
 		p.ResponseBadRequestWithMessage(w, "Invalid product ID")
 		return
 	}
-	price := p.Price(r)
-	if price == nil {
-		p.ResponseBadRequestWithMessage(w, "Price is required")
+	var dto dtos.ProductUpdateRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		p.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	quantity := p.Quantity(r)
-	if quantity == nil {
-		p.ResponseBadRequestWithMessage(w, "Quantity is required")
-		return
-	}
-	name := p.Name(r)
-	desc := p.Desc(r)
-	searchTokens := tokenizer.MergeTokens(name, desc)
-	product := models.NewProduct(name, *price, desc, *quantity, searchTokens)
+	searchTokens := tokenizer.MergeTokens(dto.Name, dto.Desc)
+	product := models.NewProduct(dto.Name, dto.Price, dto.Desc, dto.Quantity, searchTokens)
 	product.ID = productID
 	p.Response(w, p.svc.UpdateProduct(bizID, product))
 }

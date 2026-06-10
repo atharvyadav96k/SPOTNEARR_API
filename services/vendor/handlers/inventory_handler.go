@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/atharvyadav96k/spotnearr/vendor-svc/dtos"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
 )
@@ -22,12 +23,13 @@ func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Reques
 		i.ResponseBadRequest(w)
 		return
 	}
-	store, err := ParseBody[models.Store](r)
-	if err != nil || store == nil {
-		i.ResponseBadRequest(w)
+	var dto dtos.InventoryCreateRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		i.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	i.Response(w, i.svc.CreateInventory(bizID, store))
+	store := models.NewStore(dto.Name, dto.StreetAddress, dto.Lat, dto.Long)
+	i.Response(w, i.svc.CreateInventory(bizID, &store))
 }
 
 func (i *InventoryHandler) InventoryUpdate(w http.ResponseWriter, r *http.Request) {
@@ -41,13 +43,12 @@ func (i *InventoryHandler) InventoryUpdate(w http.ResponseWriter, r *http.Reques
 		i.ResponseBadRequest(w)
 		return
 	}
-	latBody := i.Lat(r)
-	longBody := i.Long(r)
-	if latBody == nil || longBody == nil {
-		i.ResponseBadRequestWithMessage(w, "lat and long are required")
+	var dto dtos.InventoryUpdateRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		i.ResponseBadRequestWithMessage(w, err.Error())
 		return
 	}
-	i.Response(w, i.svc.UpdateInventory(bizID, storeID, i.Name(r), i.Address(r), latBody.ToFloat64(), longBody.ToFloat64()))
+	i.Response(w, i.svc.UpdateInventory(bizID, storeID, dto.Name, dto.Address, *dto.Lat, *dto.Long))
 }
 
 func (i *InventoryHandler) InventoryGetProducts(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +68,12 @@ func (i *InventoryHandler) InventoryAddProduct(w http.ResponseWriter, r *http.Re
 		i.ResponseBadRequest(w)
 		return
 	}
-	i.Response(w, i.svc.AddInvProduct(bizID, invID, i.ProductIDField(r), i.Count(r), i.Available(r)))
+	var dto dtos.InventoryAddProductRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		i.ResponseBadRequestWithMessage(w, err.Error())
+		return
+	}
+	i.Response(w, i.svc.AddInvProduct(bizID, invID, dto.ProductID, dto.Count, dto.Available))
 }
 
 func (i *InventoryHandler) InventoryUpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +83,12 @@ func (i *InventoryHandler) InventoryUpdateProduct(w http.ResponseWriter, r *http
 		i.ResponseBadRequest(w)
 		return
 	}
-	i.Response(w, i.svc.UpdateInvProduct(bizID, invProdID, i.Count(r), i.Available(r)))
+	var dto dtos.InventoryUpdateProductRequest
+	if err := parseAndValidateBody(r, &dto); err != nil {
+		i.ResponseBadRequestWithMessage(w, err.Error())
+		return
+	}
+	i.Response(w, i.svc.UpdateInvProduct(bizID, invProdID, dto.Count, dto.Available))
 }
 
 func (i *InventoryHandler) InventoryRemoveProduct(w http.ResponseWriter, r *http.Request) {
