@@ -1,7 +1,7 @@
 go 1.25.5
 
 use (
-	../database
+	./database
 	./app/cmd
 	./pkg
 	./services/search
