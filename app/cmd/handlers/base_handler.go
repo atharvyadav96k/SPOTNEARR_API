@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/auth"
-	middleware "github.com/atharvyadav96k/SPOTNEARR_API/middlewares"
+	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
+	"github.com/atharvyadav96k/spotnearr/pkg/jwtutil"
 	"github.com/atharvyadav96k/SPOTNEARR_API/services"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
 	"github.com/gorilla/mux"
@@ -48,8 +48,6 @@ type Validatable interface {
 	Validate() error
 }
 
-// parseAndValidateBody decodes JSON into dst (must be a pointer to a DTO) then
-// calls Validate(). Returns a single error covering both steps.
 func parseAndValidateBody(r *http.Request, dst Validatable) error {
 	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
 		return fmt.Errorf("invalid request body")
@@ -83,12 +81,12 @@ func (h *BaseHandler) ResponseBadRequestWithMessage(w http.ResponseWriter, messa
 	res(w, http.StatusBadRequest, response.Res{Message: message})
 }
 
-func (h *BaseHandler) getClaims(r *http.Request) (auth.UserClaims, error) {
-	claims, ok := r.Context().Value(middleware.ClaimsKey).(*auth.UserClaims)
+func (h *BaseHandler) getClaims(r *http.Request) (*jwtutil.UserClaims, error) {
+	claims, ok := pkgmid.ClaimsFromContext(r)
 	if !ok {
-		return auth.UserClaims{}, fmt.Errorf("unauthorized access")
+		return nil, fmt.Errorf("unauthorized access")
 	}
-	return *claims, nil
+	return claims, nil
 }
 
 func (h *BaseHandler) ClaimGetBusinessId(r *http.Request) uint {
