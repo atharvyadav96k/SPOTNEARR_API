@@ -1,6 +1,8 @@
 package applayer
 
 import (
+	"context"
+
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/config"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/database"
@@ -14,7 +16,6 @@ import (
 type application struct {
 	db              *gorm.DB
 	cache           *cache.Cache
-	publisher       *events.Publisher
 	bizHandler      *handlers.BusinessHandler
 	invHandler      *handlers.InventoryHandler
 	productHandler  *handlers.ProductHandler
@@ -41,7 +42,8 @@ func Init() application {
 		panic(err)
 	}
 
-	pub := events.NewPublisher(c.RedisClient())
+	notifier := events.NewNotifier(config.C.SearchServiceURL)
+	notify := func() { notifier.Notify(context.Background()) }
 
 	bizSvc := services.NewBusinessService(db, c, config.C.UserServiceURL)
 	invSvc := services.NewInventoryService(db, c)
@@ -51,10 +53,9 @@ func Init() application {
 	return application{
 		db:              db,
 		cache:           c,
-		publisher:       pub,
 		bizHandler:      handlers.NewBusinessHandler(bizSvc),
-		invHandler:      handlers.NewInventoryHandler(invSvc),
-		productHandler:  handlers.NewProductHandler(productSvc),
+		invHandler:      handlers.NewInventoryHandler(invSvc, notify),
+		productHandler:  handlers.NewProductHandler(productSvc, notify),
 		categoryHandler: handlers.NewCategoryHandler(categorySvc),
 		internalHandler: internal_handlers.NewInternalHandler(db),
 	}

@@ -10,11 +10,12 @@ import (
 
 type InventoryHandler struct {
 	BaseHandler
-	svc *services.InventoryService
+	svc    *services.InventoryService
+	notify func()
 }
 
-func NewInventoryHandler(svc *services.InventoryService) *InventoryHandler {
-	return &InventoryHandler{svc: svc}
+func NewInventoryHandler(svc *services.InventoryService, notify func()) *InventoryHandler {
+	return &InventoryHandler{svc: svc, notify: notify}
 }
 
 func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +75,7 @@ func (i *InventoryHandler) InventoryAddProduct(w http.ResponseWriter, r *http.Re
 		return
 	}
 	i.Response(w, i.svc.AddInvProduct(bizID, invID, dto.ProductID, dto.Count, dto.Available))
+	go i.notify()
 }
 
 func (i *InventoryHandler) InventoryUpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +91,7 @@ func (i *InventoryHandler) InventoryUpdateProduct(w http.ResponseWriter, r *http
 		return
 	}
 	i.Response(w, i.svc.UpdateInvProduct(bizID, invProdID, dto.Count, dto.Available))
+	go i.notify()
 }
 
 func (i *InventoryHandler) InventoryRemoveProduct(w http.ResponseWriter, r *http.Request) {
@@ -99,4 +102,5 @@ func (i *InventoryHandler) InventoryRemoveProduct(w http.ResponseWriter, r *http
 		return
 	}
 	i.Response(w, i.svc.RemoveInvProduct(bizID, invProdID))
+	go i.notify()
 }

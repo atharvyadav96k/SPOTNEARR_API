@@ -11,11 +11,12 @@ import (
 
 type ProductHandler struct {
 	BaseHandler
-	svc *services.ProductService
+	svc    *services.ProductService
+	notify func()
 }
 
-func NewProductHandler(svc *services.ProductService) *ProductHandler {
-	return &ProductHandler{svc: svc}
+func NewProductHandler(svc *services.ProductService, notify func()) *ProductHandler {
+	return &ProductHandler{svc: svc, notify: notify}
 }
 
 func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +60,7 @@ func (p *ProductHandler) ProductDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p.Response(w, p.svc.DeleteProduct(bizID, productID))
+	go p.notify()
 }
 
 func (p *ProductHandler) ProductGet(w http.ResponseWriter, r *http.Request) {
