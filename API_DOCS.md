@@ -1,87 +1,74 @@
-# SPOTNEARR API — Complete Reference
+# Spotnearr API Reference
 
-**Base URL:** `http://<host>:<PORT>/api/v1`  
-**Default port:** `8080`  
-**Framework:** Go + Gorilla Mux  
-**Auth:** JWT (HS256), access token in `Authorization: Bearer <token>` header
+## Services & Base URLs
+
+| Service | Default Port | Purpose |
+|---|---|---|
+| **User Service** | `8080` | Customer accounts, auth, reviews, claims |
+| **Vendor Service** | `8081` | Business owner dashboard — products, inventory, categories |
+| **Search Service** | `8082` | Product search (public, no auth) |
+
+All endpoints under `/api/v1/...` unless noted. CORS is enabled on all services.
 
 ---
 
-## Global Conventions
+## Response Shape
 
-### Response Envelope
-Every response (success or error) uses this shape:
+Every response follows this envelope:
+```json
+{ "message": "string", "data": <object|array|null> }
+```
+HTTP status is always set on the response. `data` is omitted when null.
+
+**Common error codes**
+
+| Code | Meaning |
+|---|---|
+| `400` | Validation failure / missing required field |
+| `401` | Missing, invalid, or expired JWT |
+| `403` | Valid JWT but insufficient role |
+| `404` | Resource not found or not owned by caller |
+| `409` | Duplicate (email, slug, etc.) |
+| `500` | Server error |
+
+---
+
+## Auth Header
+
+Protected endpoints require:
+```
+Authorization: Bearer <access_token>
+```
+
+**BusinessOnly** endpoints additionally require the token to carry a `business_id` (obtained after logging into the vendor service).
+
+---
+
+# Vendor Service — `:8081`
+
+Business owners register and manage products here. The vendor service has its own auth — separate from the user service.
+
+## Auth
+
+### `POST /api/v1/auth/register`
+Create a business account.
+
+**Body:**
 ```json
 {
-  "message": "string",
-  "data": <object|array|null>
-}
-```
-HTTP status code is set directly on the response. `data` is omitted when null.
-
-### Auth Levels
-| Level | Header Required |
-|---|---|
-| **None** | No headers needed |
-| **JWT** | `Authorization: Bearer <access_token>` |
-| **BusinessOnly** | JWT + token must have `business_id` and role ≠ `"user"` |
-| **Captcha** | `X-Captcha-Token: <turnstile_token>` (Cloudflare Turnstile) |
-
-### Rate Limits (per user, per endpoint)
-| Profile | Limit |
-|---|---|
-| Strict | 5 req / min |
-| Normal | 10–30 req / min |
-| Relaxed | 60 req / min |
-
----
-
-## 1. Health
-
-### GET `/health`
-**Auth:** None  
-**Rate limit:** None  
-Returns `200 OK` when the server is running.
-
-**Response:**
-```
-HTTP 200
-(empty body)
-```
-
----
-
-## 2. Authentication
-
-### POST `/auth/users/register`
-**Auth:** Captcha  
-**Rate limit:** None  
-Register a new user account.
-
-**Headers:**
-```
-X-Captcha-Token: <turnstile_token>
-Content-Type: application/json
-```
-
-**Request body:**
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
+  "name": "Biz Name",
+  "email": "owner@example.com",
   "phone": "+919876543210",
-  "password": "SecurePass123!"
+  "password": "Abcd1234",
+  "desc": "optional"
 }
 ```
-- `email` — must be a valid email address
-- `phone` — must be a valid phone number
-- `password` — validated (min length + complexity enforced server-side)
-- `name` — optional but recommended
+- `password` — must have uppercase, lowercase, digit, min 8 chars
+- `phone` — E.164 format
 
 **Response `200`:**
 ```json
 {
-  "message": "...",
   "data": {
     "access_token": "<jwt>",
     "access_token_expires_at": 1749259500,
@@ -90,760 +77,269 @@ Content-Type: application/json
   }
 }
 ```
+- Access token expires in ~5 minutes
+- Refresh token expires in ~30 days
 
 ---
 
-### POST `/auth/users/login`
-**Auth:** Captcha  
-**Rate limit:** None  
-
-**Headers:**
-```
-X-Captcha-Token: <turnstile_token>
-Content-Type: application/json
-```
-
-**Request body:**
+### `POST /api/v1/auth/login`
+**Body:**
 ```json
-{
-  "email": "john@example.com",
-  "password": "SecurePass123!"
-}
+{ "email": "owner@example.com", "password": "Abcd1234" }
 ```
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": {
-    "access_token": "<jwt>",
-    "access_token_expires_at": 1749259500,
-    "refresh_token": "<jwt>",
-    "refresh_token_expires_at": 1751847900
-  }
-}
-```
+**Response `200`:** same shape as register.
 
 ---
 
-### POST `/auth/reset-request`
-**Auth:** Captcha  
-**Rate limit:** None  
-Send a password-reset session notification to the user's email.
+### `POST /api/v1/auth/refresh`
+Exchange a refresh token for a new access token.
 
-**Headers:**
-```
-X-Captcha-Token: <turnstile_token>
-Content-Type: application/json
-```
-
-**Request body:**
+**Body:**
 ```json
-{
-  "email": "john@example.com"
-}
+{ "refresh_token": "<jwt>" }
 ```
-
 **Response `200`:**
 ```json
 {
-  "message": "..."
-}
-```
-
----
-
-### POST `/auth/reset-password?session=<sessionId>`
-**Auth:** Captcha + valid session query param  
-**Rate limit:** None  
-Reset the user's password. The `session` query parameter is the token received via the reset notification.
-
-**Headers:**
-```
-X-Captcha-Token: <turnstile_token>
-Content-Type: application/json
-```
-
-**Query params:**
-| Param | Type | Required | Description |
-|---|---|---|---|
-| `session` | string | Yes | Session token from reset notification |
-
-**Request body:**
-```json
-{
-  "password": "NewSecurePass456!"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "..."
-}
-```
-
----
-
-### POST `/auth/refresh`
-**Auth:** None  
-**Rate limit:** None  
-Exchange a valid refresh token for a new access/refresh token pair.
-
-**Request body:**
-```json
-{
-  "access_token": "<expired_or_current_access_token>",
-  "refresh_token": "<valid_refresh_token>"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "...",
   "data": {
     "access_token": "<new_jwt>",
-    "access_token_expires_at": 1749259500,
-    "refresh_token": "<jwt>",
-    "refresh_token_expires_at": 1751847900
-  }
-}
-```
-> Note: `refresh_token` is unchanged (same token passed in). `refresh_token_expires_at` reflects its original expiry from its JWT claims.
-
----
-
-### GET `/auth/`
-**Auth:** JWT  
-**Rate limit:** None  
-Verify that the current access token is valid. Returns `200` with no data if valid.
-
-**Response `200`:**
-```
-(empty body)
-```
-
----
-
-### POST `/auth/logout-all-devices`
-**Auth:** JWT  
-**Rate limit:** None  
-Invalidate all refresh tokens for the authenticated user (forces re-login on all devices).
-
-**Response `200`:**
-```json
-{
-  "message": "..."
-}
-```
-
----
-
-## 3. Users
-
-### GET `/users/{userId}/profile`
-**Auth:** JWT  
-**Rate limit:** Normal (10 req/min)  
-Get profile of any user by ID. The server uses the userId from the JWT, not the path param.
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `userId` | uint | Target user ID |
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": {
-    "id": 1,
-    "fullName": "John Doe",
-    "email": "john@example.com",
-    "phone": "+919876543210",
-    "isVerifiedEmail": false,
-    "isVerifiedPhone": false,
-    "isActive": true,
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
-  }
-}
-```
-> Note: `passwordHash` and `pushToken` are never returned.
-
----
-
-## 4. Businesses
-
-### POST `/businesses/register`
-**Auth:** JWT  
-**Rate limit:** Strict (5 req/min)  
-Register a new business linked to the authenticated user.
-
-**Request body:**
-```json
-{
-  "name": "Baaner Store",
-  "email": "store@baaner.com",
-  "phone": "+919876543210",
-  "desc": "A description of the business"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": {
-    "id": 1,
-    "businessName": "Baaner Store",
-    "email": "store@baaner.com",
-    "phone": "+919876543210",
-    "description": "A description of the business",
-    "isActive": true,
-    "verifiedBusiness": false,
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
-  }
-}
-```
-> After registering a business, the user must log in again (or refresh) to get a token with `business_id` embedded — business-only endpoints require a token that includes `business_id`.
-
----
-
-### GET `/businesses/{bizId}/profile`
-**Auth:** JWT  
-**Rate limit:** Normal (30 req/min)
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `bizId` | uint | Business ID |
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": {
-    "id": 1,
-    "businessName": "Baaner Store",
-    "email": "store@baaner.com",
-    "phone": "+919876543210",
-    "description": "...",
-    "isActive": true,
-    "verifiedBusiness": false,
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "access_token_expires_at": 1749259500
   }
 }
 ```
 
 ---
 
-### PATCH `/businesses/`
-**Auth:** JWT + BusinessOnly  
-**Rate limit:** Normal (30 req/min)  
-Update the authenticated user's business profile.
+## Categories
+Auth: **JWT**
 
-**Request body:**
-```json
-{
-  "name": "Updated Business Name",
-  "desc": "Updated description"
-}
-```
-Both fields are optional (omit to leave unchanged).
+### `GET /api/v1/categories/`
+List all categories.
 
 **Response `200`:**
 ```json
 {
-  "message": "..."
-}
-```
-
----
-
-### DELETE `/businesses/`
-**Auth:** JWT + BusinessOnly  
-**Rate limit:** Strict (5 req/min)  
-Delete the authenticated business. (Stub — returns `200 OK` currently.)
-
----
-
-### GET `/businesses/inventories`
-**Auth:** JWT + BusinessOnly  
-**Rate limit:** Normal (30 req/min)  
-List all stores/inventories belonging to the authenticated business.
-
-**Response `200`:**
-```json
-{
-  "message": "...",
   "data": [
-    {
-      "id": 1,
-      "name": "Main Branch",
-      "streetAddress": "123 Market St",
-      "businessId": 1,
-      "lat": 12.9716,
-      "long": 77.5946,
-      "geoHash": "tdr1u",
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:00:00Z"
-    }
+    { "id": 1, "name": "Fruits", "slug": "fruits" }
   ]
 }
 ```
 
----
+### `POST /api/v1/categories/`
+Auth: **JWT + BusinessOnly**
 
-## 5. Inventory (Stores)
-
-All inventory endpoints require **JWT + BusinessOnly**.
-
-### POST `/inventory/`
-**Rate limit:** Strict (5 req/min)  
-Create a new store/inventory location.
-
-**Request body:**
+**Body:**
 ```json
-{
-  "name": "Main Branch",
-  "streetAddress": "123 Market St, Bengaluru",
-  "lat": 12.9716,
-  "long": 77.5946
-}
+{ "name": "Dairy", "slug": "dairy" }
 ```
-All fields are required. `geoHash` is computed automatically.
+Both `name` and `slug` must be globally unique.
 
-**Response `200`:**
+**Response `201`:**
 ```json
-{
-  "message": "...",
-  "data": {
-    "id": 1,
-    "name": "Main Branch",
-    "streetAddress": "123 Market St, Bengaluru",
-    "businessId": 1,
-    "lat": 12.9716,
-    "long": 77.5946,
-    "geoHash": "tdr1u",
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
-  }
-}
+{ "data": { "id": 3, "name": "Dairy", "slug": "dairy" } }
 ```
 
 ---
 
-### PATCH `/inventory/{invId}`
-**Rate limit:** Normal (30 req/min)  
-Update store details. `lat` and `long` are **required** even if unchanged (used to recompute geoHash).
+## Products
+Auth: **JWT + BusinessOnly** on all product endpoints.
 
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `invId` | uint | Inventory/store ID |
+### `POST /api/v1/products/`
+Create a product.
 
-**Request body:**
-```json
-{
-  "name": "Updated Branch Name",
-  "address": "456 New Street",
-  "lat": 12.9716,
-  "long": 77.5946
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "..."
-}
-```
-
----
-
-### DELETE `/inventory/{invId}`
-**Rate limit:** Strict (5 req/min)  
-Delete a store. (Stub — returns `200 OK` currently.)
-
----
-
-### GET `/inventory/{invId}/products`
-**Rate limit:** Normal (30 req/min)  
-List all products in a specific store.
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `invId` | uint | Inventory/store ID |
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": [
-    {
-      "id": 1,
-      "storeId": 1,
-      "productId": 5,
-      "count": 10,
-      "available": true,
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### POST `/inventory/{invId}/products`
-**Rate limit:** Normal (30 req/min)  
-Add a product to a store inventory. Uses **query parameters** (not JSON body).
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `invId` | uint | Inventory/store ID |
-
-**Query params:**
-| Param | Type | Required | Description |
-|---|---|---|---|
-| `productID` | uint | Yes | ID of product to add |
-| `count` | int | No | Stock count |
-| `available` | bool | No | `"true"` or `"false"` (default: false) |
-
-**Example:** `POST /inventory/1/products?productID=5&count=10&available=true`
-
-**Response `200`:**
-```json
-{
-  "message": "..."
-}
-```
-
----
-
-### DELETE `/inventory/{invId}/products`
-**Rate limit:** Strict (5 req/min)  
-Remove a product from a store inventory. (Stub — returns `200 OK` currently.)
-
----
-
-## 6. Products
-
-All product endpoints require **JWT + BusinessOnly**.
-
-### POST `/products/`
-**Rate limit:** Strict (5 req/min)  
-Create a new product for the authenticated business.
-
-**Request body:**
+**Body:**
 ```json
 {
   "name": "Organic Apples",
-  "price": {
-    "value": 120.00,
-    "unit": "INR"
-  },
-  "quantity": {
-    "value": 1.0,
-    "unit": "kg"
-  },
-  "desc": "Fresh organic apples from Himachal",
+  "price":    { "value": 120.00, "unit": "rs" },
+  "quantity": { "value": 1.0,   "unit": "kg" },
+  "desc": "optional",
   "categoryIds": [1, 3],
-  "storeIds": [1, 2]
+  "storeIds": [1]
 }
 ```
 - `name`, `price`, `quantity`, `categoryIds` — required
-- `storeIds` — optional; links product to specific stores immediately
-- `desc` — optional
+- `storeIds` — optional; auto-links product to the first store if omitted
 
-**Response `200`:**
+**Response `201`:**
 ```json
 {
-  "message": "...",
   "data": {
     "id": 5,
     "name": "Organic Apples",
-    "price": 120.00,
-    "priceUnit": "INR",
-    "quantity": 1.0,
-    "quantityUnit": "kg",
-    "desc": "Fresh organic apples from Himachal",
-    "businessId": 1,
-    "categories": [
-      { "id": 1, "name": "Fruits", "slug": "fruits" }
-    ],
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
----
-
-### GET `/products/{productId}`
-**Rate limit:** Relaxed (60 req/min)  
-Get a specific product by ID. Only returns products belonging to the authenticated business.
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `productId` | uint | Product ID |
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": {
-    "id": 5,
-    "name": "Organic Apples",
-    "price": 120.00,
-    "priceUnit": "INR",
-    "quantity": 1.0,
-    "quantityUnit": "kg",
+    "price": 120.00, "priceUnit": "rs",
+    "quantity": 1.0, "quantityUnit": "kg",
     "desc": "...",
     "businessId": 1,
-    "categories": [
-      { "id": 1, "name": "Fruits", "slug": "fruits" }
-    ],
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "categories": [{ "id": 1, "name": "Fruits", "slug": "fruits" }],
+    "createdAt": "...", "updatedAt": "..."
   }
 }
 ```
 
----
+### `GET /api/v1/products/`
+List all products for the authenticated business.
 
-### PATCH `/products/{productId}`
-**Rate limit:** Normal (30 req/min)  
+**Response `200`:** `data` is an array of product objects (same shape as above).
+
+### `GET /api/v1/products/{productId}`
+Get a single product. Returns `404` if it doesn't belong to the caller's business.
+
+### `PATCH /api/v1/products/{productId}`
 Update a product. `price` and `quantity` are required even if unchanged.
 
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `productId` | uint | Product ID |
-
-**Request body:**
+**Body:**
 ```json
 {
-  "name": "Updated Apples",
-  "price": {
-    "value": 130.00,
-    "unit": "INR"
-  },
-  "quantity": {
-    "value": 1.0,
-    "unit": "kg"
-  },
-  "desc": "Updated description"
+  "name": "Updated Name",
+  "price":    { "value": 130.00, "unit": "rs" },
+  "quantity": { "value": 1.0,   "unit": "kg" },
+  "desc": "optional"
 }
 ```
+**Response `200`:** updated product object in `data`.
+
+### `DELETE /api/v1/products/{productId}`
+Soft-delete a product. **Response `200`.**
+
+---
+
+## Inventory (Stores)
+Auth: **JWT + BusinessOnly** on all inventory endpoints.
+
+### `POST /api/v1/inventory/`
+Create a store location.
+
+**Body:**
+```json
+{
+  "name": "Main Branch",
+  "streetAddress": "123 Market St",
+  "lat": 12.9716,
+  "long": 77.5946
+}
+```
+`geoHash` is computed automatically.
 
 **Response `200`:**
 ```json
 {
-  "message": "..."
-}
-```
-
----
-
-### DELETE `/products/{productId}`
-**Rate limit:** Strict (5 req/min)  
-Soft-delete a product.
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `productId` | uint | Product ID |
-
-**Response `200`:**
-```json
-{
-  "message": "..."
-}
-```
-
----
-
-### GET `/products/nearby`
-**Rate limit:** Relaxed (60 req/min)  
-Get nearby products. (Stub — returns `200 OK` currently. Use `/search` for live geo search.)
-
----
-
-## 7. Search
-
-### GET `/search`
-**Auth:** None  
-**Rate limit:** None  
-Full-text product search with optional geo filtering.
-
-**Query params:**
-| Param | Type | Required | Description |
-|---|---|---|---|
-| `search` | string | Yes | Search term (tokenized against product names/descriptions) |
-| `lat` | float64 | No | Latitude for geo filtering |
-| `long` | float64 | No | Longitude for geo filtering |
-| `range` | float64 | No | Search radius in km (default: `5.0`) |
-
-**Example:** `GET /search?search=apples&lat=12.9716&long=77.5946&range=10`
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": [
-    {
-      "id": 5,
-      "name": "Organic Apples",
-      "price": 120.00,
-      "priceUnit": "INR",
-      "quantity": 1.0,
-      "quantityUnit": "kg",
-      "desc": "...",
-      "businessId": 1,
-      "categories": [...],
-      "createdAt": "...",
-      "updatedAt": "..."
-    }
-  ]
-}
-```
-
----
-
-## 8. Claims
-
-All claim endpoints require **JWT**.
-
-### GET `/claims`
-**Rate limit:** Normal (10 req/min)  
-Get all claims made by the authenticated user.
-
-**Response `200`:**
-```json
-{
-  "message": "...",
-  "data": [
-    {
-      "id": 1,
-      "userId": 42,
-      "inventoryProductId": 7,
-      "status": "pending",
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### POST `/claims/{invProductId}`
-**Rate limit:** Normal (10 req/min)  
-Claim a product from a store (by its inventory-product join ID).
-
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `invProductId` | uint | ID from the inventory_products table |
-
-**Response `200`:**
-```json
-{
-  "message": "...",
   "data": {
     "id": 1,
-    "userId": 42,
-    "inventoryProductId": 7,
-    "status": "pending",
-    "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "name": "Main Branch",
+    "streetAddress": "123 Market St",
+    "businessId": 1,
+    "lat": 12.9716, "long": 77.5946,
+    "geoHash": "tdr1u",
+    "createdAt": "...", "updatedAt": "..."
   }
 }
 ```
 
----
+### `GET /api/v1/inventory/`
+List all stores for the authenticated business. **Response `200`:** array in `data`.
 
-### DELETE `/claims/{claimId}`
-**Rate limit:** Normal (10 req/min)  
-Remove/cancel a claim owned by the authenticated user.
+### `PATCH /api/v1/inventory/{invId}`
+Update a store. `lat` and `long` are required (used to recompute `geoHash`).
 
-**Path params:**
-| Param | Type | Description |
-|---|---|---|
-| `claimId` | uint | Claim ID |
+**Body:**
+```json
+{
+  "name": "Updated Name",
+  "address": "New Address",
+  "lat": 12.9716,
+  "long": 77.5946
+}
+```
+**Response `200`.**
+
+### `GET /api/v1/inventory/{invId}/products`
+List all products linked to a store.
 
 **Response `200`:**
 ```json
 {
-  "message": "..."
+  "data": [
+    { "id": 7, "storeId": 1, "productId": 5, "count": 10, "available": true, "createdAt": "...", "updatedAt": "..." }
+  ]
 }
 ```
+
+### `POST /api/v1/inventory/{invId}/products`
+Add a product to a store.
+
+**Body:**
+```json
+{ "productID": 5, "count": 10, "available": true }
+```
+**Response `200`.**
+
+### `PATCH /api/v1/inventory/{invId}/products/{invProductId}`
+Update stock/availability for a product in a store.
+
+**Body:**
+```json
+{ "count": 20, "available": true }
+```
+Both fields are optional (omit to leave unchanged).
+**Response `200`.**
+
+### `DELETE /api/v1/inventory/{invId}/products/{invProductId}`
+Remove a product from a store. **Response `200`.**
 
 ---
 
-## 9. Reviews
+## Business Profile
+Auth: **JWT**
 
-All review endpoints require **JWT**.
+### `POST /api/v1/businesses/register`
+Register a business profile after creating an account (call after first login). Returns the business object.
 
-### Review body (POST / PUT)
+**Body:**
 ```json
-{
-  "targetId": 1,
-  "stars": 4,
-  "comment": "Great product!"
-}
+{ "name": "Store Name", "email": "biz@example.com", "phone": "+91...", "desc": "optional" }
 ```
-- `targetId` — ID of the entity being reviewed
-- `stars` — integer 0–255 (validated by business logic)
-- `comment` — optional text
 
-### Delete body (DELETE)
-```json
-{
-  "targetId": 1,
-  "stars": 0,
-  "comment": ""
-}
-```
-Only `targetId` is used for deletion; `stars`/`comment` are ignored.
+### `GET /api/v1/businesses/{bizId}/profile`
+Get a business profile by ID. **Response `200`:** business object in `data`.
+
+### `PATCH /api/v1/businesses/`
+Auth: **JWT + BusinessOnly**. Update name or description.
+
+**Body:** `{ "name": "...", "desc": "..." }` — both optional.
 
 ---
 
-### Business Reviews
+# Search Service — `:8082`
 
-| Method | Path | Description | Rate |
-|---|---|---|---|
-| `GET` | `/review/businesses?id={businessId}` | Get all reviews for a business | Relaxed |
-| `POST` | `/review/businesses` | Add a review for a business | Normal |
-| `PUT` | `/review/businesses` | Update your review for a business | Normal |
-| `DELETE` | `/review/businesses` | Delete your review for a business | Normal |
+No auth required. Public.
 
-**GET query params:**
-| Param | Type | Required |
+## `GET /api/v1/search`
+
+**Query params:**
+
+| Param | Required | Description |
 |---|---|---|
-| `id` | uint | Yes |
+| `q` | Yes | Search query string |
+| `lat` | No | Latitude |
+| `long` | No | Longitude |
+| `range` | No | Radius in km (default: `10.0`) |
 
-**GET Response `200`:**
+**Example:** `GET /api/v1/search?q=apples&lat=12.97&long=77.59&range=5`
+
+**Response `200`:**
 ```json
 {
-  "message": "...",
   "data": [
     {
-      "id": 1,
-      "userId": 42,
-      "targetType": "business",
-      "targetId": 1,
-      "stars": 4,
-      "comment": "Great service!",
-      "createdAt": "...",
-      "updatedAt": "..."
+      "id": 7,
+      "productName": "Organic Apples",
+      "price": 120.00, "priceUnit": "rs",
+      "available": true,
+      "storeName": "Main Branch",
+      "streetAddress": "123 Market St",
+      "lat": 12.9716, "long": 77.5946,
+      "categories": [{ "id": 1 }]
     }
   ]
 }
@@ -851,319 +347,73 @@ Only `targetId` is used for deletion; `stars`/`comment` are ignored.
 
 ---
 
-### Product Reviews
+# User Service — `:8080`
 
-| Method | Path | Description | Rate |
-|---|---|---|---|
-| `GET` | `/review/products?id={productId}` | Get all reviews for a product | Relaxed |
-| `POST` | `/review/products` | Add a review for a product | Normal |
-| `PUT` | `/review/products` | Update your review for a product | Normal |
-| `DELETE` | `/review/products` | Delete your review for a product | Normal |
+End-user accounts (customers). Requires Cloudflare Turnstile captcha on register/login.
 
-**GET query params:**
-| Param | Type | Required |
-|---|---|---|
-| `id` | uint | Yes |
+## Auth
+
+### `POST /api/v1/auth/users/register`
+**Headers:** `X-Captcha-Token: <turnstile_token>`
+
+**Body:**
+```json
+{ "name": "John Doe", "email": "john@example.com", "phone": "+91...", "password": "Abcd1234" }
+```
+**Response `200`:** `{ "data": { "access_token", "access_token_expires_at", "refresh_token", "refresh_token_expires_at" } }`
+
+### `POST /api/v1/auth/users/login`
+**Headers:** `X-Captcha-Token: <turnstile_token>`
+
+**Body:** `{ "email": "...", "password": "..." }`
+**Response `200`:** same token shape.
+
+### `POST /api/v1/auth/refresh`
+**Body:** `{ "access_token": "...", "refresh_token": "..." }`
+**Response `200`:** new `access_token` + updated `access_token_expires_at`.
+
+### `POST /api/v1/auth/reset-request`
+**Headers:** `X-Captcha-Token`
+
+**Body:** `{ "email": "..." }` — sends reset email. **Response `200`.**
+
+### `POST /api/v1/auth/reset-password?session=<token>`
+**Headers:** `X-Captcha-Token`
+
+**Body:** `{ "password": "NewPass123" }` **Response `200`.**
 
 ---
 
-### Offer Reviews
+## Users
 
-| Method | Path | Description | Rate |
-|---|---|---|---|
-| `GET` | `/review/offers/{offerId}` | Get all reviews for an offer | Relaxed |
-| `POST` | `/review/offers` | Add a review for an offer | Normal |
-| `PUT` | `/review/offers` | Update your review for an offer | Normal |
-| `DELETE` | `/review/offers` | Delete your review for an offer | Normal |
-
----
-
-### Spotlight Reviews
-
-| Method | Path | Description | Rate |
-|---|---|---|---|
-| `GET` | `/review/spotlights/{spotlightId}` | Get all reviews for a spotlight | Relaxed |
-| `POST` | `/review/spotlights` | Add a review for a spotlight | Normal |
-| `PUT` | `/review/spotlights` | Update your review for a spotlight | Normal |
-| `DELETE` | `/review/spotlights` | Delete your review for a spotlight | Normal |
-
----
-
-## 10. Categories
-
-### GET `/categories/`
-**Auth:** JWT  
-**Rate limit:** Normal (30 req/min)  
-List all product categories.
+### `GET /api/v1/users/{userId}/profile`
+Auth: **JWT**. Returns the caller's profile (path param is ignored; user is derived from token).
 
 **Response `200`:**
 ```json
 {
-  "message": "...",
-  "data": [
-    {
-      "id": 1,
-      "name": "Fruits",
-      "slug": "fruits"
-    },
-    {
-      "id": 2,
-      "name": "Vegetables",
-      "slug": "vegetables"
-    }
-  ]
-}
-```
-
----
-
-### POST `/categories/`
-**Auth:** JWT + BusinessOnly  
-**Rate limit:** Strict (5 req/min)  
-Create a new product category.
-
-**Request body:**
-```json
-{
-  "name": "Dairy",
-  "slug": "dairy"
-}
-```
-Both `name` and `slug` must be unique.
-
-**Response `200`:**
-```json
-{
-  "message": "...",
   "data": {
-    "id": 3,
-    "name": "Dairy",
-    "slug": "dairy"
+    "id": 1, "fullName": "John Doe",
+    "email": "john@example.com", "phone": "+91...",
+    "isVerifiedEmail": false, "isVerifiedPhone": false,
+    "isActive": true, "createdAt": "...", "updatedAt": "..."
   }
 }
 ```
 
 ---
 
-## 11. Offers
+## JWT Claims (decoded)
 
-All offer endpoints require **JWT**. Business write operations also require **BusinessOnly**.
-
-> **Note:** Offer creation/update/delete are stubs that return `200 OK` with no data. Only `GET /offers/nearby` routing is active.
-
-| Method | Path | Auth | Rate | Status |
-|---|---|---|---|---|
-| `GET` | `/offers/nearby` | JWT | Relaxed | Stub |
-| `POST` | `/offers` | JWT + BusinessOnly | Strict | Stub |
-| `PUT` | `/offers/{offerID}` | JWT + BusinessOnly | Normal | Stub |
-| `DELETE` | `/offers/{offerID}` | JWT + BusinessOnly | Strict | Stub |
-
----
-
-## Data Models Reference
-
-### User
-```json
-{
-  "id": 1,
-  "fullName": "John Doe",
-  "email": "john@example.com",
-  "phone": "+919876543210",
-  "isVerifiedEmail": false,
-  "isVerifiedPhone": false,
-  "isActive": true,
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### TokenResponse
-```json
-{
-  "access_token": "<jwt>",
-  "access_token_expires_at": 1749259500,
-  "refresh_token": "<jwt>",
-  "refresh_token_expires_at": 1751847900
-}
-```
-- **`access_token_expires_at`** — Unix timestamp (seconds) when the access token expires (~5 minutes from issuance)
-- **`refresh_token_expires_at`** — Unix timestamp (seconds) when the refresh token expires (~30 days from issuance)
-- Use `POST /auth/refresh` to exchange a refresh token for a new access token before expiry
-
-### JWT Claims (decoded)
 ```json
 {
   "user_id": 42,
   "business_id": 1,
   "token_type": "access",
   "role": "admin",
-  "exp": 1700000000,
-  "iat": 1700000000,
-  "nbf": 1700000000
+  "exp": 1700000000
 }
 ```
-- `business_id` is `null` for regular users until they register a business
+- `business_id` is `null` until a business is registered
 - `role`: `"user"` | `"admin"` | `"sub-admin"`
-
-### Business
-```json
-{
-  "id": 1,
-  "businessName": "Baaner Store",
-  "email": "store@baaner.com",
-  "phone": "+919876543210",
-  "description": "...",
-  "isActive": true,
-  "verifiedBusiness": false,
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### Store (Inventory)
-```json
-{
-  "id": 1,
-  "name": "Main Branch",
-  "streetAddress": "123 Market St",
-  "businessId": 1,
-  "lat": 12.9716,
-  "long": 77.5946,
-  "geoHash": "tdr1unz6g",
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### Product
-```json
-{
-  "id": 5,
-  "name": "Organic Apples",
-  "price": 120.00,
-  "priceUnit": "INR",
-  "quantity": 1.0,
-  "quantityUnit": "kg",
-  "desc": "Fresh organic apples",
-  "businessId": 1,
-  "categories": [
-    { "id": 1, "name": "Fruits", "slug": "fruits" }
-  ],
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### InventoryProduct (Store-Product link)
-```json
-{
-  "id": 7,
-  "storeId": 1,
-  "productId": 5,
-  "count": 10,
-  "available": true,
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### Claim
-```json
-{
-  "id": 1,
-  "userId": 42,
-  "inventoryProductId": 7,
-  "status": "pending",
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-- `status`: `"pending"` | `"accepted"` | `"rejected"`
-
-### Review
-```json
-{
-  "id": 1,
-  "userId": 42,
-  "targetType": "business",
-  "targetId": 1,
-  "stars": 4,
-  "comment": "Great service!",
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:00:00Z"
-}
-```
-- `targetType`: `"business"` | `"product"` | `"offer"` | `"spotlight"`
-
-### Category
-```json
-{
-  "id": 1,
-  "name": "Fruits",
-  "slug": "fruits"
-}
-```
-
----
-
-## Error Responses
-
-| HTTP Status | Meaning |
-|---|---|
-| `400 Bad Request` | Missing required field, invalid format, or validation failure |
-| `401 Unauthorized` | Missing or invalid JWT, or expired access token |
-| `403 Forbidden` | Valid JWT but insufficient role (e.g. non-business user hitting BusinessOnly endpoint) |
-| `404 Not Found` | Resource does not exist or does not belong to caller |
-| `429 Too Many Requests` | Rate limit exceeded |
-| `500 Internal Server Error` | Unexpected server error |
-
-**Error body:**
-```json
-{
-  "message": "descriptive error message"
-}
-```
-
----
-
-## Authentication Flow (Step by Step)
-
-```
-1. Register       POST /auth/users/register  (requires Captcha)
-                  → receives { access_token, access_token_expires_at,
-                               refresh_token, refresh_token_expires_at }
-
-2. Login          POST /auth/users/login      (requires Captcha)
-                  → receives { access_token, access_token_expires_at,
-                               refresh_token, refresh_token_expires_at }
-
-3. API calls      Authorization: Bearer <access_token>
-                  (access token valid for 5 min; check access_token_expires_at)
-
-4. Refresh        POST /auth/refresh          (no auth required)
-                  body: { access_token, refresh_token }
-                  → receives new { access_token, access_token_expires_at,
-                                   refresh_token, refresh_token_expires_at }
-                  (refresh token valid for 30 days; check refresh_token_expires_at)
-
-5. Register biz   POST /businesses/register   (requires JWT)
-                  → creates business linked to user
-                  → must refresh/re-login to get token with business_id
-
-6. Biz endpoints  Authorization: Bearer <access_token_with_business_id>
-                  Token must have business_id != null AND role != "user"
-```
-
----
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `JWT_SECRET` | Yes | — | Secret key for JWT signing |
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `CAPTCHA_URL` | Yes | — | Cloudflare Turnstile verification URL |
-| `CAPTCHA_SECRET_KEY` | Yes | — | Cloudflare Turnstile secret key |
-| `CACHE_URL` | No | `redis://localhost:6379` | Redis connection URL |
-| `CACHE_PASSWORD` | No | `` | Redis password |
-| `PORT` | No | `8080` | Server port |
+- Access token: ~5 min lifetime — refresh before expiry using `refresh_token`
