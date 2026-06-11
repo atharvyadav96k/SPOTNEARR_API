@@ -24,7 +24,7 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, httputil.Res{Message: err.Error()})
 		return
 	}
-	result := h.svc.Search(dto.Q, dto.Lat, dto.Long, dto.RangeKm)
+	result := h.svc.Search(r.Context(), dto.Q, dto.Lat, dto.Long, dto.RangeKm)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(result.StatusCode)
 	json.NewEncoder(w).Encode(result)
