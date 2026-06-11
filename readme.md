@@ -1,6 +1,12 @@
 # Spotnearr Platform
 
 
+### System design
+
+#### Quick Links
+
+- [Hight Level Design](./HLD.MD)
+
 ###  API Reference
 
 #### Quick Links
