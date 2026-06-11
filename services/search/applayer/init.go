@@ -1,15 +1,20 @@
 package applayer
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/atharvyadav96k/spotnearr/search-svc/config"
 	"github.com/atharvyadav96k/spotnearr/search-svc/connections/database"
+	freqpkg "github.com/atharvyadav96k/spotnearr/search-svc/freq"
 	"github.com/atharvyadav96k/spotnearr/search-svc/handlers"
 	"github.com/atharvyadav96k/spotnearr/search-svc/services"
 	syncsvc "github.com/atharvyadav96k/spotnearr/search-svc/sync"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +37,19 @@ func Init() application {
 		panic(err)
 	}
 
-	applier := syncsvc.NewApplier(searchDB)
+	opts, err := redis.ParseURL(config.C.CacheURL)
+	if err != nil {
+		panic(fmt.Errorf("search: redis url: %w", err))
+	}
+	if config.C.CachePassword != "" {
+		opts.Password = config.C.CachePassword
+	}
+	rdb := redis.NewClient(opts)
+
+	flusher := freqpkg.NewFlusher(searchDB, rdb)
+	go flusher.Run(context.Background(), 30*time.Second)
+
+	applier := syncsvc.NewApplier(searchDB, rdb)
 	searchSvc := services.NewSearchService(searchDB)
 
 	return application{
