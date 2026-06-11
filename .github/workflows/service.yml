@@ -134,8 +134,8 @@ jobs:
           TF_VAR_image:               ${{ env.IMAGE }}
           TF_VAR_environment:         ${{ inputs.environment }}
           TF_VAR_database_url:        ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
-          TF_VAR_vendor_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_VENDOR_DATABASE_URL || secrets.VENDOR_DATABASE_URL }}
-          TF_VAR_search_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_SEARCH_DATABASE_URL || secrets.SEARCH_DATABASE_URL }}
+          TF_VAR_vendor_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
+          TF_VAR_search_database_url: ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_vendor_db_url:       ${{ secrets.VENDOR_DB_URL }}
           TF_VAR_cache_url:           ${{ secrets.CACHE_URL }}
           TF_VAR_cache_password:      ${{ secrets.CACHE_PASSWORD }}
