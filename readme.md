@@ -3,6 +3,13 @@
 
 ###  API Reference
 
+#### Quick Links
+
+| [Vendor](./API_DOCS.md#vendor-service--8081) | [Products](./API_DOCS.md#products) | [Searching](./API_DOCS.md#search-service--8082) | [User Service](./API_DOCS.md#user-service--8080) |
+
+---
+
+
 Detailed endpoints are documented in the main file:
 
  **[Go to API_DOCS.md](./API_DOCS.md)**
@@ -19,15 +26,6 @@ Detailed endpoints are documented in the main file:
 
 ---
 
-#### Quick Links
-
-- [Vendor](./API_DOCS.md#vendor-service--8081)
-- [Products](./API_DOCS.md#products)
-- [Inventory & Stores](./API_DOCS.md#inventory-stores)
-- [Searching](./API_DOCS.md#search-service--8082)
-- [User Service](./API_DOCS.md#user-service--8080)
-
----
 
 #### Core Routes
 
