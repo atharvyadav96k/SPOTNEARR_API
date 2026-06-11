@@ -17,6 +17,7 @@ import (
 type application struct {
 	db              *gorm.DB
 	cache           *cache.Cache
+	authHandler     *handlers.AuthHandler
 	bizHandler      *handlers.BusinessHandler
 	invHandler      *handlers.InventoryHandler
 	productHandler  *handlers.ProductHandler
@@ -47,6 +48,7 @@ func Init() application {
 	go flusher.Run(context.Background(), 30*time.Second)
 	notify := func() { go flusher.Flush(context.Background()) }
 
+	authSvc := services.NewAuthService(db, config.C.JWTSecret)
 	bizSvc := services.NewBusinessService(db, c, config.C.UserServiceURL)
 	invSvc := services.NewInventoryService(db, c)
 	productSvc := services.NewProductService(db, c)
@@ -55,6 +57,7 @@ func Init() application {
 	return application{
 		db:              db,
 		cache:           c,
+		authHandler:     handlers.NewAuthHandler(authSvc),
 		bizHandler:      handlers.NewBusinessHandler(bizSvc),
 		invHandler:      handlers.NewInventoryHandler(invSvc, notify),
 		productHandler:  handlers.NewProductHandler(productSvc, notify),

@@ -18,6 +18,15 @@ func NewInventoryHandler(svc *services.InventoryService, notify func()) *Invento
 	return &InventoryHandler{svc: svc, notify: notify}
 }
 
+func (i *InventoryHandler) InventoryList(w http.ResponseWriter, r *http.Request) {
+	bizID := i.ClaimGetBusinessID(r)
+	if bizID == 0 {
+		i.ResponseBadRequest(w)
+		return
+	}
+	i.Response(w, i.svc.GetBusinessInventory(bizID))
+}
+
 func (i *InventoryHandler) InventoryCreate(w http.ResponseWriter, r *http.Request) {
 	bizID := i.ClaimGetBusinessID(r)
 	if bizID == 0 {

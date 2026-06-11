@@ -19,6 +19,7 @@ func (a *application) NewMux() *mux.Router {
 
 	apiV1 := router.PathPrefix("/api/v1").Subrouter()
 	a.healthRouter(apiV1)
+	a.authRouter(apiV1)
 	a.businessRouter(apiV1, auth, bizOnly, rl)
 	a.inventoryRouter(apiV1, auth, bizOnly, rl)
 	a.productRouter(apiV1, auth, bizOnly, rl)
@@ -29,6 +30,13 @@ func (a *application) NewMux() *mux.Router {
 	a.internalRouter(internal)
 
 	return router
+}
+
+func (a *application) authRouter(router *mux.Router) {
+	auth := router.PathPrefix("/auth").Subrouter()
+	auth.HandleFunc("/register", a.authHandler.Register).Methods(http.MethodPost)
+	auth.HandleFunc("/login", a.authHandler.Login).Methods(http.MethodPost)
+	auth.HandleFunc("/refresh", a.authHandler.Refresh).Methods(http.MethodPost)
 }
 
 func (a *application) healthRouter(router *mux.Router) {
@@ -68,6 +76,10 @@ func (a *application) inventoryRouter(router *mux.Router, auth, bizOnly mux.Midd
 	inv := router.PathPrefix("/inventory").Subrouter()
 	inv.Use(auth)
 	inv.Use(bizOnly)
+
+	inv.Handle("/",
+		normalRL(http.HandlerFunc(a.invHandler.InventoryList)),
+	).Methods(http.MethodGet)
 
 	inv.Handle("/",
 		strictRL(http.HandlerFunc(a.invHandler.InventoryCreate)),

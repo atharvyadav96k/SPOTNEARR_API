@@ -169,6 +169,20 @@ type ProductToken struct {
 
 // ---------------------------------------------------------------------------
 
+// BusinessAccount stores credentials for business owners who authenticate
+// directly with the vendor service, independent of the user service.
+type BusinessAccount struct {
+	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Email        string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
+	PasswordHash string    `gorm:"type:varchar(255);not null" json:"-"`
+	BusinessID   uint      `gorm:"uniqueIndex;not null" json:"businessId"`
+	Business     *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// ---------------------------------------------------------------------------
+
 // SearchSyncOutbox is the transactional outbox for propagating inventory changes
 // to the Search Service. Written in the same DB transaction as the triggering write.
 type SearchSyncOutbox struct {
