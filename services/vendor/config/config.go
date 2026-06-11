@@ -39,7 +39,7 @@ func Load() error {
 		CaptchaSecretKey: optional("CAPTCHA_SECRET_KEY", "1x0000000000000000000000000000000AA"),
 		CacheURL:         optional("CACHE_URL", "redis://localhost:6379"),
 		CachePassword:    optional("CACHE_PASSWORD", ""),
-		Port:             optional("PORT", "8081"),
+		Port:             optional("PORT", "8080"),
 		UserServiceURL:   optional("USER_SERVICE_URL", "http://localhost:8080"),
 		SearchServiceURL: optional("SEARCH_SERVICE_URL", "http://localhost:8082"),
 	}
