@@ -1,8 +1,5 @@
 # Spotnearr Platform
 
-<table>
-<tr>
-<td width="35%" valign="top">
 
 ###  API Reference
 
@@ -52,9 +49,6 @@ POST /api/v1/inventory/{invId}/products
 Authorization: Bearer <access_token>
 ```
 
-</td>
-<td width="65%" valign="top">
-
 ## About Spotnearr
 
 Spotnearr is a hyperlocal marketplace platform designed to bridge the gap between physical brick-and-mortar businesses and nearby customers. By leveraging real-time geographic coordinates, the platform allows local merchants to digitally broadcast products and promotional media to consumers within their immediate vicinity.
@@ -90,6 +84,3 @@ The system serves two distinct user roles — **Businesses** and **Customers** �
 - **Storage & Media:** Integrated with *Google Cloud Storage (GCS)*. Clients request secure, short-lived Signed URLs from a dedicated internal bridge service to upload multimedia directly to GCS buckets.
 - **Automated QA:** Self-contained end-to-end integration test suite deployed on GCP, triggered automatically via Cloud Scheduler — simulates 34 complete user journeys from registration to product claiming.
 
-</td>
-</tr>
-</table>
