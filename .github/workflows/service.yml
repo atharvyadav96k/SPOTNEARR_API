@@ -42,8 +42,6 @@ on:
         required: false
       VENDOR_DATABASE_URL:
         required: false
-      DEV_VENDOR_DATABASE_URL:
-        required: false
       SEARCH_DATABASE_URL:
         required: false
       DEV_SEARCH_DATABASE_URL:
@@ -113,7 +111,6 @@ jobs:
           TF_VAR_database_url:        ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_vendor_database_url: ${{ secrets.VENDOR_DATABASE_URL }}
           TF_VAR_search_database_url: ${{ secrets.SEARCH_DATABASE_URL }}
-          TF_VAR_vendor_db_url:       ${{ inputs.environment == 'dev' && secrets.DEV_VENDOR_DATABASE_URL || secrets.VENDOR_DATABASE_URL }}
           TF_VAR_cache_url:           ${{ secrets.CACHE_URL }}
           TF_VAR_cache_password:      ${{ secrets.CACHE_PASSWORD }}
           TF_VAR_jwt_secret:          ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}
@@ -134,7 +131,6 @@ jobs:
           TF_VAR_database_url:        ${{ inputs.environment == 'dev' && secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
           TF_VAR_vendor_database_url: ${{ secrets.VENDOR_DATABASE_URL }}
           TF_VAR_search_database_url: ${{ secrets.SEARCH_DATABASE_URL }}
-          TF_VAR_vendor_db_url:       ${{ inputs.environment == 'dev' && secrets.DEV_VENDOR_DATABASE_URL || secrets.VENDOR_DATABASE_URL }}
           TF_VAR_cache_url:           ${{ secrets.CACHE_URL }}
           TF_VAR_cache_password:      ${{ secrets.CACHE_PASSWORD }}
           TF_VAR_jwt_secret:          ${{ inputs.environment == 'dev' && secrets.DEV_JWT_SECRET || secrets.JWT_SECRET }}

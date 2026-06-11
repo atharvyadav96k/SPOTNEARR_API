@@ -2,6 +2,7 @@ package applayer
 
 import (
 	"context"
+	"time"
 
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/config"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
@@ -42,8 +43,9 @@ func Init() application {
 		panic(err)
 	}
 
-	notifier := events.NewNotifier(config.C.SearchServiceURL)
-	notify := func() { notifier.Notify(context.Background()) }
+	flusher := events.NewFlusher(db, config.C.SearchServiceURL)
+	go flusher.Run(context.Background(), 30*time.Second)
+	notify := func() { go flusher.Flush(context.Background()) }
 
 	bizSvc := services.NewBusinessService(db, c, config.C.UserServiceURL)
 	invSvc := services.NewInventoryService(db, c)

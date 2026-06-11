@@ -14,7 +14,6 @@ variable "region"              {}
 variable "service_account"     {}
 variable "image"               {}
 variable "search_database_url" {}
-variable "vendor_db_url"       {}
 variable "cache_url"           {}
 variable "jwt_secret"          {}
 variable "cache_password"      { default = "" }
@@ -39,10 +38,6 @@ resource "google_cloud_run_v2_service" "search" {
       env {
         name  = "DATABASE_URL"
         value = var.search_database_url
-      }
-      env {
-        name  = "VENDOR_DB_URL"
-        value = var.vendor_db_url
       }
       env {
         name  = "CACHE_URL"
