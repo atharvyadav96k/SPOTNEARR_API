@@ -21,11 +21,11 @@ Detailed endpoints are documented in the main file:
 
 #### Quick Links
 
-- [Vendor Auth](./API_DOCS.md#vendor-service----8081)
+- [Vendor](./API_DOCS.md#vendor-service--8081)
 - [Products](./API_DOCS.md#products)
 - [Inventory & Stores](./API_DOCS.md#inventory-stores)
-- [Proximity Search](./API_DOCS.md#search-service----8082)
-- [User Service Auth](./API_DOCS.md#user-service----8080)
+- [Searching](./API_DOCS.md#search-service--8082)
+- [User Service](./API_DOCS.md#user-service--8080)
 
 ---
 
