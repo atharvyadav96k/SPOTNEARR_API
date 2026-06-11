@@ -93,7 +93,10 @@ func (r *SearchRepository) Upsert(ctx context.Context, entry search.SearchEntry)
 	if err != nil {
 		return fmt.Errorf("marshal search_tokens: %w", err)
 	}
-	catArr := intArrayLiteral(entry.CategoryIDs)
+	catsJSON, err := json.Marshal(entry.CategoryIDs)
+	if err != nil {
+		return fmt.Errorf("marshal category_ids: %w", err)
+	}
 
 	return r.db.WithContext(ctx).Exec(`
 		INSERT INTO search_entries (
@@ -105,7 +108,7 @@ func (r *SearchRepository) Upsert(ctx context.Context, entry search.SearchEntry)
 		) VALUES (
 			?, ?, ?, ?,
 			?, ?, ?, ?, ?,
-			?::jsonb, ?::integer[],
+			?::jsonb, ?::jsonb,
 			?, ?, ?, ?, ?, ?,
 			?, NOW(), NULL
 		)
@@ -132,7 +135,7 @@ func (r *SearchRepository) Upsert(ctx context.Context, entry search.SearchEntry)
 	`,
 		entry.ID, entry.ProductID, entry.BusinessID, entry.ProductName,
 		entry.Price, entry.PriceUnit, entry.Quantity, entry.QuantityUnit, entry.Description,
-		string(tokensJSON), catArr,
+		string(tokensJSON), string(catsJSON),
 		entry.StoreID, entry.StoreName, entry.StreetAddress, entry.Lat, entry.Long, entry.GeoHash,
 		entry.Available,
 	).Error
@@ -146,13 +149,3 @@ func (r *SearchRepository) SoftDelete(ctx context.Context, id uint) error {
 	`, id).Error
 }
 
-func intArrayLiteral(ids []uint) string {
-	if len(ids) == 0 {
-		return "{}"
-	}
-	parts := make([]string, len(ids))
-	for i, id := range ids {
-		parts[i] = fmt.Sprintf("%d", id)
-	}
-	return "{" + strings.Join(parts, ",") + "}"
-}

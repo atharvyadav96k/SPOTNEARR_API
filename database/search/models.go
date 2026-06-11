@@ -15,7 +15,7 @@ type SearchEntry struct {
 	QuantityUnit  *string    `gorm:"type:varchar(20)" json:"quantityUnit,omitempty"`
 	Description   string     `gorm:"type:text" json:"description"`
 	SearchTokens  []string   `gorm:"type:jsonb;serializer:json;not null" json:"-"`
-	CategoryIDs   []uint     `gorm:"type:integer[];serializer:json;not null" json:"-"`
+	CategoryIDs   []uint     `gorm:"type:jsonb;serializer:json;not null" json:"-"`
 	StoreID       uint       `gorm:"index;not null" json:"storeId"`
 	StoreName     string     `gorm:"type:text;not null" json:"storeName"`
 	StreetAddress string     `gorm:"type:text;not null" json:"streetAddress"`
