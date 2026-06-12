@@ -60,7 +60,7 @@ func Init() application {
 		panic(err)
 	}
 
-	searchSvc := services.NewSearchService(searchDB)
+	searchSvc := services.NewSearchService(searchDB, rdb)
 
 	return application{
 		searchDB:      searchDB,
