@@ -158,4 +158,6 @@ func (a *application) categoryRouter(router *mux.Router, auth, bizOnly mux.Middl
 func (a *application) internalRouter(router *mux.Router) {
 	router.HandleFunc("/inventory-products/{id}", a.internalHandler.GetInventoryProduct).Methods(http.MethodGet)
 	router.HandleFunc("/users/{id}/access", a.internalHandler.GetUserAccess).Methods(http.MethodGet)
+	router.HandleFunc("/businesses/{bizId}/follow", a.internalHandler.FollowBusiness).Methods(http.MethodPost)
+	router.HandleFunc("/businesses/{bizId}/unfollow", a.internalHandler.UnfollowBusiness).Methods(http.MethodPost)
 }

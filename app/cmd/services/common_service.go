@@ -9,6 +9,7 @@ type Services struct {
 	UserService   *UserService
 	ClaimService  *ClaimService
 	ReviewService *ReviewService
+	SocialService *SocialService
 }
 
 func Init(db *gorm.DB, cache *cache.Cache) *Services {
@@ -17,5 +18,6 @@ func Init(db *gorm.DB, cache *cache.Cache) *Services {
 		UserService:   NewUserService(db, cache),
 		ClaimService:  NewClaimService(base),
 		ReviewService: NewReviewService(base),
+		SocialService: NewSocialService(base),
 	}
 }

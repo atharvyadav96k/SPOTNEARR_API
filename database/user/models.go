@@ -108,3 +108,45 @@ type Review struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 }
+
+// ---------------------------------------------------------------------------
+
+// BusinessFollow records that a user follows a business.
+// Composite PK prevents duplicates. No soft-delete — a delete is a real unfollow.
+type BusinessFollow struct {
+	UserID     uint      `gorm:"primaryKey;not null" json:"userId"`
+	BusinessID uint      `gorm:"primaryKey;not null" json:"businessId"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// ProductLike records that a user liked an inventory product.
+type ProductLike struct {
+	UserID       uint      `gorm:"primaryKey;not null" json:"userId"`
+	InvProductID uint      `gorm:"primaryKey;not null" json:"invProductId"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// ProductSave records that a user saved an inventory product.
+type ProductSave struct {
+	UserID       uint      `gorm:"primaryKey;not null" json:"userId"`
+	InvProductID uint      `gorm:"primaryKey;not null" json:"invProductId"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// SpotlightLike records that a user liked a spotlight post.
+type SpotlightLike struct {
+	UserID      uint      `gorm:"primaryKey;not null" json:"userId"`
+	SpotlightID uint      `gorm:"primaryKey;not null" json:"spotlightId"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+// SpotlightSave records that a user saved a spotlight post.
+type SpotlightSave struct {
+	UserID      uint      `gorm:"primaryKey;not null" json:"userId"`
+	SpotlightID uint      `gorm:"primaryKey;not null" json:"spotlightId"`
+	CreatedAt   time.Time `json:"createdAt"`
+}

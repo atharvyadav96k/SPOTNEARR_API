@@ -57,10 +57,12 @@ Path: `app/cmd/`
 ### Social & Feed
 | Feature | Status | Notes |
 |---|---|---|
-| Follow a business | ⬜ Not Started | |
-| Follow another user | ⬜ Not Started | |
-| Like / save a product | ⬜ Not Started | |
-| Like / save a spotlight | ⬜ Not Started | |
+| Follow a business | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/businesses/{bizId}/follow` |
+| Like a product | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/products/{invProductId}/like` |
+| Save a product | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/products/{invProductId}/save` |
+| Like a spotlight | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/spotlights/{spotlightId}/like` |
+| Save a spotlight | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/spotlights/{spotlightId}/save` |
+| Follow another user | ⬜ Not Started | Removed from current scope |
 | Spotlight feed (hyperlocal, 10 km) | ⬜ Not Started | |
 | Real-time notifications | ⬜ Not Started | Live offers, nearby updates, comments |
 

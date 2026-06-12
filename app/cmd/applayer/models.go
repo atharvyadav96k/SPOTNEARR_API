@@ -12,5 +12,6 @@ type application struct {
 	userHandler     *handlers.UserHandler
 	claimHandler    *handlers.ClaimHandler
 	reviewHandler   *handlers.ReviewHandler
+	socialHandler   *handlers.SocialHandler
 	internalHandler *handlers.InternalHandler
 }

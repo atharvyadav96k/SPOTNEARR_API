@@ -16,12 +16,14 @@ import (
 type InternalHandler struct {
 	invProductRepo *vendorpostgres.InvProductRepository
 	accessRepo     *vendorpostgres.AccessRepository
+	bizRepo        *vendorpostgres.BusinessRepository
 }
 
 func NewInternalHandler(db *gorm.DB) *InternalHandler {
 	return &InternalHandler{
 		invProductRepo: vendorpostgres.NewInvProductRepository(db),
 		accessRepo:     vendorpostgres.NewAccessRepository(db),
+		bizRepo:        vendorpostgres.NewBusinessRepository(db),
 	}
 }
 
@@ -75,6 +77,36 @@ func (h *InternalHandler) GetInventoryProduct(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(detail)
+}
+
+// FollowBusiness handles POST /internal/businesses/{bizId}/follow.
+// Called by User Service after recording a follow in the user DB.
+func (h *InternalHandler) FollowBusiness(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "bizId")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := h.bizRepo.IncrementFollowerCount(context.Background(), id); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// UnfollowBusiness handles POST /internal/businesses/{bizId}/unfollow.
+// Called by User Service after removing a follow in the user DB.
+func (h *InternalHandler) UnfollowBusiness(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "bizId")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := h.bizRepo.DecrementFollowerCount(context.Background(), id); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func parseID(r *http.Request, key string) (uint, error) {

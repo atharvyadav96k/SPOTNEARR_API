@@ -30,3 +30,24 @@ type IReviewRepository interface {
 	GetByTarget(ctx context.Context, targetType ReviewTarget, targetID uint) ([]Review, error)
 	GetByUserAndTarget(ctx context.Context, userID uint, targetType ReviewTarget, targetID uint) (Review, error)
 }
+
+type IBusinessFollowRepository interface {
+	Follow(ctx context.Context, userID, businessID uint) error
+	Unfollow(ctx context.Context, userID, businessID uint) error
+	IsFollowing(ctx context.Context, userID, businessID uint) (bool, error)
+	GetFollowedBusinessIDs(ctx context.Context, userID uint) ([]uint, error)
+}
+
+type IProductEngagementRepository interface {
+	Like(ctx context.Context, userID, invProductID uint) error
+	Unlike(ctx context.Context, userID, invProductID uint) error
+	Save(ctx context.Context, userID, invProductID uint) error
+	Unsave(ctx context.Context, userID, invProductID uint) error
+}
+
+type ISpotlightEngagementRepository interface {
+	Like(ctx context.Context, userID, spotlightID uint) error
+	Unlike(ctx context.Context, userID, spotlightID uint) error
+	Save(ctx context.Context, userID, spotlightID uint) error
+	Unsave(ctx context.Context, userID, spotlightID uint) error
+}

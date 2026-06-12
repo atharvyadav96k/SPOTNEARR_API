@@ -17,6 +17,7 @@ type Business struct {
 
 	IsActive         bool `gorm:"default:true;not null" json:"isActive"`
 	VerifiedBusiness bool `gorm:"default:false;not null" json:"verifiedBusiness"`
+	FollowerCount    uint `gorm:"default:0;not null" json:"followerCount"`
 
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`

@@ -7,5 +7,10 @@ func AutoMigrate(db *gorm.DB) error {
 		&User{},
 		&Claim{},
 		&Review{},
+		&BusinessFollow{},
+		&ProductLike{},
+		&ProductSave{},
+		&SpotlightLike{},
+		&SpotlightSave{},
 	)
 }

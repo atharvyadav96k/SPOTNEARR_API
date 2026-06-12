@@ -24,6 +24,7 @@ func (a *application) NewMux() *mux.Router {
 	a.userRouter(apiV1, auth, rl)
 	a.claimRouter(apiV1, auth, rl)
 	a.reviewRouter(apiV1, auth, rl)
+	a.socialRouter(apiV1, auth, rl)
 
 	// Internal routes — network-isolated, no auth middleware.
 	internal := router.PathPrefix("/internal").Subrouter()
@@ -94,6 +95,49 @@ func (a *application) claimRouter(router *mux.Router, auth mux.MiddlewareFunc, r
 
 	protectedAuth.Handle("/{claimId}",
 		normalRateLimit(http.HandlerFunc(a.claimHandler.ClaimRemove)),
+	).Methods(http.MethodDelete)
+}
+
+func (a *application) socialRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRateLimit := pkgmid.RateLimit(rl, 3000, time.Minute)
+
+	s := router.PathPrefix("/social").Subrouter()
+	s.Use(auth)
+
+	// Follow / unfollow business
+	s.Handle("/businesses/{bizId}/follow",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.FollowBusiness)),
+	).Methods(http.MethodPost)
+	s.Handle("/businesses/{bizId}/follow",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnfollowBusiness)),
+	).Methods(http.MethodDelete)
+
+	// Like / save product
+	s.Handle("/products/{invProductId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.LikeProduct)),
+	).Methods(http.MethodPost)
+	s.Handle("/products/{invProductId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnlikeProduct)),
+	).Methods(http.MethodDelete)
+	s.Handle("/products/{invProductId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.SaveProduct)),
+	).Methods(http.MethodPost)
+	s.Handle("/products/{invProductId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnsaveProduct)),
+	).Methods(http.MethodDelete)
+
+	// Like / save spotlight
+	s.Handle("/spotlights/{spotlightId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.LikeSpotlight)),
+	).Methods(http.MethodPost)
+	s.Handle("/spotlights/{spotlightId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnlikeSpotlight)),
+	).Methods(http.MethodDelete)
+	s.Handle("/spotlights/{spotlightId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.SaveSpotlight)),
+	).Methods(http.MethodPost)
+	s.Handle("/spotlights/{spotlightId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnsaveSpotlight)),
 	).Methods(http.MethodDelete)
 }
 

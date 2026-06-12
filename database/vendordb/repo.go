@@ -12,6 +12,8 @@ type IBusinessesRepository interface {
 	GetByPhone(ctx context.Context, phone string) (*Business, error)
 	VerifyBusiness(ctx context.Context, id uint) error
 	ToggleActiveStatus(ctx context.Context, id uint, isActive bool) error
+	IncrementFollowerCount(ctx context.Context, id uint) error
+	DecrementFollowerCount(ctx context.Context, id uint) error
 }
 
 type IStoreRepository interface {

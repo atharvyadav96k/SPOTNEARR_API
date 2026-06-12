@@ -26,6 +26,7 @@ func Init() application {
 	a.userHandler = handlers.NewUserHandler(svcs)
 	a.claimHandler = handlers.NewClaimHandler(svcs)
 	a.reviewHandler = handlers.NewReviewHandler(svcs)
+	a.socialHandler = handlers.NewSocialHandler(svcs)
 	a.internalHandler = handlers.NewInternalHandler(svcs)
 	return a
 }
