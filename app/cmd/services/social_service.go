@@ -3,49 +3,23 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
-	"net/http"
-	"time"
 
-	"github.com/atharvyadav96k/SPOTNEARR_API/config"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
+	"github.com/atharvyadav96k/spotnearr/pkg/mq"
 	"gorm.io/gorm"
 )
 
 type SocialService struct {
 	base_service
-	httpClient *http.Client
+	publisher *mq.Publisher
 }
 
-func NewSocialService(b base_service) *SocialService {
-	return &SocialService{
-		base_service: b,
-		httpClient:   &http.Client{Timeout: 500 * time.Millisecond},
-	}
+func NewSocialService(b base_service, publisher *mq.Publisher) *SocialService {
+	return &SocialService{base_service: b, publisher: publisher}
 }
 
-// notifyVendor fires a POST to the vendor internal endpoint for follow/unfollow.
-// Failure is logged but never propagates — follower count is a best-effort metric.
-func (s *SocialService) notifyVendor(bizID uint, action string) {
-	url := fmt.Sprintf("%s/internal/businesses/%d/%s", config.C.VendorServiceURL, bizID, action)
-	req, err := http.NewRequest(http.MethodPost, url, nil)
-	if err != nil {
-		log.Printf("social: build request for %s biz %d: %v", action, bizID, err)
-		return
-	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		log.Printf("social: vendor notification %s biz %d failed: %v", action, bizID, err)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("social: vendor notification %s biz %d returned %d", action, bizID, resp.StatusCode)
-	}
-}
-
-// FollowBusiness records a follow in the user DB then notifies vendor to increment count.
+// FollowBusiness records a follow in the user DB then publishes a follow event.
 func (s *SocialService) FollowBusiness(userID, bizID uint) response.Res {
 	ctx := context.Background()
 
@@ -61,11 +35,13 @@ func (s *SocialService) FollowBusiness(userID, bizID uint) response.Res {
 		return s.ResponseInternalServer("Failed to follow business")
 	}
 
-	go s.notifyVendor(bizID, "follow")
+	if err := s.publisher.Publish(ctx, mq.TopicBusinessFollow, mq.BusinessFollowPayload{BusinessID: bizID, UserID: userID}); err != nil {
+		log.Printf("social: publish follow event biz %d: %v", bizID, err)
+	}
 	return s.ResponseOK("Followed successfully", nil)
 }
 
-// UnfollowBusiness removes the follow from the user DB then notifies vendor to decrement count.
+// UnfollowBusiness removes the follow from the user DB then publishes an unfollow event.
 func (s *SocialService) UnfollowBusiness(userID, bizID uint) response.Res {
 	ctx := context.Background()
 
@@ -76,7 +52,9 @@ func (s *SocialService) UnfollowBusiness(userID, bizID uint) response.Res {
 		return s.ResponseInternalServer("Failed to unfollow business")
 	}
 
-	go s.notifyVendor(bizID, "unfollow")
+	if err := s.publisher.Publish(ctx, mq.TopicBusinessUnfollow, mq.BusinessFollowPayload{BusinessID: bizID, UserID: userID}); err != nil {
+		log.Printf("social: publish unfollow event biz %d: %v", bizID, err)
+	}
 	return s.ResponseOK("Unfollowed successfully", nil)
 }
 

@@ -1,5 +1,22 @@
 services:
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: spotnearr_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    networks:
+      - spotnearr-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   postgres:
     image: postgres:16-alpine
     container_name: spotnearr_postgres
@@ -47,12 +64,15 @@ services:
       CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-1x0000000000000000000000000000000AA}
       CAPTCHA_URL: https://challenges.cloudflare.com/turnstile/v0/siteverify
       VENDOR_SERVICE_URL: http://vendor-service:8080
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - spotnearr-network
@@ -73,12 +93,15 @@ services:
       CAPTCHA_URL: https://challenges.cloudflare.com/turnstile/v0/siteverify
       USER_SERVICE_URL: http://user-service:8080
       SEARCH_SERVICE_URL: http://search-service:8080
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/
     ports:
       - "8081:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - spotnearr-network

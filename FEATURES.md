@@ -164,3 +164,18 @@ Path: `services/search/`
 | Feature | Status | Route |
 |---|---|---|
 | Manual sync trigger | ✅ Done | `POST /internal/sync` |
+
+---
+
+## Cross-Cutting Infrastructure
+
+### Messaging (`pkg/mq`)
+| Component | Status | Notes |
+|---|---|---|
+| RabbitMQ container | ✅ Done | `docker-compose.yml` — port `5672`, management UI `15672` |
+| Connection wrapper | ✅ Done | `pkg/mq/conn.go` — `Connect()`, durable topic exchange `spotnearr.events` |
+| Predefined topics | ✅ Done | `pkg/mq/topics.go` — add new event types here |
+| Publisher | ✅ Done | `pkg/mq/publisher.go` — `Publish(ctx, Topic, payload)` |
+| Subscriber | ✅ Done | `pkg/mq/subscriber.go` — `Subscribe(ctx, queue, Topic, Handler)` with ack/nack |
+| Follow event (user → vendor) | ✅ Done | Topic `user.business.follow` → vendor increments `follower_count` |
+| Unfollow event (user → vendor) | ✅ Done | Topic `user.business.unfollow` → vendor decrements `follower_count` |

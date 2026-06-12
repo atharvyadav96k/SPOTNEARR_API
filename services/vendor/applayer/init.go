@@ -11,6 +11,7 @@ import (
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/handlers"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/internal_handlers"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
+	"github.com/atharvyadav96k/spotnearr/pkg/mq"
 	"gorm.io/gorm"
 )
 
@@ -41,6 +42,18 @@ func Init() application {
 
 	c, err := cache.InitCache(config.C.CacheURL, config.C.CachePassword)
 	if err != nil {
+		panic(err)
+	}
+
+	mqConn, err := mq.Connect(config.C.RabbitMQURL)
+	if err != nil {
+		panic(err)
+	}
+	mqSub, err := mq.NewSubscriber(mqConn)
+	if err != nil {
+		panic(err)
+	}
+	if err := events.InitConsumers(context.Background(), mqSub, db); err != nil {
 		panic(err)
 	}
 
