@@ -23,14 +23,16 @@ type SyncPayload struct {
 	InvProductID uint    `json:"inv_product_id"`
 	ProductID    uint    `json:"product_id"`
 	ProductName  string  `json:"product_name"`
+	Price        float64 `json:"price"`
+	PriceUnit    string  `json:"price_unit"`
 	Desc         string  `json:"desc"`
 	Categories   []struct {
 		ID uint `json:"id"`
 	} `json:"categories"`
-	Lat      float64 `json:"lat"`
-	Long     float64 `json:"long"`
-	GeoHash  string  `json:"geo_hash"`
-	Available bool   `json:"available"`
+	Lat       float64 `json:"lat"`
+	Long      float64 `json:"long"`
+	GeoHash   string  `json:"geo_hash"`
+	Available bool    `json:"available"`
 }
 
 // Applier applies vendor-pushed sync events to the search index and maintains
@@ -81,6 +83,9 @@ func (a *Applier) applyUpsert(ctx context.Context, p SyncPayload) error {
 	if err := a.repo.Upsert(ctx, searchdb.SearchEntry{
 		ID:           p.InvProductID,
 		ProductID:    p.ProductID,
+		Name:         p.ProductName,
+		Price:        p.Price,
+		PriceUnit:    p.PriceUnit,
 		SearchTokens: tokens,
 		CategoryIDs:  catIDs,
 		Lat:          p.Lat,

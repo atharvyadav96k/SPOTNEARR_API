@@ -13,6 +13,7 @@ type Config struct {
 	CacheURL      string
 	CachePassword string
 	Port          string
+	RabbitMQURL   string
 }
 
 var C *Config
@@ -32,6 +33,7 @@ func Load() error {
 		CacheURL:      optional("CACHE_URL", "redis://localhost:6379"),
 		CachePassword: optional("CACHE_PASSWORD", ""),
 		Port:          optional("PORT", "8080"),
+		RabbitMQURL:   optional("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672/"),
 	}
 
 	log.Default().Println(*C)

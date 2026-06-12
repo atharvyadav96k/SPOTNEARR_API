@@ -25,23 +25,7 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 
-	// Drop columns that no longer belong in the lean search index.
-	// IF EXISTS makes this a no-op on fresh installs.
-	db.Exec(`
-		ALTER TABLE search_entries
-			DROP COLUMN IF EXISTS business_id,
-			DROP COLUMN IF EXISTS product_name,
-			DROP COLUMN IF EXISTS price,
-			DROP COLUMN IF EXISTS price_unit,
-			DROP COLUMN IF EXISTS quantity,
-			DROP COLUMN IF EXISTS quantity_unit,
-			DROP COLUMN IF EXISTS description,
-			DROP COLUMN IF EXISTS store_id,
-			DROP COLUMN IF EXISTS store_name,
-			DROP COLUMN IF EXISTS street_address
-	`)
-
-	db.Exec(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_se_tokens_gin
+db.Exec(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_se_tokens_gin
 		ON search_entries USING GIN (search_tokens jsonb_path_ops)
 		WHERE deleted_at IS NULL AND available = true`)
 	db.Exec(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_se_lat_long

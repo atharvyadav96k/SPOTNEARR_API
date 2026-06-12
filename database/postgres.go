@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Connect opens a single shared GORM postgres connection pool.
@@ -20,6 +21,7 @@ import (
 func Connect(databaseURL string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
 		TranslateError: true,
+		Logger:         logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, err

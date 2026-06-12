@@ -1,32 +1,27 @@
 package events
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
+	vendordb "github.com/Developer-Aadesh/spotnearr-database/vendordb"
+	"github.com/atharvyadav96k/spotnearr/pkg/mq"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/models"
 	"gorm.io/gorm"
 )
 
 // Flusher reads unprocessed search_sync_outboxes rows from the vendor DB and
-// pushes each payload to the search service. Vendor owns its outbox lifecycle;
-// search never touches the vendor database.
+// publishes each payload to the search service via RabbitMQ.
 type Flusher struct {
-	db     *gorm.DB
-	url    string
-	client *http.Client
+	db  *gorm.DB
+	pub *mq.Publisher
 }
 
-func NewFlusher(db *gorm.DB, searchServiceURL string) *Flusher {
-	return &Flusher{
-		db:     db,
-		url:    searchServiceURL + "/internal/sync",
-		client: &http.Client{Timeout: 5 * time.Second},
-	}
+func NewFlusher(db *gorm.DB, pub *mq.Publisher) *Flusher {
+	return &Flusher{db: db, pub: pub}
 }
 
 // Run starts the fallback poll loop. Call in a goroutine.
@@ -77,8 +72,8 @@ func (f *Flusher) Flush(ctx context.Context) {
 	}
 
 	for _, row := range rows {
-		if err := f.push(ctx, row.Payload); err != nil {
-			log.Printf("flusher: push row %d: %v", row.ID, err)
+		if err := f.publish(ctx, row.Payload); err != nil {
+			log.Printf("flusher: publish row %d: %v", row.ID, err)
 			continue
 		}
 		now := time.Now()
@@ -93,19 +88,10 @@ func (f *Flusher) Flush(ctx context.Context) {
 	tx.Commit()
 }
 
-func (f *Flusher) push(ctx context.Context, payload []byte) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, f.url, bytes.NewReader(payload))
-	if err != nil {
-		return err
+func (f *Flusher) publish(ctx context.Context, payload []byte) error {
+	var p vendordb.OutboxPayload
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return fmt.Errorf("unmarshal outbox payload: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := f.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("search returned %d", resp.StatusCode)
-	}
-	return nil
+	return f.pub.Publish(ctx, mq.TopicProductSync, p)
 }

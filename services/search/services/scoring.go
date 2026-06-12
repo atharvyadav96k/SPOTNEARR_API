@@ -16,11 +16,26 @@ const (
 	bucketKm2 = 2.0
 	bucketKm3 = 5.0
 
-	noGeoTier = math.MaxInt32
+	noGeoTier  = math.MaxInt32
+	maxResults = 100
 )
 
+// SearchResult is the per-item shape returned to the client.
+// Full product detail (store address, availability, categories) is available
+// via GET /api/v1/products/{invProductId}/detail on the vendor service.
+type SearchResult struct {
+	InvProductID uint    `json:"inv_product_id"`
+	ProductID    uint    `json:"product_id"`
+	Name         string  `json:"name"`
+	Price        float64 `json:"price"`
+	PriceUnit    string  `json:"price_unit"`
+	Lat          float64 `json:"lat"`
+	Long         float64 `json:"long"`
+	DistanceKm   float64 `json:"distance_km,omitempty"`
+}
+
 type rankedEntry struct {
-	productID  uint
+	row        searchdb.SearchRow
 	score      int
 	distanceKm float64
 	tier       int
@@ -42,7 +57,6 @@ func distanceTierOf(km float64) int {
 }
 
 // buildCategoryScores sums stored frequency counts per category for the query tokens.
-// This gives a signal for how common each category is for the given search terms.
 func buildCategoryScores(queryTokens []string, freqs []searchdb.TokenCategoryFreq) map[uint]int64 {
 	tokenSet := make(map[string]struct{}, len(queryTokens))
 	for _, t := range queryTokens {
@@ -58,15 +72,15 @@ func buildCategoryScores(queryTokens []string, freqs []searchdb.TokenCategoryFre
 }
 
 // rankProducts scores every search row, deduplicates by ProductID (keeping the
-// highest-scored entry per product), sorts, and returns an ordered list of product IDs.
+// highest-scored entry per product), sorts, caps at 100, and returns SearchResults.
 func rankProducts(
 	rows []searchdb.SearchRow,
 	queryTokens []string,
 	freqs []searchdb.TokenCategoryFreq,
 	lat, long *float64,
-) []uint {
+) []SearchResult {
 	if len(rows) == 0 {
-		return []uint{}
+		return []SearchResult{}
 	}
 
 	catScores := buildCategoryScores(queryTokens, freqs)
@@ -80,8 +94,8 @@ func rankProducts(
 	best := make(map[uint]rankedEntry, len(rows))
 	for _, row := range rows {
 		e := scoreEntry(row, len(queryTokens), catScores, maxCatScore, lat, long)
-		if prev, ok := best[e.productID]; !ok || isBetter(e, prev) {
-			best[e.productID] = e
+		if prev, ok := best[e.row.ProductID]; !ok || isBetter(e, prev) {
+			best[e.row.ProductID] = e
 		}
 	}
 
@@ -100,11 +114,24 @@ func rankProducts(
 		return a.distanceKm < b.distanceKm
 	})
 
-	ids := make([]uint, len(ranked))
-	for i, e := range ranked {
-		ids[i] = e.productID
+	if len(ranked) > maxResults {
+		ranked = ranked[:maxResults]
 	}
-	return ids
+
+	results := make([]SearchResult, len(ranked))
+	for i, e := range ranked {
+		results[i] = SearchResult{
+			InvProductID: e.row.ID,
+			ProductID:    e.row.ProductID,
+			Name:         e.row.Name,
+			Price:        e.row.Price,
+			PriceUnit:    e.row.PriceUnit,
+			Lat:          e.row.Lat,
+			Long:         e.row.Long,
+			DistanceKm:   e.distanceKm,
+		}
+	}
+	return results
 }
 
 func isBetter(a, b rankedEntry) bool {
@@ -126,13 +153,11 @@ func scoreEntry(
 ) rankedEntry {
 	score := 0
 
-	// Token coverage: fraction of query tokens matched by this entry (precomputed by DB).
 	if queryTokenCount > 0 {
 		coverage := float64(row.TokenMatchCnt) / float64(queryTokenCount)
 		score += int(coverage * float64(scoreCoverageMax))
 	}
 
-	// Category frequency boost.
 	if maxCatScore > 0 {
 		var bestCat int64
 		for _, catID := range row.CategoryIDs {
@@ -150,12 +175,7 @@ func scoreEntry(
 		tier = distanceTierOf(distKm)
 	}
 
-	return rankedEntry{
-		productID:  row.ProductID,
-		score:      score,
-		distanceKm: distKm,
-		tier:       tier,
-	}
+	return rankedEntry{row: row, score: score, distanceKm: distKm, tier: tier}
 }
 
 func haversineKm(lat1, lon1, lat2, lon2 float64) float64 {

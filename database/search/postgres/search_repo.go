@@ -111,14 +111,19 @@ func (r *SearchRepository) Upsert(ctx context.Context, entry searchdb.SearchEntr
 	}
 	return r.db.WithContext(ctx).Exec(`
 		INSERT INTO search_entries (
-			id, product_id, search_tokens, category_ids,
+			id, product_id, name, price, price_unit,
+			search_tokens, category_ids,
 			lat, long, geo_hash, available, updated_at, deleted_at
 		) VALUES (
-			?, ?, ?::jsonb, ?::jsonb,
+			?, ?, ?, ?, ?,
+			?::jsonb, ?::jsonb,
 			?, ?, ?, ?, NOW(), NULL
 		)
 		ON CONFLICT (id) DO UPDATE SET
 			product_id    = EXCLUDED.product_id,
+			name          = EXCLUDED.name,
+			price         = EXCLUDED.price,
+			price_unit    = EXCLUDED.price_unit,
 			search_tokens = EXCLUDED.search_tokens,
 			category_ids  = EXCLUDED.category_ids,
 			lat           = EXCLUDED.lat,
@@ -127,7 +132,8 @@ func (r *SearchRepository) Upsert(ctx context.Context, entry searchdb.SearchEntr
 			available     = EXCLUDED.available,
 			updated_at    = NOW(),
 			deleted_at    = NULL
-	`, entry.ID, entry.ProductID, string(tokensJSON), string(catsJSON),
+	`, entry.ID, entry.ProductID, entry.Name, entry.Price, entry.PriceUnit,
+		string(tokensJSON), string(catsJSON),
 		entry.Lat, entry.Long, entry.GeoHash, entry.Available).Error
 }
 

@@ -50,6 +50,6 @@ func (s *SearchService) Search(ctx context.Context, query string, lat, long *flo
 		return httputil.NewResponse("search failed", http.StatusInternalServerError, nil)
 	}
 
-	ids := rankProducts(rows, parsed.Tokens, freqs, lat, long)
-	return httputil.NewResponse("search results", http.StatusOK, ids)
+	results := rankProducts(rows, parsed.Tokens, freqs, lat, long)
+	return httputil.NewResponse("search results", http.StatusOK, results)
 }

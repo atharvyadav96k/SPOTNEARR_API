@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	vendorpostgres "github.com/Developer-Aadesh/spotnearr-database/vendordb/postgres"
+	"github.com/atharvyadav96k/spotnearr/pkg/mq"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/config"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/cache"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/connections/database"
@@ -11,7 +13,6 @@ import (
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/handlers"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/internal_handlers"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
-	"github.com/atharvyadav96k/spotnearr/pkg/mq"
 	"gorm.io/gorm"
 )
 
@@ -49,6 +50,10 @@ func Init() application {
 	if err != nil {
 		panic(err)
 	}
+	mqPub, err := mq.NewPublisher(mqConn)
+	if err != nil {
+		panic(err)
+	}
 	mqSub, err := mq.NewSubscriber(mqConn)
 	if err != nil {
 		panic(err)
@@ -57,7 +62,7 @@ func Init() application {
 		panic(err)
 	}
 
-	flusher := events.NewFlusher(db, config.C.SearchServiceURL)
+	flusher := events.NewFlusher(db, mqPub)
 	go flusher.Run(context.Background(), 30*time.Second)
 	notify := func() { go flusher.Flush(context.Background()) }
 
@@ -73,7 +78,7 @@ func Init() application {
 		authHandler:     handlers.NewAuthHandler(authSvc),
 		bizHandler:      handlers.NewBusinessHandler(bizSvc),
 		invHandler:      handlers.NewInventoryHandler(invSvc, notify),
-		productHandler:  handlers.NewProductHandler(productSvc, notify),
+		productHandler:  handlers.NewProductHandler(productSvc, vendorpostgres.NewInvProductRepository(db), notify),
 		categoryHandler: handlers.NewCategoryHandler(categorySvc),
 		internalHandler: internal_handlers.NewInternalHandler(db),
 	}

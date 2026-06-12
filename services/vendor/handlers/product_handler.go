@@ -1,22 +1,27 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
-	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
+	vendorpostgres "github.com/Developer-Aadesh/spotnearr-database/vendordb/postgres"
 	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
+	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
+	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
 	vendormodel "github.com/Developer-Aadesh/spotnearr-database/vendordb"
 	"github.com/atharvyadav96k/spotnearr/vendor-svc/services"
+	"gorm.io/gorm"
 )
 
 type ProductHandler struct {
 	BaseHandler
-	svc    *services.ProductService
-	notify func()
+	svc            *services.ProductService
+	invProductRepo *vendorpostgres.InvProductRepository
+	notify         func()
 }
 
-func NewProductHandler(svc *services.ProductService, notify func()) *ProductHandler {
-	return &ProductHandler{svc: svc, notify: notify}
+func NewProductHandler(svc *services.ProductService, invProductRepo *vendorpostgres.InvProductRepository, notify func()) *ProductHandler {
+	return &ProductHandler{svc: svc, invProductRepo: invProductRepo, notify: notify}
 }
 
 func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +37,7 @@ func (p *ProductHandler) ProductAdd(w http.ResponseWriter, r *http.Request) {
 		product.Categories = append(product.Categories, vendormodel.Category{ID: id})
 	}
 	p.Response(w, p.svc.AddNewProduct(bizID, product, dto.StoreIDs))
+	go p.notify()
 }
 
 func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +56,7 @@ func (p *ProductHandler) ProductUpdate(w http.ResponseWriter, r *http.Request) {
 	product := vendormodel.NewProduct(dto.Name, dto.Price.Value, dto.Price.Unit, dto.Desc, &dto.Quantity.Value, &dto.Quantity.Unit, searchTokens)
 	product.ID = productID
 	p.Response(w, p.svc.UpdateProduct(bizID, product))
+	go p.notify()
 }
 
 func (p *ProductHandler) ProductDelete(w http.ResponseWriter, r *http.Request) {
@@ -76,4 +83,25 @@ func (p *ProductHandler) ProductGet(w http.ResponseWriter, r *http.Request) {
 func (p *ProductHandler) ProductList(w http.ResponseWriter, r *http.Request) {
 	bizID := p.ClaimGetBusinessID(r)
 	p.Response(w, p.svc.GetAllProducts(bizID))
+}
+
+// ProductDetail handles GET /api/v1/products/{invProductId}/detail.
+// Public endpoint — no auth required. Returns name, price, store info for a
+// specific inventory product; intended for the detail view after a search tap.
+func (p *ProductHandler) ProductDetail(w http.ResponseWriter, r *http.Request) {
+	id, err := p.GetInvProductID(r)
+	if err != nil {
+		p.ResponseBadRequestWithMessage(w, "invalid product ID")
+		return
+	}
+	detail, err := p.invProductRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			respond(w, http.StatusNotFound, httputil.Res{Message: "not found"})
+			return
+		}
+		respond(w, http.StatusInternalServerError, httputil.Res{Message: "internal error"})
+		return
+	}
+	respond(w, http.StatusOK, httputil.Res{Message: "product detail", Data: detail})
 }

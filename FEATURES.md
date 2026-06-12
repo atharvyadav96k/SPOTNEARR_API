@@ -97,6 +97,7 @@ Path: `services/vendor/`
 | Create product | ✅ Done | `POST /api/v1/products/` |
 | List all products | ✅ Done | `GET /api/v1/products/` |
 | Get single product | ✅ Done | `GET /api/v1/products/{productId}` |
+| Get inventory product detail (public) | ✅ Done | `GET /api/v1/products/{invProductId}/detail` — no auth |
 | Update product | ✅ Done | `PATCH /api/v1/products/{productId}` |
 | Soft-delete product | ✅ Done | `DELETE /api/v1/products/{productId}` |
 
@@ -155,6 +156,8 @@ Path: `services/search/`
 |---|---|---|
 | Proximity product search | ✅ Done | `GET /api/v1/search?q=&lat=&long=&range=` |
 | Result scoring / ranking | ✅ Done | `services/search/services/scoring.go` |
+| Search results include name + price | ✅ Done | Stored in `search_entries`; returned as `SearchResult` objects |
+| Result cap at 100 | ✅ Done | Applied in `rankProducts` after dedup |
 | Search index sync (outbox poller) | ✅ Done | `services/search/sync/poller.go` |
 | Query frequency flusher | ✅ Done | `services/search/freq/flusher.go` |
 | Category filter | ⬜ Not Started | Filter results by category IDs |
@@ -179,3 +182,4 @@ Path: `services/search/`
 | Subscriber | ✅ Done | `pkg/mq/subscriber.go` — `Subscribe(ctx, queue, Topic, Handler)` with ack/nack |
 | Follow event (user → vendor) | ✅ Done | Topic `user.business.follow` → vendor increments `follower_count` |
 | Unfollow event (user → vendor) | ✅ Done | Topic `user.business.unfollow` → vendor decrements `follower_count` |
+| Product sync (vendor → search) | ✅ Done | Topic `vendor.product.sync` → search upserts/deletes index entry |

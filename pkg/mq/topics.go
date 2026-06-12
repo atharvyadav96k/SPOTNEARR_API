@@ -6,6 +6,7 @@ type Topic string
 const (
 	TopicBusinessFollow   Topic = "user.business.follow"
 	TopicBusinessUnfollow Topic = "user.business.unfollow"
+	TopicProductSync      Topic = "vendor.product.sync"
 )
 
 // BusinessFollowPayload is published for both follow and unfollow events.

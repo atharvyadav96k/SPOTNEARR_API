@@ -3,6 +3,7 @@ package mq
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -23,6 +24,7 @@ func NewPublisher(c *Conn) (*Publisher, error) {
 		return nil, err
 	}
 	ch.Close()
+	log.Println("rabbitmq publisher ready")
 	return &Publisher{conn: c}, nil
 }
 

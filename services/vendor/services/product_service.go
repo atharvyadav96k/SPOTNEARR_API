@@ -63,18 +63,24 @@ func (p *ProductService) AddNewProduct(bizID uint, product vendormodel.Product, 
 }
 
 func (p *ProductService) UpdateProduct(bizID uint, product vendormodel.Product) httputil.Res {
-	updated, err := p.RepoProduct().UpdateProduct(context.Background(), product, bizID)
+	ctx := context.Background()
+	updated, err := p.RepoProduct().UpdateProduct(ctx, product, bizID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return p.ResponseNotFound("Product not found")
 		}
 		return p.ResponseInternalServer("Failed to update product")
 	}
+	// Write outbox entries so the search index reflects the new name/price.
+	_ = p.RepoInvProduct().WriteUpsertOutboxesForProduct(ctx, updated.ID)
 	return p.ResponseOK("Product updated successfully", updated)
 }
 
 func (p *ProductService) DeleteProduct(bizID uint, productID uint) httputil.Res {
-	if err := p.RepoProduct().DeleteProduct(context.Background(), productID, bizID); err != nil {
+	ctx := context.Background()
+	// Write delete outbox entries before the soft-delete so inv_product IDs are still queryable.
+	_ = p.RepoInvProduct().WriteDeleteOutboxesForProduct(ctx, productID)
+	if err := p.RepoProduct().DeleteProduct(ctx, productID, bizID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return p.ResponseNotFound("Product not found")
 		}

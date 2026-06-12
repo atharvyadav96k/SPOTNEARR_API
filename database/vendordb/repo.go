@@ -49,6 +49,8 @@ type IInventoryProduct interface {
 	UpdateProduct(ctx context.Context, invProduct InventoryProduct, bizID uint) (InventoryProduct, error)
 	RemoveProduct(ctx context.Context, invProdID uint, bizID uint) error
 	GetByID(ctx context.Context, id uint) (*InvProductDetail, error)
+	WriteUpsertOutboxesForProduct(ctx context.Context, productID uint) error
+	WriteDeleteOutboxesForProduct(ctx context.Context, productID uint) error
 }
 
 type IAccessRepository interface {

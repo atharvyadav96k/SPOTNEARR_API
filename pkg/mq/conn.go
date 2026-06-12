@@ -1,6 +1,10 @@
 package mq
 
-import amqp "github.com/rabbitmq/amqp091-go"
+import (
+	"log"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+)
 
 const exchangeName = "spotnearr.events"
 
@@ -15,6 +19,7 @@ func Connect(url string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("rabbitmq connection established")
 	return &Conn{raw: c}, nil
 }
 

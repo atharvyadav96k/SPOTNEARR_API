@@ -24,6 +24,7 @@ func NewSubscriber(c *Conn) (*Subscriber, error) {
 		return nil, err
 	}
 	ch.Close()
+	log.Println("rabbitmq subscriber ready")
 	return &Subscriber{conn: c}, nil
 }
 
