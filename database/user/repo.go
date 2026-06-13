@@ -11,7 +11,9 @@ type IUserRepository interface {
 	RemoveRefreshToken(ctx context.Context, userID uint) error
 	UpdatePasswordWithEmail(ctx context.Context, email string, hashedPassword string) error
 	UpdatePasswordWithUserId(ctx context.Context, userId uint, hashedPassword string) error
+	UpdateProfile(ctx context.Context, userID uint, fullName string) error
 	FreezeAccount(ctx context.Context, email string) error
+	FreezeAccountByID(ctx context.Context, userID uint) error
 	UnfreezeAccount(ctx context.Context, email string) error
 }
 
@@ -45,6 +47,8 @@ type IProductEngagementRepository interface {
 	Unlike(ctx context.Context, userID, invProductID uint) error
 	Save(ctx context.Context, userID, invProductID uint) error
 	Unsave(ctx context.Context, userID, invProductID uint) error
+	GetLikedByUser(ctx context.Context, userID uint) ([]uint, error)
+	GetSavedByUser(ctx context.Context, userID uint) ([]uint, error)
 }
 
 type ISpotlightEngagementRepository interface {
@@ -52,4 +56,6 @@ type ISpotlightEngagementRepository interface {
 	Unlike(ctx context.Context, userID, spotlightID uint) error
 	Save(ctx context.Context, userID, spotlightID uint) error
 	Unsave(ctx context.Context, userID, spotlightID uint) error
+	GetLikedByUser(ctx context.Context, userID uint) ([]uint, error)
+	GetSavedByUser(ctx context.Context, userID uint) ([]uint, error)
 }

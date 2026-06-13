@@ -157,3 +157,48 @@ func (h *SocialHandler) UnsaveSpotlight(w http.ResponseWriter, r *http.Request) 
 	}
 	h.Response(w, h.getSocialService().UnsaveSpotlight(userID, spotlightID))
 }
+
+func (h *SocialHandler) GetFollowedBusinesses(w http.ResponseWriter, r *http.Request) {
+	userID := h.ClaimGetUserId(r)
+	if userID == 0 {
+		h.ResponseBadRequest(w)
+		return
+	}
+	h.Response(w, h.getSocialService().GetFollowedBusinesses(userID))
+}
+
+func (h *SocialHandler) GetLikedProducts(w http.ResponseWriter, r *http.Request) {
+	userID := h.ClaimGetUserId(r)
+	if userID == 0 {
+		h.ResponseBadRequest(w)
+		return
+	}
+	h.Response(w, h.getSocialService().GetLikedProducts(userID))
+}
+
+func (h *SocialHandler) GetSavedProducts(w http.ResponseWriter, r *http.Request) {
+	userID := h.ClaimGetUserId(r)
+	if userID == 0 {
+		h.ResponseBadRequest(w)
+		return
+	}
+	h.Response(w, h.getSocialService().GetSavedProducts(userID))
+}
+
+func (h *SocialHandler) GetLikedSpotlights(w http.ResponseWriter, r *http.Request) {
+	userID := h.ClaimGetUserId(r)
+	if userID == 0 {
+		h.ResponseBadRequest(w)
+		return
+	}
+	h.Response(w, h.getSocialService().GetLikedSpotlights(userID))
+}
+
+func (h *SocialHandler) GetSavedSpotlights(w http.ResponseWriter, r *http.Request) {
+	userID := h.ClaimGetUserId(r)
+	if userID == 0 {
+		h.ResponseBadRequest(w)
+		return
+	}
+	h.Response(w, h.getSocialService().GetSavedSpotlights(userID))
+}

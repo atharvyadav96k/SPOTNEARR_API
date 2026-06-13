@@ -15,6 +15,7 @@ import (
 	"github.com/atharvyadav96k/SPOTNEARR_API/connections/cache"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils"
 	"github.com/atharvyadav96k/SPOTNEARR_API/utils/response"
+	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	usermodel "github.com/Developer-Aadesh/spotnearr-database/user"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -193,6 +194,29 @@ func (u *UserService) SessionNotification(email string) response.Res {
 	sessionLink := fmt.Sprintf("session=%s", session)
 	log.Default().Println(sessionLink)
 	return u.ResponseOK("", sessionLink)
+}
+
+func (u *UserService) UpdateProfile(userID uint, dto pkgdtos.UpdateProfileRequest) response.Res {
+	if err := u.RepoUser().UpdateProfile(context.Background(), userID, dto.FullName); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return u.ResponseNotFound("User not found")
+		}
+		return u.ResponseInternalServer("Failed to update profile")
+	}
+	return u.ResponseOK("Profile updated", nil)
+}
+
+func (u *UserService) BanUser(userID uint) response.Res {
+	if err := u.RepoUser().FreezeAccountByID(context.Background(), userID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return u.ResponseNotFound("User not found")
+		}
+		return u.ResponseInternalServer("Failed to ban user")
+	}
+	if err := u.Cache().GetRefreshTokenSession().InvalidateRefreshToken(userID); err != nil {
+		log.Printf("ban: failed to invalidate refresh token for user %d: %v", userID, err)
+	}
+	return u.ResponseOK("User banned", nil)
 }
 
 func (u *UserService) UpdatePassword(password string, session string) response.Res {

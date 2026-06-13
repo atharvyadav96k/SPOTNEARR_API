@@ -137,6 +137,28 @@ func (u *UserRepository) UpdatePasswordWithUserId(ctx context.Context, userId ui
 	return nil
 }
 
+func (u *UserRepository) UpdateProfile(ctx context.Context, userID uint, fullName string) error {
+	db := u.db.WithContext(ctx).Model(&user.User{}).Where("id = ? AND is_active = ?", userID, true).Update("full_name", fullName)
+	if db.Error != nil {
+		return db.Error
+	}
+	if db.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (u *UserRepository) FreezeAccountByID(ctx context.Context, userID uint) error {
+	db := u.db.WithContext(ctx).Model(&user.User{}).Where("id = ?", userID).Update("is_active", false)
+	if db.Error != nil {
+		return db.Error
+	}
+	if db.RowsAffected == 0 {
+		return fmt.Errorf("account not found with id %d", userID)
+	}
+	return nil
+}
+
 func (u *UserRepository) FreezeAccount(ctx context.Context, email string) error {
 	db := u.db.WithContext(ctx).Model(&user.User{}).Where("email = ?", email).Update("is_active", false)
 	if db.Error != nil {

@@ -84,7 +84,11 @@ func (a *application) userRouter(router *mux.Router, auth mux.MiddlewareFunc, rl
 
 	protectedAuth.Handle("/{userId}/ban",
 		strictRateLimit(http.HandlerFunc(a.userHandler.BanUser)),
-	)
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/profile",
+		normalRateLimit(http.HandlerFunc(a.userHandler.UpdateProfile)),
+	).Methods(http.MethodPatch)
 }
 
 func (a *application) claimRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
@@ -147,6 +151,23 @@ func (a *application) socialRouter(router *mux.Router, auth mux.MiddlewareFunc, 
 	s.Handle("/spotlights/{spotlightId}/save",
 		normalRateLimit(http.HandlerFunc(a.socialHandler.UnsaveSpotlight)),
 	).Methods(http.MethodDelete)
+
+	// Read-side: lists of what the user follows / likes / saves
+	s.Handle("/businesses/followed",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetFollowedBusinesses)),
+	).Methods(http.MethodGet)
+	s.Handle("/products/liked",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetLikedProducts)),
+	).Methods(http.MethodGet)
+	s.Handle("/products/saved",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetSavedProducts)),
+	).Methods(http.MethodGet)
+	s.Handle("/spotlights/liked",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetLikedSpotlights)),
+	).Methods(http.MethodGet)
+	s.Handle("/spotlights/saved",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetSavedSpotlights)),
+	).Methods(http.MethodGet)
 }
 
 func (a *application) reviewRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {

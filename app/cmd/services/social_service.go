@@ -121,3 +121,58 @@ func (s *SocialService) UnsaveSpotlight(userID, spotlightID uint) response.Res {
 	}
 	return s.ResponseOK("Spotlight unsaved", nil)
 }
+
+func (s *SocialService) GetFollowedBusinesses(userID uint) response.Res {
+	ids, err := s.RepoFollow().GetFollowedBusinessIDs(context.Background(), userID)
+	if err != nil {
+		return s.ResponseInternalServer("Failed to fetch followed businesses")
+	}
+	if ids == nil {
+		ids = []uint{}
+	}
+	return s.ResponseOK("Followed businesses", ids)
+}
+
+func (s *SocialService) GetLikedProducts(userID uint) response.Res {
+	ids, err := s.RepoProductEngage().GetLikedByUser(context.Background(), userID)
+	if err != nil {
+		return s.ResponseInternalServer("Failed to fetch liked products")
+	}
+	if ids == nil {
+		ids = []uint{}
+	}
+	return s.ResponseOK("Liked products", ids)
+}
+
+func (s *SocialService) GetSavedProducts(userID uint) response.Res {
+	ids, err := s.RepoProductEngage().GetSavedByUser(context.Background(), userID)
+	if err != nil {
+		return s.ResponseInternalServer("Failed to fetch saved products")
+	}
+	if ids == nil {
+		ids = []uint{}
+	}
+	return s.ResponseOK("Saved products", ids)
+}
+
+func (s *SocialService) GetLikedSpotlights(userID uint) response.Res {
+	ids, err := s.RepoSpotlightEngage().GetLikedByUser(context.Background(), userID)
+	if err != nil {
+		return s.ResponseInternalServer("Failed to fetch liked spotlights")
+	}
+	if ids == nil {
+		ids = []uint{}
+	}
+	return s.ResponseOK("Liked spotlights", ids)
+}
+
+func (s *SocialService) GetSavedSpotlights(userID uint) response.Res {
+	ids, err := s.RepoSpotlightEngage().GetSavedByUser(context.Background(), userID)
+	if err != nil {
+		return s.ResponseInternalServer("Failed to fetch saved spotlights")
+	}
+	if ids == nil {
+		ids = []uint{}
+	}
+	return s.ResponseOK("Saved spotlights", ids)
+}
