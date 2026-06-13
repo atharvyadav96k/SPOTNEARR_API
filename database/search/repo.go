@@ -17,8 +17,15 @@ type FreqDelta struct {
 	Delta      int64
 }
 
+// SearchFilters holds optional query-time filters applied on top of the token match.
+type SearchFilters struct {
+	CategoryIDs []uint
+	MinPrice    *float64
+	MaxPrice    *float64
+}
+
 type ISearchRepository interface {
-	Search(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64) ([]SearchRow, error)
+	Search(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64, filters SearchFilters) ([]SearchRow, error)
 	GetByID(ctx context.Context, id uint) (*SearchEntry, error)
 	Upsert(ctx context.Context, entry SearchEntry) error
 	SoftDelete(ctx context.Context, id uint) error
