@@ -28,19 +28,50 @@ func buildTokenFilter(tokens []string) string {
 	return "(" + strings.Join(parts, " OR ") + ")"
 }
 
-func (r *SearchRepository) Search(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64) ([]searchdb.SearchRow, error) {
+func (r *SearchRepository) Search(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64, filters searchdb.SearchFilters) ([]searchdb.SearchRow, error) {
 	if len(tokens) == 0 {
 		return nil, nil
 	}
 	if lat == nil || long == nil {
-		return r.searchNoGeo(ctx, tokens)
+		return r.searchNoGeo(ctx, tokens, filters)
 	}
-	return r.searchWithGeo(ctx, tokens, *lat, *long, rangeKm)
+	return r.searchWithGeo(ctx, tokens, *lat, *long, rangeKm, filters)
 }
 
-func (r *SearchRepository) searchNoGeo(ctx context.Context, tokens []string) ([]searchdb.SearchRow, error) {
+// buildFilterClauses returns extra WHERE fragments and args for optional filters.
+func buildFilterClauses(filters searchdb.SearchFilters) (string, []interface{}) {
+	var clauses []string
+	var args []interface{}
+
+	if len(filters.CategoryIDs) > 0 {
+		b, _ := json.Marshal(filters.CategoryIDs)
+		clauses = append(clauses, "se.category_ids && ?::jsonb")
+		args = append(args, string(b))
+	}
+	if filters.MinPrice != nil {
+		clauses = append(clauses, "se.price >= ?")
+		args = append(args, *filters.MinPrice)
+	}
+	if filters.MaxPrice != nil {
+		clauses = append(clauses, "se.price <= ?")
+		args = append(args, *filters.MaxPrice)
+	}
+
+	clause := ""
+	for _, c := range clauses {
+		clause += " AND " + c
+	}
+	return clause, args
+}
+
+func (r *SearchRepository) searchNoGeo(ctx context.Context, tokens []string, filters searchdb.SearchFilters) ([]searchdb.SearchRow, error) {
 	tokenArray := "{" + strings.Join(tokens, ",") + "}"
 	tokenFilter := buildTokenFilter(tokens)
+	filterClause, filterArgs := buildFilterClauses(filters)
+
+	args := []interface{}{tokenArray}
+	args = append(args, filterArgs...)
+
 	var rows []searchdb.SearchRow
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT se.*,
@@ -53,14 +84,14 @@ func (r *SearchRepository) searchNoGeo(ctx context.Context, tokens []string) ([]
 		) mc
 		WHERE se.deleted_at IS NULL
 		  AND se.available = true
-		  AND `+tokenFilter+`
+		  AND `+tokenFilter+filterClause+`
 		ORDER BY mc.cnt DESC
 		LIMIT 200
-	`, tokenArray).Scan(&rows).Error
+	`, args...).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, lat, long, rangeKm float64) ([]searchdb.SearchRow, error) {
+func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, lat, long, rangeKm float64, filters searchdb.SearchFilters) ([]searchdb.SearchRow, error) {
 	latDelta := rangeKm / 111.32
 	lonDelta := rangeKm / (111.32 * math.Cos(lat*math.Pi/180))
 	minLat, maxLat := lat-latDelta, lat+latDelta
@@ -68,6 +99,11 @@ func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, l
 
 	tokenArray := "{" + strings.Join(tokens, ",") + "}"
 	tokenFilter := buildTokenFilter(tokens)
+	filterClause, filterArgs := buildFilterClauses(filters)
+
+	args := []interface{}{tokenArray, minLat, maxLat, minLon, maxLon}
+	args = append(args, filterArgs...)
+
 	var rows []searchdb.SearchRow
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT se.*,
@@ -82,10 +118,10 @@ func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, l
 		  AND se.available = true
 		  AND se.lat  BETWEEN ? AND ?
 		  AND se.long BETWEEN ? AND ?
-		  AND `+tokenFilter+`
+		  AND `+tokenFilter+filterClause+`
 		ORDER BY mc.cnt DESC
 		LIMIT 200
-	`, tokenArray, minLat, maxLat, minLon, maxLon).Scan(&rows).Error
+	`, args...).Scan(&rows).Error
 	return rows, err
 }
 

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
+	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
 	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
+	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/search-svc/services"
 )
 
@@ -19,12 +20,20 @@ func NewSearchHandler(svc *services.SearchService) *SearchHandler {
 
 func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	dto := pkgdtos.NewSearchQuery(q.Get("q"), q.Get("lat"), q.Get("long"), q.Get("range"))
+	dto := pkgdtos.NewSearchQuery(
+		q.Get("q"), q.Get("lat"), q.Get("long"), q.Get("range"),
+		q.Get("category_ids"), q.Get("min_price"), q.Get("max_price"),
+	)
 	if err := dto.Validate(); err != nil {
 		respond(w, http.StatusBadRequest, httputil.Res{Message: err.Error()})
 		return
 	}
-	result := h.svc.Search(r.Context(), dto.Q, dto.Lat, dto.Long, dto.RangeKm)
+	filters := searchdb.SearchFilters{
+		CategoryIDs: dto.CategoryIDs,
+		MinPrice:    dto.MinPrice,
+		MaxPrice:    dto.MaxPrice,
+	}
+	result := h.svc.Search(r.Context(), dto.Q, dto.Lat, dto.Long, dto.RangeKm, filters)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(result.StatusCode)
 	json.NewEncoder(w).Encode(result)

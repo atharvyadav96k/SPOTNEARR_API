@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
 	searchpostgres "github.com/Developer-Aadesh/spotnearr-database/search/postgres"
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
@@ -30,7 +31,7 @@ func NewSearchService(db *gorm.DB, rdb *redis.Client) *SearchService {
 
 // Search tokenizes the query, loads category frequency data (Redis-cached), queries
 // the index, and returns a ranked list of product cards capped at 100 results.
-func (s *SearchService) Search(ctx context.Context, query string, lat, long *float64, rangeKm float64) httputil.Res {
+func (s *SearchService) Search(ctx context.Context, query string, lat, long *float64, rangeKm float64, filters searchdb.SearchFilters) httputil.Res {
 	parsed := tokenizer.QueryTokenParse(query)
 	if len(parsed.Tokens) == 0 {
 		return httputil.NewResponse("no valid search terms", http.StatusBadRequest, nil)
@@ -45,13 +46,12 @@ func (s *SearchService) Search(ctx context.Context, query string, lat, long *flo
 		freqs, err = s.repo.GetTokenCategoryFreqs(ctx, parsed.Tokens)
 		if err != nil {
 			log.Printf("search: load freqs: %v", err)
-			// Non-fatal: category boost degrades to zero; token coverage still ranks results.
 		} else {
 			s.cache.SetTokenFreqs(ctx, parsed.Tokens, freqs)
 		}
 	}
 
-	rows, err := s.repo.Search(ctx, parsed.Tokens, lat, long, rangeKm)
+	rows, err := s.repo.Search(ctx, parsed.Tokens, lat, long, rangeKm, filters)
 	if err != nil {
 		if ctx.Err() != nil {
 			log.Printf("search: timeout after %s: %v", searchTimeout, err)
