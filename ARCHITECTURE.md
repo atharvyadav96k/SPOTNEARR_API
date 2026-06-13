@@ -14,7 +14,7 @@ Spotnearr is a microservices backend built in Go. The monorepo uses a **Go works
 
 ### Cross-Service Communication Rule
 
-Each service owns and manages its own database exclusively. Services never read from or write to another service's database directly. If a service needs data from another service, it calls that service's HTTP API. Data changes are propagated via HTTP — not Redis events, not shared tables.
+Each service owns and manages its own database exclusively. Services never read from or write to another service's database directly. Synchronous requests use HTTP; asynchronous events are published over **RabbitMQ** (durable topic exchange `spotnearr.events`). Data changes are never propagated via shared tables.
 
 ---
 
@@ -88,6 +88,11 @@ pkg/
 │   ├── cors.go          # CORS headers
 │   ├── ratelimit.go     # Per-IP rate limiter middleware
 │   └── session.go       # Session helpers
+├── mq/
+│   ├── conn.go          # Connect() — dials RabbitMQ, declares durable topic exchange
+│   ├── publisher.go     # Publisher.Publish(ctx, Topic, payload) — JSON encodes + routes
+│   ├── subscriber.go    # Subscriber.Subscribe(ctx, queue, Topic, Handler) — ack/nack
+│   └── topics.go        # Topic constants (user.business.follow, vendor.product.sync, …)
 ├── ratelimit/
 │   └── ratelimit.go     # Rate limiter core (Redis-backed)
 ├── tokenizer/
@@ -108,19 +113,22 @@ pkg/
 ```
 database/
 ├── go.mod
-├── postgres.go          # Generic postgres connection helper
+├── postgres.go          # Generic postgres connection helper (GORM silent logging)
 ├── vendordb/
 │   ├── models.go        # Business, Store, Category, Product, InventoryProduct,
 │   │                    # BusinessAccess, ProductToken, BusinessAccount,
 │   │                    # SearchSyncOutbox, OutboxPayload
 │   ├── migrate.go       # AutoMigrate for vendor models
-│   ├── repo.go          # Base repo helpers
+│   ├── repo.go          # Interfaces incl. IInventoryProduct (WriteUpsertOutboxesForProduct,
+│   │                    # WriteDeleteOutboxesForProduct, GetByID, AddProduct, …)
 │   └── postgres/        # Postgres-specific query implementations
 ├── search/
-│   ├── models.go        # SearchEntry (search index row)
-│   ├── migrate.go       # AutoMigrate for search models
-│   ├── repo.go          # Base repo helpers
-│   └── postgres/        # Postgres full-text / geo search queries
+│   ├── models.go        # SearchEntry (id, product_id, name, price, price_unit,
+│   │                    # search_tokens, category_ids, lat, long, geo_hash, available)
+│   │                    # TokenCategoryFreq (token, category_id, count)
+│   ├── migrate.go       # AutoMigrate + legacy category_ids jsonb conversion
+│   ├── repo.go          # ISearchRepository interface
+│   └── postgres/        # JSONB + geo bounding-box search queries, upsert, soft-delete
 └── user/
     ├── models.go        # User model
     ├── migrate.go       # AutoMigrate for user models
@@ -141,11 +149,13 @@ services/vendor/
 ├── cmd/
 │   └── main.go              # Entry point: calls applayer.Init(), starts HTTP server
 ├── applayer/
-│   ├── init.go              # Wires DB, Redis, services, handlers; starts outbox flusher
-│   └── routes.go            # Registers all routes on a gorilla/mux router
+│   ├── init.go              # Wires DB, Redis, RabbitMQ publisher/subscriber,
+│   │                        # services, handlers; starts outbox flusher goroutine
+│   └── routes.go            # Registers all routes on a gorilla/mux router;
+│                            #   public /products/{id}/detail registered before auth subrouter
 ├── config/
 │   └── config.go            # Reads env vars: DATABASE_URL, CACHE_URL, JWT_SECRET,
-│                            #   SEARCH_SERVICE_URL, USER_SERVICE_URL, PORT
+│                            #   RABBITMQ_URL, USER_SERVICE_URL, PORT
 ├── connections/
 │   ├── database/            # GORM postgres connection + auto-migrate
 │   └── cache/               # Redis connection + rate limiter factory
@@ -155,7 +165,8 @@ services/vendor/
 │   ├── business_handler.go  # GET/PATCH /api/v1/businesses/...
 │   ├── category_handler.go  # GET/POST /api/v1/categories/
 │   ├── inventory_handler.go # CRUD /api/v1/inventory/...
-│   └── product_handler.go   # CRUD /api/v1/products/...
+│   └── product_handler.go   # CRUD /api/v1/products/... + public ProductDetail handler;
+│                            #   ProductAdd/Update/Delete each call notify() after write
 ├── internal_handlers/
 │   └── internal.go          # /internal/inventory-products/{id}
 │                            # /internal/users/{id}/access
@@ -166,31 +177,25 @@ services/vendor/
 │   ├── business_service.go  # Business profile, update; calls user-service HTTP
 │   ├── category_service.go  # Category add, list
 │   ├── inventory_service.go # Inventory CRUD, add/remove products
-│   └── product_service.go   # Product add, list, get, update, delete
+│   └── product_service.go   # Product add, list, get, update, delete;
+│                            #   Update writes upsert outboxes, Delete writes delete outboxes
 ├── repository/
-│   ├── iaccess_repo.go      # Interface: BusinessAccess queries
-│   ├── ibusinesses_repo.go  # Interface: Business queries
-│   ├── icategory_repo.go    # Interface: Category queries
+│   ├── iaccess_repo.go
+│   ├── ibusinesses_repo.go
+│   ├── icategory_repo.go
 │   ├── iinventory_product_repo.go
 │   ├── iproduct_repo.go
 │   ├── iproduct_token_repo.go
 │   ├── istore_repo.go
 │   └── implementation/      # Concrete GORM implementations of each interface
 ├── models/
-│   ├── business.go          # Local model types (may extend vendordb models)
-│   ├── business_access.go
-│   ├── category.go
-│   ├── inventory_product.go
-│   ├── product.go
-│   ├── product_token.go
-│   ├── search_sync_outbox.go
-│   └── store.go
+│   └── ...                  # Local model types extending vendordb models
 ├── events/
-│   └── publisher.go         # Outbox flusher: polls search_sync_outboxes,
-│                            #   POSTs each payload to search-service /internal/sync
+│   └── publisher.go         # Outbox flusher: polls search_sync_outboxes with SKIP LOCKED,
+│                            #   publishes each payload to RabbitMQ topic vendor.product.sync
 ├── utils/
-│   ├── validation.go        # Request validation helpers
-│   └── request/             # Request parsing helpers
+│   ├── validation.go
+│   └── request/
 └── main.tf                  # Terraform (infrastructure as code)
 ```
 
@@ -209,6 +214,7 @@ services/vendor/
 | POST | `/api/v1/categories/` | JWT + BizOnly | Add category |
 | POST | `/api/v1/products/` | JWT + BizOnly | Add product |
 | GET | `/api/v1/products/` | JWT + BizOnly | List products |
+| GET | `/api/v1/products/{invProductId}/detail` | — | Get inventory product detail (public) |
 | GET | `/api/v1/products/{id}` | JWT + BizOnly | Get product |
 | PATCH | `/api/v1/products/{id}` | JWT + BizOnly | Update product |
 | DELETE | `/api/v1/products/{id}` | JWT + BizOnly | Delete product |
@@ -224,7 +230,7 @@ services/vendor/
 
 ### Outbox Pattern (vendor → search)
 
-When inventory products are added, updated, or removed, the vendor service writes a `SearchSyncOutbox` row in the **same database transaction** as the triggering write. A background `Flusher` goroutine polls unprocessed outbox rows every 30 seconds and also runs immediately on-demand after each write. It POSTs the JSON payload to `search-service /internal/sync` and marks rows as processed. This ensures search data is eventually consistent without direct database coupling.
+When inventory products are added, updated, or removed, the vendor service writes a `SearchSyncOutbox` row in the **same database transaction** as the triggering write. A background `Flusher` goroutine polls unprocessed outbox rows every 30 seconds (and immediately on-demand after each write) using `SKIP LOCKED` for multi-instance safety. It publishes each payload as JSON to the RabbitMQ topic **`vendor.product.sync`** and marks the row as processed. The search service subscribes to this topic and applies upsert/delete events to its index. This ensures eventual consistency without direct database coupling or HTTP coupling between services.
 
 ---
 
@@ -239,24 +245,34 @@ services/search/
 ├── cmd/
 │   └── main.go              # Entry point
 ├── applayer/
-│   ├── init.go              # Wires DB, search service, sync applier
-│   └── routes.go            # Registers routes
+│   ├── init.go              # Wires DB, Redis, RabbitMQ subscriber, freq flusher,
+│   │                        # sync consumer, search service
+│   └── routes.go            # GET /health, GET /api/v1/search
 ├── config/
-│   └── config.go            # Reads env vars: DATABASE_URL, PORT
+│   └── config.go            # Reads env vars: DATABASE_URL, CACHE_URL, CACHE_PASSWORD,
+│                            #   RABBITMQ_URL, PORT
 ├── connections/
 │   └── database/            # GORM postgres connection + auto-migrate
+├── cache/
+│   └── cache.go             # SearchCache: GetTokenFreqs / SetTokenFreqs with 30 s Redis TTL
+│                            #   key format: search:freqs:{sorted-tokens}
 ├── handlers/
-│   └── search_handler.go    # GET /api/v1/search, GET /health
+│   └── search_handler.go    # GET /api/v1/search
 ├── services/
-│   ├── search_service.go    # Search query logic
-│   └── scoring.go           # Result scoring/ranking
+│   ├── search_service.go    # Search query logic; uses SearchCache for freq lookup
+│   └── scoring.go           # Scoring (token coverage + category freq + distance tier),
+│                            #   dedup by ProductID, cap at 100 results; returns SearchResult
 ├── repository/
-│   └── search_repo.go       # GORM queries against search index
+│   └── search_repo.go       # Local repo interface (wraps database/search/postgres)
 ├── models/
-│   └── search_entry.go      # SearchEntry model
+│   └── search_entry.go      # Local mirror of SearchEntry (name, price, price_unit added)
+├── freq/
+│   └── flusher.go           # Accumulates token-category freq deltas in Redis (HINCRBY),
+│                            #   flushes to DB every 30 s
 ├── sync/
-│   ├── subscriber.go        # Parses incoming sync JSON (upsert / delete events)
-│   └── poller.go            # Applies events to the search index
+│   ├── consumer.go          # RunConsumer: subscribes to vendor.product.sync via RabbitMQ
+│   ├── subscriber.go        # Applier.Apply: routes upsert/delete payloads
+│   └── poller.go            # applyUpsert / applyDelete: writes to search_entries
 ├── replica/                 # (read replica support)
 └── main.tf                  # Terraform
 ```
@@ -266,12 +282,11 @@ services/search/
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/health` | — | Health check |
-| GET | `/api/v1/search` | — | Search products (`?q=`, `?lat=`, `?long=`, `?radius=`) |
-| POST | `/internal/sync` | None | Internal: receive upsert/delete event from vendor |
+| GET | `/api/v1/search` | — | Search products (`?q=`, `?lat=`, `?long=`, `?range=`) |
 
-### Sync Events
+### Sync Flow
 
-The `/internal/sync` endpoint accepts JSON with `event_type: "upsert"` or `event_type: "delete"`. On upsert, the search index row is created or replaced. On delete, it is removed. The endpoint is expected to be network-isolated (no public exposure).
+The search service subscribes to RabbitMQ topic **`vendor.product.sync`** (queue `search.product.sync`). Each message carries an `OutboxPayload` with `event_type: "upsert"` or `event_type: "delete"`. On upsert, the search index row is created or replaced (`ON CONFLICT (id) DO UPDATE`). On delete, the row is soft-deleted. Messages are acked on success and nacked+requeued on error.
 
 ---
 
@@ -326,14 +341,18 @@ node dummy.js categories BIZ_EMAIL=... BIZ_PASSWORD=...
 ### Production (`docker-compose.yml`)
 
 ```
-postgres (port 5432) ──┬── spotnearr_user   → user-service  (port 8080)
-                       ├── spotnearr_vendor → vendor-service (port 8081)
-                       └── spotnearr_search → search-service (port 8082)
-redis   (port 6379)  ──┬── user-service
-                       └── vendor-service
+postgres  (port 5432) ──┬── spotnearr_user   → user-service   (port 8080)
+                        ├── spotnearr_vendor → vendor-service  (port 8081)
+                        └── spotnearr_search → search-service  (port 8082)
+redis     (port 6379) ──┬── user-service    (rate limiting)
+                        ├── vendor-service  (rate limiting, caching)
+                        └── search-service  (freq-delta accumulation, token-freq cache)
+rabbitmq  (port 5672) ──┬── vendor-service  (publisher: vendor.product.sync,
+                        │                    consumer: user.business.follow/unfollow)
+                        └── search-service  (consumer: vendor.product.sync)
 ```
 
-All services share one postgres instance, each with its own database. Redis is used by user-service and vendor-service for rate limiting and caching.
+All services share one postgres instance, each with its own database. All three services wait on RabbitMQ's healthcheck before starting (`rabbitmq-diagnostics ping`).
 
 ### Test (`docker-compose.test.yml`)
 
@@ -360,7 +379,7 @@ Each service directory contains a `main.tf` for cloud infrastructure provisionin
 | `CACHE_URL` | Redis URL |
 | `CACHE_PASSWORD` | Redis password (empty for local) |
 | `JWT_SECRET` | Secret for signing JWTs |
-| `SEARCH_SERVICE_URL` | Base URL of search-service (for outbox flusher) |
+| `RABBITMQ_URL` | RabbitMQ AMQP URL (e.g. `amqp://admin:admin123@rabbitmq:5672/`) |
 | `USER_SERVICE_URL` | Base URL of user-service (for business access checks) |
 | `PORT` | HTTP listen port (default 8080) |
 
@@ -369,4 +388,7 @@ Each service directory contains a `main.tf` for cloud infrastructure provisionin
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | Postgres connection string for `spotnearr_search` |
+| `CACHE_URL` | Redis URL |
+| `CACHE_PASSWORD` | Redis password (empty for local) |
+| `RABBITMQ_URL` | RabbitMQ AMQP URL |
 | `PORT` | HTTP listen port (default 8080) |

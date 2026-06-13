@@ -1,6 +1,6 @@
 # Feature Tracker
 
-Last updated: 2026-06-12
+Last updated: 2026-06-13
 
 Status legend: `✅ Done` · `🚧 In Progress` · `⬜ Not Started`
 
@@ -158,15 +158,11 @@ Path: `services/search/`
 | Result scoring / ranking | ✅ Done | `services/search/services/scoring.go` |
 | Search results include name + price | ✅ Done | Stored in `search_entries`; returned as `SearchResult` objects |
 | Result cap at 100 | ✅ Done | Applied in `rankProducts` after dedup |
-| Search index sync (outbox poller) | ✅ Done | `services/search/sync/poller.go` |
-| Query frequency flusher | ✅ Done | `services/search/freq/flusher.go` |
+| Search index sync via RabbitMQ | ✅ Done | Topic `vendor.product.sync` → `services/search/sync/consumer.go` |
+| Query frequency flusher | ✅ Done | `services/search/freq/flusher.go` — flushes Redis deltas to DB every 30 s |
+| Token-category freq caching | ✅ Done | `services/search/cache/cache.go` — Redis cache with 30 s TTL, shared across users |
 | Category filter | ⬜ Not Started | Filter results by category IDs |
 | Price range filter | ⬜ Not Started | |
-
-### Internal
-| Feature | Status | Route |
-|---|---|---|
-| Manual sync trigger | ✅ Done | `POST /internal/sync` |
 
 ---
 
@@ -175,11 +171,17 @@ Path: `services/search/`
 ### Messaging (`pkg/mq`)
 | Component | Status | Notes |
 |---|---|---|
-| RabbitMQ container | ✅ Done | `docker-compose.yml` — port `5672`, management UI `15672` |
-| Connection wrapper | ✅ Done | `pkg/mq/conn.go` — `Connect()`, durable topic exchange `spotnearr.events` |
+| RabbitMQ container | ✅ Done | `docker-compose.yml` — port `5672`, management UI `15672`; all services wait on healthcheck |
+| Connection wrapper | ✅ Done | `pkg/mq/conn.go` — `Connect()`, durable topic exchange `spotnearr.events`; logs on connect |
 | Predefined topics | ✅ Done | `pkg/mq/topics.go` — add new event types here |
-| Publisher | ✅ Done | `pkg/mq/publisher.go` — `Publish(ctx, Topic, payload)` |
-| Subscriber | ✅ Done | `pkg/mq/subscriber.go` — `Subscribe(ctx, queue, Topic, Handler)` with ack/nack |
+| Publisher | ✅ Done | `pkg/mq/publisher.go` — `Publish(ctx, Topic, payload)`; logs "ready" on init |
+| Subscriber | ✅ Done | `pkg/mq/subscriber.go` — `Subscribe(ctx, queue, Topic, Handler)` with ack/nack; logs "ready" on init |
 | Follow event (user → vendor) | ✅ Done | Topic `user.business.follow` → vendor increments `follower_count` |
 | Unfollow event (user → vendor) | ✅ Done | Topic `user.business.unfollow` → vendor decrements `follower_count` |
 | Product sync (vendor → search) | ✅ Done | Topic `vendor.product.sync` → search upserts/deletes index entry |
+
+### Observability
+| Component | Status | Notes |
+|---|---|---|
+| GORM query logging | ✅ Done | Disabled (`logger.Silent`) — `database/postgres.go` |
+| RabbitMQ startup logs | ✅ Done | Logs connection, publisher ready, subscriber ready on startup |

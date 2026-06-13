@@ -16,6 +16,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
 
   postgres:
     image: postgres:16-alpine
@@ -36,6 +40,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
 
   redis:
     image: redis:7-alpine
@@ -49,6 +57,10 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
 
   user-service:
     build:
@@ -77,6 +89,10 @@ services:
     networks:
       - spotnearr-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
 
   vendor-service:
     build:
@@ -106,6 +122,10 @@ services:
     networks:
       - spotnearr-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
 
   search-service:
     build:
@@ -131,6 +151,10 @@ services:
     networks:
       - spotnearr-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
 
 networks:
   spotnearr-network:
