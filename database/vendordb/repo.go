@@ -83,6 +83,7 @@ type ISpotlightRepository interface {
 	GetByID(ctx context.Context, id uint, bizID uint) (Spotlight, error)
 	GetByBusiness(ctx context.Context, bizID uint) ([]Spotlight, error)
 	Delete(ctx context.Context, id uint, bizID uint) error
+	GetFeed(ctx context.Context, lat, long, rangeKm float64) ([]Spotlight, error)
 }
 
 type IInvProductExtRepository interface {

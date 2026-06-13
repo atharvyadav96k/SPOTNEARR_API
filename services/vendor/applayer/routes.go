@@ -27,6 +27,7 @@ func (a *application) NewMux() *mux.Router {
 	a.offerRouter(apiV1, auth, bizOnly, rl)
 	a.spotlightRouter(apiV1, auth, bizOnly, rl)
 	a.claimRouter(apiV1, auth, bizOnly, rl)
+	a.feedRouter(apiV1, rl)
 
 	// Internal routes — no auth middleware, expected to be network-isolated.
 	internal := router.PathPrefix("/internal").Subrouter()
@@ -235,6 +236,15 @@ func (a *application) claimRouter(router *mux.Router, auth, bizOnly mux.Middlewa
 	claims.Handle("/{claimId}/reject",
 		normalRL(http.HandlerFunc(a.claimHandler.RejectClaim)),
 	).Methods(http.MethodPatch)
+}
+
+func (a *application) feedRouter(router *mux.Router, rl pkgmid.RateLimiter) {
+	relaxedRL := pkgmid.RateLimit(rl, 60000, time.Minute)
+
+	feed := router.PathPrefix("/feed").Subrouter()
+	feed.Handle("/spotlights",
+		relaxedRL(http.HandlerFunc(a.spotlightHandler.SpotlightFeed)),
+	).Methods(http.MethodGet)
 }
 
 func (a *application) internalRouter(router *mux.Router) {

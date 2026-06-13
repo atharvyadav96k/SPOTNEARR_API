@@ -25,6 +25,7 @@ Path: `app/cmd/`
 | Feature | Status | Route |
 |---|---|---|
 | Get user profile | ✅ Done | `GET /api/v1/users/{userId}/profile` |
+| Update own profile | ✅ Done | `PATCH /api/v1/users/profile` |
 | Ban user (admin) | ✅ Done | `POST /api/v1/users/{userId}/ban` |
 
 ### Claims (Product Reservations)
@@ -57,13 +58,18 @@ Path: `app/cmd/`
 ### Social & Feed
 | Feature | Status | Notes |
 |---|---|---|
-| Follow a business | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/businesses/{bizId}/follow` |
-| Like a product | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/products/{invProductId}/like` |
-| Save a product | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/products/{invProductId}/save` |
-| Like a spotlight | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/spotlights/{spotlightId}/like` |
-| Save a spotlight | 🚧 In Progress | Routes: `POST/DELETE /api/v1/social/spotlights/{spotlightId}/save` |
+| Follow a business | ✅ Done | `POST/DELETE /api/v1/social/businesses/{bizId}/follow` |
+| Like a product | ✅ Done | `POST/DELETE /api/v1/social/products/{invProductId}/like` |
+| Save a product | ✅ Done | `POST/DELETE /api/v1/social/products/{invProductId}/save` |
+| Like a spotlight | ✅ Done | `POST/DELETE /api/v1/social/spotlights/{spotlightId}/like` |
+| Save a spotlight | ✅ Done | `POST/DELETE /api/v1/social/spotlights/{spotlightId}/save` |
+| List followed businesses | ✅ Done | `GET /api/v1/social/businesses/followed` |
+| List liked products | ✅ Done | `GET /api/v1/social/products/liked` |
+| List saved products | ✅ Done | `GET /api/v1/social/products/saved` |
+| List liked spotlights | ✅ Done | `GET /api/v1/social/spotlights/liked` |
+| List saved spotlights | ✅ Done | `GET /api/v1/social/spotlights/saved` |
 | Follow another user | ⬜ Not Started | Removed from current scope |
-| Spotlight feed (hyperlocal, 10 km) | ⬜ Not Started | |
+| Spotlight feed (hyperlocal, 10 km) | ✅ Done | `GET /api/v1/feed/spotlights?lat=&long=&range=` — joins spotlights→stores by biz, default 10 km |
 | Real-time notifications | ⬜ Not Started | Live offers, nearby updates, comments |
 
 ### Internal
@@ -167,8 +173,8 @@ Path: `services/search/`
 | Search index sync via RabbitMQ | ✅ Done | Topic `vendor.product.sync` → `services/search/sync/consumer.go` |
 | Query frequency flusher | ✅ Done | `services/search/freq/flusher.go` — flushes Redis deltas to DB every 30 s |
 | Token-category freq caching | ✅ Done | `services/search/cache/cache.go` — Redis cache with 30 s TTL, shared across users |
-| Category filter | ⬜ Not Started | Filter results by category IDs |
-| Price range filter | ⬜ Not Started | |
+| Category filter | ✅ Done | `?category_ids=1,2,3` — jsonb `&&` overlap on `search_entries.category_ids` |
+| Price range filter | ✅ Done | `?min_price=10&max_price=100` — applied as SQL WHERE on `search_entries.price` |
 
 ---
 

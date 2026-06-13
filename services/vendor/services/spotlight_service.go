@@ -65,3 +65,11 @@ func (s *SpotlightService) DeleteSpotlight(bizID uint, spotlightID uint) httputi
 	}
 	return s.ResponseOK("spotlight deleted", nil)
 }
+
+func (s *SpotlightService) GetFeed(lat, long, rangeKm float64) httputil.Res {
+	spots, err := s.RepoSpotlight().GetFeed(context.Background(), lat, long, rangeKm)
+	if err != nil {
+		return s.ResponseInternalServer("failed to fetch spotlight feed")
+	}
+	return s.ResponseOK("spotlight feed", spots)
+}

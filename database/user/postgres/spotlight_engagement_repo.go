@@ -37,3 +37,19 @@ func (r *SpotlightEngagementRepository) Unsave(ctx context.Context, userID, spot
 		Where("user_id = ? AND spotlight_id = ?", userID, spotlightID).
 		Delete(&user.SpotlightSave{}).Error
 }
+
+func (r *SpotlightEngagementRepository) GetLikedByUser(ctx context.Context, userID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.WithContext(ctx).Model(&user.SpotlightLike{}).
+		Where("user_id = ?", userID).
+		Pluck("spotlight_id", &ids).Error
+	return ids, err
+}
+
+func (r *SpotlightEngagementRepository) GetSavedByUser(ctx context.Context, userID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.WithContext(ctx).Model(&user.SpotlightSave{}).
+		Where("user_id = ?", userID).
+		Pluck("spotlight_id", &ids).Error
+	return ids, err
+}

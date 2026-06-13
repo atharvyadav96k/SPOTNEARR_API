@@ -37,3 +37,19 @@ func (r *ProductEngagementRepository) Unsave(ctx context.Context, userID, invPro
 		Where("user_id = ? AND inv_product_id = ?", userID, invProductID).
 		Delete(&user.ProductSave{}).Error
 }
+
+func (r *ProductEngagementRepository) GetLikedByUser(ctx context.Context, userID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.WithContext(ctx).Model(&user.ProductLike{}).
+		Where("user_id = ?", userID).
+		Pluck("inv_product_id", &ids).Error
+	return ids, err
+}
+
+func (r *ProductEngagementRepository) GetSavedByUser(ctx context.Context, userID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.WithContext(ctx).Model(&user.ProductSave{}).
+		Where("user_id = ?", userID).
+		Pluck("inv_product_id", &ids).Error
+	return ids, err
+}
