@@ -24,6 +24,9 @@ func (a *application) NewMux() *mux.Router {
 	a.inventoryRouter(apiV1, auth, bizOnly, rl)
 	a.productRouter(apiV1, auth, bizOnly, rl)
 	a.categoryRouter(apiV1, auth, bizOnly, rl)
+	a.offerRouter(apiV1, auth, bizOnly, rl)
+	a.spotlightRouter(apiV1, auth, bizOnly, rl)
+	a.claimRouter(apiV1, auth, bizOnly, rl)
 
 	// Internal routes — no auth middleware, expected to be network-isolated.
 	internal := router.PathPrefix("/internal").Subrouter()
@@ -158,6 +161,80 @@ func (a *application) categoryRouter(router *mux.Router, auth, bizOnly mux.Middl
 	bizOnlySub.Handle("/",
 		strictRL(http.HandlerFunc(a.categoryHandler.CategoryAdd)),
 	).Methods(http.MethodPost)
+}
+
+func (a *application) offerRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
+
+	offers := router.PathPrefix("/offers").Subrouter()
+	offers.Use(auth)
+	offers.Use(bizOnly)
+
+	offers.Handle("/",
+		normalRL(http.HandlerFunc(a.offerHandler.OfferList)),
+	).Methods(http.MethodGet)
+
+	offers.Handle("/",
+		strictRL(http.HandlerFunc(a.offerHandler.OfferCreate)),
+	).Methods(http.MethodPost)
+
+	offers.Handle("/{offerId}",
+		normalRL(http.HandlerFunc(a.offerHandler.OfferGet)),
+	).Methods(http.MethodGet)
+
+	offers.Handle("/{offerId}",
+		normalRL(http.HandlerFunc(a.offerHandler.OfferUpdate)),
+	).Methods(http.MethodPatch)
+
+	offers.Handle("/{offerId}",
+		strictRL(http.HandlerFunc(a.offerHandler.OfferDelete)),
+	).Methods(http.MethodDelete)
+}
+
+func (a *application) spotlightRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
+
+	spotlights := router.PathPrefix("/spotlights").Subrouter()
+	spotlights.Use(auth)
+	spotlights.Use(bizOnly)
+
+	spotlights.Handle("/",
+		normalRL(http.HandlerFunc(a.spotlightHandler.SpotlightList)),
+	).Methods(http.MethodGet)
+
+	spotlights.Handle("/",
+		strictRL(http.HandlerFunc(a.spotlightHandler.SpotlightPost)),
+	).Methods(http.MethodPost)
+
+	spotlights.Handle("/{spotlightId}",
+		normalRL(http.HandlerFunc(a.spotlightHandler.SpotlightGet)),
+	).Methods(http.MethodGet)
+
+	spotlights.Handle("/{spotlightId}",
+		strictRL(http.HandlerFunc(a.spotlightHandler.SpotlightDelete)),
+	).Methods(http.MethodDelete)
+}
+
+func (a *application) claimRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
+
+	claims := router.PathPrefix("/claims").Subrouter()
+	claims.Use(auth)
+	claims.Use(bizOnly)
+
+	claims.Handle("/",
+		normalRL(http.HandlerFunc(a.claimHandler.ListClaims)),
+	).Methods(http.MethodGet)
+
+	claims.Handle("/{claimId}/accept",
+		normalRL(http.HandlerFunc(a.claimHandler.AcceptClaim)),
+	).Methods(http.MethodPatch)
+
+	claims.Handle("/{claimId}/reject",
+		normalRL(http.HandlerFunc(a.claimHandler.RejectClaim)),
+	).Methods(http.MethodPatch)
 }
 
 func (a *application) internalRouter(router *mux.Router) {

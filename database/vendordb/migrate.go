@@ -13,6 +13,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&ProductToken{},
 		&BusinessAccount{},
 		&SearchSyncOutbox{},
+		&Offer{},
+		&Spotlight{},
 	); err != nil {
 		return err
 	}

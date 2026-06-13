@@ -70,6 +70,9 @@ Path: `app/cmd/`
 | Feature | Status | Route |
 |---|---|---|
 | Invalidate user refresh token | ✅ Done | `POST /internal/users/{userId}/invalidate-refresh` |
+| Get claims by product IDs | ✅ Done | `GET /internal/claims?product_ids=` — used by vendor service |
+| Get single claim | ✅ Done | `GET /internal/claims/{claimId}` — used by vendor service |
+| Update claim status | ✅ Done | `PATCH /internal/claims/{claimId}/status` — used by vendor service |
 
 ---
 
@@ -119,25 +122,28 @@ Path: `services/vendor/`
 | Create category | ✅ Done | `POST /api/v1/categories/` |
 
 ### Offers & Coupons
-| Feature | Status | Notes |
+| Feature | Status | Route |
 |---|---|---|
-| Create offer / coupon | ⬜ Not Started | Flat discount, %, min order threshold |
-| List offers | ⬜ Not Started | |
-| Update offer | ⬜ Not Started | |
-| Delete offer | ⬜ Not Started | |
+| Create offer / coupon | ✅ Done | `POST /api/v1/offers/` |
+| List offers | ✅ Done | `GET /api/v1/offers/` |
+| Get single offer | ✅ Done | `GET /api/v1/offers/{offerId}` |
+| Update offer | ✅ Done | `PATCH /api/v1/offers/{offerId}` |
+| Delete offer | ✅ Done | `DELETE /api/v1/offers/{offerId}` |
 
 ### Spotlight Marketing
-| Feature | Status | Notes |
+| Feature | Status | Route |
 |---|---|---|
-| Post spotlight (image/video) | ⬜ Not Started | Types: Product, Offer, General |
-| List spotlights | ⬜ Not Started | |
-| Delete spotlight | ⬜ Not Started | |
+| Post spotlight (image/video) | ✅ Done | `POST /api/v1/spotlights/` — types: product, offer, general |
+| List spotlights | ✅ Done | `GET /api/v1/spotlights/` |
+| Get single spotlight | ✅ Done | `GET /api/v1/spotlights/{spotlightId}` |
+| Delete spotlight | ✅ Done | `DELETE /api/v1/spotlights/{spotlightId}` |
 
 ### Claim Management
-| Feature | Status | Notes |
+| Feature | Status | Route |
 |---|---|---|
-| View incoming claims | ⬜ Not Started | |
-| Accept / reject a claim | ⬜ Not Started | |
+| View incoming claims | ✅ Done | `GET /api/v1/claims` — scoped to vendor's inventory products |
+| Accept a claim | ✅ Done | `PATCH /api/v1/claims/{claimId}/accept` |
+| Reject a claim | ✅ Done | `PATCH /api/v1/claims/{claimId}/reject` |
 
 ### Internal
 | Feature | Status | Route |

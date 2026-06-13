@@ -20,6 +20,8 @@ type IClaimRepository interface {
 	GetByID(ctx context.Context, claimID uint) (Claim, error)
 	GetByUserID(ctx context.Context, userID uint) ([]Claim, error)
 	GetByUserAndInvProduct(ctx context.Context, userID uint, invProductID uint) (Claim, error)
+	GetByProductIDs(ctx context.Context, invProductIDs []uint) ([]Claim, error)
+	UpdateStatus(ctx context.Context, claimID uint, status ClaimStatus) error
 	Delete(ctx context.Context, claimID uint, userID uint) error
 }
 

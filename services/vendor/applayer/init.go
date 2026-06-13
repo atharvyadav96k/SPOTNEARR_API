@@ -17,14 +17,17 @@ import (
 )
 
 type application struct {
-	db              *gorm.DB
-	cache           *cache.Cache
-	authHandler     *handlers.AuthHandler
-	bizHandler      *handlers.BusinessHandler
-	invHandler      *handlers.InventoryHandler
-	productHandler  *handlers.ProductHandler
-	categoryHandler *handlers.CategoryHandler
-	internalHandler *internal_handlers.InternalHandler
+	db               *gorm.DB
+	cache            *cache.Cache
+	authHandler      *handlers.AuthHandler
+	bizHandler       *handlers.BusinessHandler
+	invHandler       *handlers.InventoryHandler
+	productHandler   *handlers.ProductHandler
+	categoryHandler  *handlers.CategoryHandler
+	offerHandler     *handlers.OfferHandler
+	spotlightHandler *handlers.SpotlightHandler
+	claimHandler     *handlers.ClaimHandler
+	internalHandler  *internal_handlers.InternalHandler
 }
 
 func Init() application {
@@ -71,15 +74,21 @@ func Init() application {
 	invSvc := services.NewInventoryService(db, c)
 	productSvc := services.NewProductService(db, c)
 	categorySvc := services.NewCategoryService(db, c)
+	offerSvc := services.NewOfferService(db, c)
+	spotlightSvc := services.NewSpotlightService(db, c)
+	claimSvc := services.NewClaimService(db, c)
 
 	return application{
-		db:              db,
-		cache:           c,
-		authHandler:     handlers.NewAuthHandler(authSvc),
-		bizHandler:      handlers.NewBusinessHandler(bizSvc),
-		invHandler:      handlers.NewInventoryHandler(invSvc, notify),
-		productHandler:  handlers.NewProductHandler(productSvc, vendorpostgres.NewInvProductRepository(db), notify),
-		categoryHandler: handlers.NewCategoryHandler(categorySvc),
-		internalHandler: internal_handlers.NewInternalHandler(db),
+		db:               db,
+		cache:            c,
+		authHandler:      handlers.NewAuthHandler(authSvc),
+		bizHandler:       handlers.NewBusinessHandler(bizSvc),
+		invHandler:       handlers.NewInventoryHandler(invSvc, notify),
+		productHandler:   handlers.NewProductHandler(productSvc, vendorpostgres.NewInvProductRepository(db), notify),
+		categoryHandler:  handlers.NewCategoryHandler(categorySvc),
+		offerHandler:     handlers.NewOfferHandler(offerSvc),
+		spotlightHandler: handlers.NewSpotlightHandler(spotlightSvc),
+		claimHandler:     handlers.NewClaimHandler(claimSvc),
+		internalHandler:  internal_handlers.NewInternalHandler(db),
 	}
 }

@@ -184,6 +184,79 @@ type BusinessAccount struct {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+
+type DiscountType string
+
+const (
+	DiscountTypeFlat    DiscountType = "flat"
+	DiscountTypePercent DiscountType = "percent"
+)
+
+type Offer struct {
+	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	BusinessID uint      `gorm:"index;not null" json:"businessId"`
+	Business   *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
+
+	Title       string `gorm:"type:varchar(255);not null" json:"title"`
+	Description string `gorm:"type:text" json:"description"`
+
+	DiscountType  DiscountType `gorm:"type:varchar(20);not null" json:"discountType"`
+	DiscountValue float64      `gorm:"type:decimal(12,2);not null" json:"discountValue"`
+	MinOrderValue *float64     `gorm:"type:decimal(12,2)" json:"minOrderValue,omitempty"`
+
+	Code      *string `gorm:"type:varchar(50);uniqueIndex" json:"code,omitempty"`
+	MaxUsage  *int    `json:"maxUsage,omitempty"`
+	UsedCount int     `gorm:"default:0;not null" json:"usedCount"`
+
+	Active    bool       `gorm:"default:true;not null" json:"active"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
+
+type SpotlightType string
+
+const (
+	SpotlightTypeProduct SpotlightType = "product"
+	SpotlightTypeOffer   SpotlightType = "offer"
+	SpotlightTypeGeneral SpotlightType = "general"
+)
+
+type SpotlightMediaType string
+
+const (
+	SpotlightMediaImage SpotlightMediaType = "image"
+	SpotlightMediaVideo SpotlightMediaType = "video"
+)
+
+type Spotlight struct {
+	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	BusinessID uint      `gorm:"index;not null" json:"businessId"`
+	Business   *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
+
+	Type      SpotlightType      `gorm:"type:varchar(20);not null" json:"type"`
+	Title     string             `gorm:"type:varchar(255);not null" json:"title"`
+	Caption   string             `gorm:"type:text" json:"caption"`
+	MediaURL  string             `gorm:"type:text;not null" json:"mediaUrl"`
+	MediaType SpotlightMediaType `gorm:"type:varchar(10);not null" json:"mediaType"`
+
+	ProductID *uint `gorm:"index" json:"productId,omitempty"`
+	OfferID   *uint `gorm:"index" json:"offerId,omitempty"`
+
+	LikeCount int `gorm:"default:0;not null" json:"likeCount"`
+
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
+
 // SearchSyncOutbox is the transactional outbox for propagating inventory changes
 // to the Search Service. Written in the same DB transaction as the triggering write.
 type SearchSyncOutbox struct {

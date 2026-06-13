@@ -298,6 +298,18 @@ func (i *InvProductRepository) WriteDeleteOutboxesForProduct(ctx context.Context
 	return nil
 }
 
+// GetIDsByBusiness returns all inventory_product IDs that belong to a business,
+// used by the vendor-side claim listing to scope claims to the right products.
+func (i *InvProductRepository) GetIDsByBusiness(ctx context.Context, bizID uint) ([]uint, error) {
+	var ids []uint
+	err := i.db.WithContext(ctx).Raw(`
+		SELECT ip.id FROM inventory_products ip
+		JOIN stores s ON s.id = ip.store_id AND s.deleted_at IS NULL
+		WHERE s.business_id = ? AND ip.deleted_at IS NULL
+	`, bizID).Scan(&ids).Error
+	return ids, err
+}
+
 func (i *InvProductRepository) GetByID(ctx context.Context, id uint) (*vendordb.InvProductDetail, error) {
 	var result vendordb.InvProductDetail
 	err := i.db.WithContext(ctx).Raw(`

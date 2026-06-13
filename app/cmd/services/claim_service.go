@@ -16,6 +16,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetClaimsByProductIDs returns all claims for the given inventory product IDs.
+// Used by the internal endpoint called by the vendor service.
+func (c *ClaimService) GetClaimsByProductIDs(ctx context.Context, invProductIDs []uint) ([]usermodel.Claim, error) {
+	return c.RepoClaim().GetByProductIDs(ctx, invProductIDs)
+}
+
+// GetClaimByID fetches a single claim by ID for internal use.
+func (c *ClaimService) GetClaimByID(ctx context.Context, claimID uint) (usermodel.Claim, error) {
+	return c.RepoClaim().GetByID(ctx, claimID)
+}
+
+// UpdateClaimStatus updates the status of a claim. Used by the vendor service
+// internal endpoint to accept or reject claims.
+func (c *ClaimService) UpdateClaimStatus(ctx context.Context, claimID uint, status usermodel.ClaimStatus) error {
+	return c.RepoClaim().UpdateStatus(ctx, claimID, status)
+}
+
 type ClaimService struct {
 	base_service
 	httpClient *http.Client

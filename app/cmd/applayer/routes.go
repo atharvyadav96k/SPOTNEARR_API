@@ -36,6 +36,14 @@ func (a *application) NewMux() *mux.Router {
 func (a *application) internalRouter(router *mux.Router) {
 	router.HandleFunc("/users/{userId}/invalidate-refresh",
 		a.internalHandler.InvalidateRefresh).Methods(http.MethodPost)
+
+	// Claim management — called by the vendor service.
+	router.HandleFunc("/claims",
+		a.internalHandler.GetClaimsByProductIDs).Methods(http.MethodGet)
+	router.HandleFunc("/claims/{claimId}",
+		a.internalHandler.GetClaimByID).Methods(http.MethodGet)
+	router.HandleFunc("/claims/{claimId}/status",
+		a.internalHandler.UpdateClaimStatus).Methods(http.MethodPatch)
 }
 
 func (a *application) healthRouter(router *mux.Router) {

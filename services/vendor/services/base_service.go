@@ -18,16 +18,20 @@ type repos struct {
 	productRepo      vendormodel.IProductRepository
 	categoryRepo     vendormodel.ICategoryRepository
 	productTokenRepo vendormodel.IProductTokenRepository
+	offerRepo        vendormodel.IOfferRepository
+	spotlightRepo    vendormodel.ISpotlightRepository
 }
 
 type baseService struct {
 	cache *cache.Cache
 	repo  repos
+	db    *gorm.DB
 }
 
 func newBaseService(db *gorm.DB, c *cache.Cache) baseService {
 	return baseService{
 		cache: c,
+		db:    db,
 		repo: repos{
 			bizRepo:          vendorpostgres.NewBusinessRepository(db),
 			storeRepo:        vendorpostgres.NewStoreRepository(db),
@@ -36,6 +40,8 @@ func newBaseService(db *gorm.DB, c *cache.Cache) baseService {
 			productRepo:      vendorpostgres.NewProductRepository(db),
 			categoryRepo:     vendorpostgres.NewCategoryRepository(db),
 			productTokenRepo: vendorpostgres.NewProductTokenRepository(db),
+			offerRepo:        vendorpostgres.NewOfferRepository(db),
+			spotlightRepo:    vendorpostgres.NewSpotlightRepository(db),
 		},
 	}
 }
@@ -47,6 +53,8 @@ func (b *baseService) RepoAccess() vendormodel.IAccessRepository         { retur
 func (b *baseService) RepoInvProduct() vendormodel.IInventoryProduct     { return b.repo.invProductRepo }
 func (b *baseService) RepoProduct() vendormodel.IProductRepository       { return b.repo.productRepo }
 func (b *baseService) RepoCategory() vendormodel.ICategoryRepository     { return b.repo.categoryRepo }
+func (b *baseService) RepoOffer() vendormodel.IOfferRepository           { return b.repo.offerRepo }
+func (b *baseService) RepoSpotlight() vendormodel.ISpotlightRepository   { return b.repo.spotlightRepo }
 
 func res(message string, statusCode int, data interface{}) httputil.Res {
 	return httputil.NewResponse(message, statusCode, data)
