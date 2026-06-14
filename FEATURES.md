@@ -180,6 +180,13 @@ Path: `services/search/`
 
 ## Cross-Cutting Infrastructure
 
+### Gateway (`gateway/`)
+| Component | Status | Notes |
+|---|---|---|
+| Nginx reverse proxy | ✅ Done | `gateway/nginx.conf` — single entry point on port `80` |
+| Path-prefix routing | ✅ Done | `/user/` → user-service, `/vendor/` → vendor-service, `/search/` → search-service; prefix stripped before forwarding |
+| Service port isolation | ✅ Done | Go services have no host `ports:` binding — only nginx port `80` is externally reachable |
+
 ### Messaging (`pkg/mq`)
 | Component | Status | Notes |
 |---|---|---|

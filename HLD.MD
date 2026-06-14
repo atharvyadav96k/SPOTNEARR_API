@@ -84,7 +84,7 @@ Vendor client                          User client
 
 | Component | Role |
 |---|---|
-| API gateway | Single entry point. Handles auth, rate limiting, and routing |
+| API gateway | Single entry point. Implemented as Nginx (`gateway/nginx.conf`) — routes `/user/`, `/vendor/`, `/search/` prefixes to the respective services |
 | Load balancer | Distributes traffic across service instances |
 | User service | Registration, login, token issuance |
 | Vendor service | Product upload, token parsing, storage |
@@ -145,14 +145,21 @@ User search patterns tend to repeat. A cache with a short TTL significantly redu
 
 ## Getting Started
 
-Each service is independently deployable. Start with the API gateway, then bring up individual services as needed.
+All services and the gateway are wired together in `docker-compose.yml`. Bring the full stack up with:
 
-1. Configure auth settings in the API gateway
-2. Start the user service and connect to the user database
-3. Start the vendor service and connect to the product database and message queue
-4. Start the search service and connect to the search index and message queue
-5. Deploy the CDN for static assets
-6. Set up monitoring across all services
+```bash
+docker compose up --build
+```
+
+The stack starts in dependency order: postgres + redis + rabbitmq → Go services → nginx gateway. The gateway is the only externally exposed port (`80`). Route prefix mapping:
+
+| Public prefix | Service |
+|---|---|
+| `/user/...` | user-service |
+| `/vendor/...` | vendor-service |
+| `/search/...` | search-service |
+
+For CDN and monitoring, deploy those separately and point CDN origins at the gateway hostname.
 
 ---
 

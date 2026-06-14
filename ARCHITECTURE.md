@@ -6,11 +6,14 @@ Spotnearr is a microservices backend built in Go. The monorepo uses a **Go works
 
 ### Services
 
-| Service | Port | Database | Module |
-|---|---|---|---|
-| `user-service` | 8080 | `spotnearr_user` | `app/cmd` |
-| `vendor-service` | 8081 | `spotnearr_vendor` | `vendor-svc` |
-| `search-service` | 8082 | `spotnearr_search` | `search-svc` |
+All three services run behind an **Nginx gateway** (`gateway/nginx.conf`) which is the only publicly exposed component. Individual service ports are internal to the Docker network.
+
+| Component | Public port | Internal port | Database | Module |
+|---|---|---|---|---|
+| `gateway` (nginx) | `80` | — | — | — |
+| `user-service` | — (internal only) | `8080` | `spotnearr_user` | `app/cmd` |
+| `vendor-service` | — (internal only) | `8080` | `spotnearr_vendor` | `vendor-svc` |
+| `search-service` | — (internal only) | `8080` | `spotnearr_search` | `search-svc` |
 
 ### Cross-Service Communication Rule
 
@@ -24,7 +27,7 @@ Each service owns and manages its own database exclusively. Services never read 
 SPOTNEARR_API/
 ├── go.work                   # Go workspace — ties all modules together
 ├── go.work.sum
-├── docker-compose.yml        # Production compose: postgres, redis, all 3 services
+├── docker-compose.yml        # Production compose: nginx gateway + postgres, redis, rabbitmq, all 3 services
 ├── docker-compose.test.yml   # Test compose: ephemeral postgres, per-service profiles
 ├── Dockerfile.app            # User service image
 ├── Dockerfile.vendor         # Vendor service image
@@ -36,6 +39,9 @@ SPOTNEARR_API/
 ├── readme.md
 ├── index.html                # Landing page
 │
+├── gateway/
+│   └── nginx.conf            # Nginx reverse proxy — routes /user/, /vendor/, /search/ prefixes;
+│                             #   strips prefix before forwarding; only port 80 is public
 ├── app/                      # User service
 ├── services/
 │   ├── vendor/               # Vendor service
@@ -341,18 +347,25 @@ node dummy.js categories BIZ_EMAIL=... BIZ_PASSWORD=...
 ### Production (`docker-compose.yml`)
 
 ```
-postgres  (port 5432) ──┬── spotnearr_user   → user-service   (port 8080)
-                        ├── spotnearr_vendor → vendor-service  (port 8081)
-                        └── spotnearr_search → search-service  (port 8082)
-redis     (port 6379) ──┬── user-service    (rate limiting)
-                        ├── vendor-service  (rate limiting, caching)
-                        └── search-service  (freq-delta accumulation, token-freq cache)
-rabbitmq  (port 5672) ──┬── vendor-service  (publisher: vendor.product.sync,
-                        │                    consumer: user.business.follow/unfollow)
-                        └── search-service  (consumer: vendor.product.sync)
+                              ┌─── internet ───┐
+                              │  nginx gateway  │  port 80 (only public port)
+                              │  /user/  ──────────────────────────────────┐
+                              │  /vendor/ ──────────────────────────────┐  │
+                              │  /search/ ───────────────────────────┐  │  │
+                              └─────────────────┘                    │  │  │
+                                                                      ▼  ▼  ▼
+postgres  (internal) ──┬── spotnearr_user   → user-service   (internal :8080)
+                       ├── spotnearr_vendor → vendor-service  (internal :8080)
+                       └── spotnearr_search → search-service  (internal :8080)
+redis     (internal) ──┬── user-service    (rate limiting)
+                       ├── vendor-service  (rate limiting, caching)
+                       └── search-service  (freq-delta accumulation, token-freq cache)
+rabbitmq  (internal) ──┬── vendor-service  (publisher: vendor.product.sync,
+                       │                    consumer: user.business.follow/unfollow)
+                       └── search-service  (consumer: vendor.product.sync)
 ```
 
-All services share one postgres instance, each with its own database. All three services wait on RabbitMQ's healthcheck before starting (`rabbitmq-diagnostics ping`).
+All services share one postgres instance, each with its own database. Go service containers have no host `ports:` binding — they are reachable only by other containers on `spotnearr-network`. The gateway (`nginx:alpine`) is the sole externally exposed container. All three services wait on RabbitMQ's healthcheck before starting (`rabbitmq-diagnostics ping`).
 
 ### Test (`docker-compose.test.yml`)
 

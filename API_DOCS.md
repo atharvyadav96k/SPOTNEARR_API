@@ -2,13 +2,25 @@
 
 ## Services & Base URLs
 
-| Service | Port | Purpose |
-|---|---|---|
-| **User Service** | `8080` | Customer accounts, auth, social, reviews, claims |
-| **Vendor Service** | `8081` | Business owner dashboard — products, inventory, offers, spotlights |
-| **Search Service** | `8082` | Product discovery (public, no auth) |
+All three services sit behind an **Nginx gateway** (port `80`). Individual service ports are internal-only and not reachable from outside Docker. Clients always talk to the gateway.
 
-All routes are prefixed `/api/v1/` unless noted. CORS is enabled on every service.
+| Service | Public Path Prefix | Internal Port | Purpose |
+|---|---|---|---|
+| **User Service** | `/user` | `8080` | Customer accounts, auth, social, reviews, claims |
+| **Vendor Service** | `/vendor` | `8081` | Business owner dashboard — products, inventory, offers, spotlights |
+| **Search Service** | `/search` | `8082` | Product discovery (public, no auth) |
+
+**Public URL format:** `http(s)://<host>/<prefix>/<path>`
+
+The gateway strips the prefix before forwarding, so the Go service sees the original path unchanged:
+
+| Client sends | Gateway forwards to |
+|---|---|
+| `POST /user/api/v1/auth/users/login` | `POST user-service:8080/api/v1/auth/users/login` |
+| `GET /vendor/api/v1/products/` | `GET vendor-service:8080/api/v1/products/` |
+| `GET /search/api/v1/search?q=apples` | `GET search-service:8080/api/v1/search?q=apples` |
+
+All route paths in this document are the **service-side paths** (after prefix stripping). Prepend the prefix above for the actual public URL. CORS is enabled on every service.
 
 ---
 
@@ -1254,7 +1266,7 @@ GET /api/v1/search?q=apples&lat=12.97&long=77.59&range=5&category_ids=1,3&min_pr
 
 For full product detail (store address, availability, categories) call:
 ```
-GET :8081/api/v1/products/{inv_product_id}/detail
+GET /vendor/api/v1/products/{inv_product_id}/detail
 ```
 
 **Response `400`** — missing `q`:
@@ -1273,9 +1285,9 @@ GET :8081/api/v1/products/{inv_product_id}/detail
 
 # Internal Endpoints
 
-These routes are **not exposed to the public internet** — they are called service-to-service within the private network only. No auth middleware is applied; network isolation is the security boundary.
+These routes are **not exposed through the gateway** and are **not reachable from outside Docker**. Services call each other directly by container name over the shared `spotnearr-network`. No auth middleware is applied; Docker network isolation is the security boundary.
 
-## User Service Internal — `:8080/internal/`
+## User Service Internal — `user-service:8080/internal/`
 
 ### `POST /internal/users/{userId}/invalidate-refresh`
 
@@ -1318,7 +1330,7 @@ Update a claim's status.
 
 ---
 
-## Vendor Service Internal — `:8081/internal/`
+## Vendor Service Internal — `vendor-service:8080/internal/`
 
 ### `GET /internal/inventory-products/{id}`
 

@@ -25,11 +25,14 @@ Detailed endpoints are documented in the main file:
 
 #### Services
 
-| Service | Port | Purpose |
+All traffic goes through the **Nginx gateway** on port `80`. Service ports are internal only.
+
+| Service | Public Prefix | Purpose |
 |---|---|---|
-| User | `8080` | Accounts, auth, reviews, claims |
-| Vendor | `8081` | Products, inventory, categories |
-| Search | `8082` | Public proximity search |
+| Gateway (Nginx) | `:80` | Routes, strips prefix |
+| User | `/user` | Accounts, auth, reviews, claims |
+| Vendor | `/vendor` | Products, inventory, categories |
+| Search | `/search` | Public proximity search |
 
 ---
 
@@ -37,9 +40,10 @@ Detailed endpoints are documented in the main file:
 #### Core Routes
 
 ```
-POST /api/v1/auth/login
-GET  /api/v1/search?q=&lat=&long=&range=
-POST /api/v1/inventory/{invId}/products
+POST /user/api/v1/auth/users/login
+GET  /search/api/v1/search?q=&lat=&long=&range=
+POST /vendor/api/v1/inventory/{invId}/products
+GET  /vendor/api/v1/feed/spotlights?lat=&long=&range=
 ```
 
 #### Response Envelope
