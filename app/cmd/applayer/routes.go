@@ -12,6 +12,7 @@ import (
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
+	router.Use(pkgmid.RequestLogger)
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	captcha := pkgmid.CaptchaValidation(config.C.CaptchaURL, config.C.CaptchaSecretKey)
