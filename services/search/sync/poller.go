@@ -66,8 +66,7 @@ func (a *Applier) Apply(ctx context.Context, data []byte) error {
 }
 
 func (a *Applier) applyUpsert(ctx context.Context, p SyncPayload) error {
-	// Search service owns tokenization — re-derive tokens from name + desc.
-	tokens := tokenizer.MergeTokens(p.ProductName, p.Desc)
+	tokens := tokenizer.TokenParser(p.ProductName)
 
 	catIDs := make([]uint, len(p.Categories))
 	for i, c := range p.Categories {
