@@ -220,7 +220,7 @@ services/vendor/
 | POST | `/api/v1/categories/` | JWT + BizOnly | Add category |
 | POST | `/api/v1/products/` | JWT + BizOnly | Add product |
 | GET | `/api/v1/products/` | JWT + BizOnly | List products |
-| GET | `/api/v1/products/{invProductId}/detail` | — | Get inventory product detail (public) |
+| GET | `/api/v1/products/{invProductId}/detail` | JWT | Get inventory product detail (user or vendor token) |
 | GET | `/api/v1/products/{id}` | JWT + BizOnly | Get product |
 | PATCH | `/api/v1/products/{id}` | JWT + BizOnly | Update product |
 | DELETE | `/api/v1/products/{id}` | JWT + BizOnly | Delete product |

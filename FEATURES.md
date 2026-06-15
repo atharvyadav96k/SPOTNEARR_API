@@ -106,7 +106,7 @@ Path: `services/vendor/`
 | Create product | ✅ Done | `POST /api/v1/products/` |
 | List all products | ✅ Done | `GET /api/v1/products/` |
 | Get single product | ✅ Done | `GET /api/v1/products/{productId}` |
-| Get inventory product detail (public) | ✅ Done | `GET /api/v1/products/{invProductId}/detail` — no auth |
+| Get inventory product detail | ✅ Done | `GET /api/v1/products/{invProductId}/detail` — JWT required (user or vendor token) |
 | Update product | ✅ Done | `PATCH /api/v1/products/{productId}` |
 | Soft-delete product | ✅ Done | `DELETE /api/v1/products/{productId}` |
 

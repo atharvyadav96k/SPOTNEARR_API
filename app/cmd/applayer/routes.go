@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
+	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
 	"github.com/gorilla/mux"
 )
 

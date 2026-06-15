@@ -115,32 +115,35 @@ func (a *application) productRouter(router *mux.Router, auth, bizOnly mux.Middle
 	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
 	relaxedRL := pkgmid.RateLimit(rl, 60000, time.Minute)
 
-	// Public — registered before the auth subrouter so it is matched first.
-	router.Handle("/products/{invProductId}/detail",
+	products := router.PathPrefix("/products").Subrouter()
+	products.Use(auth)
+
+	// Auth only — any registered user (or vendor) can fetch product detail.
+	products.Handle("/{invProductId}/detail",
 		relaxedRL(http.HandlerFunc(a.productHandler.ProductDetail)),
 	).Methods(http.MethodGet)
 
-	products := router.PathPrefix("/products").Subrouter()
-	products.Use(auth)
-	products.Use(bizOnly)
+	// Vendor-only routes — require business token on top of auth.
+	bizProducts := products.PathPrefix("").Subrouter()
+	bizProducts.Use(bizOnly)
 
-	products.Handle("/",
+	bizProducts.Handle("/",
 		strictRL(http.HandlerFunc(a.productHandler.ProductAdd)),
 	).Methods(http.MethodPost)
 
-	products.Handle("/",
+	bizProducts.Handle("/",
 		relaxedRL(http.HandlerFunc(a.productHandler.ProductList)),
 	).Methods(http.MethodGet)
 
-	products.Handle("/{productId}",
+	bizProducts.Handle("/{productId}",
 		relaxedRL(http.HandlerFunc(a.productHandler.ProductGet)),
 	).Methods(http.MethodGet)
 
-	products.Handle("/{productId}",
+	bizProducts.Handle("/{productId}",
 		normalRL(http.HandlerFunc(a.productHandler.ProductUpdate)),
 	).Methods(http.MethodPatch)
 
-	products.Handle("/{productId}",
+	bizProducts.Handle("/{productId}",
 		strictRL(http.HandlerFunc(a.productHandler.ProductDelete)),
 	).Methods(http.MethodDelete)
 }

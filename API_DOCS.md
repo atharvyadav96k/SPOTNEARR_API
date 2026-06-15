@@ -699,7 +699,7 @@ Get a single product owned by the authenticated business. Returns `404` if not o
 
 ### `GET /api/v1/products/{invProductId}/detail`
 
-**Public — no auth required.** Returns full inventory product detail including store and product info.
+Auth: **JWT** (user or vendor token accepted). Returns full inventory product detail including store and product info.
 
 **Response `200`:**
 ```json
