@@ -1,7 +1,9 @@
 package applayer
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
@@ -12,7 +14,7 @@ import (
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
-	router.Use(pkgmid.RequestLogger)
+	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[vendor-svc] ", log.LstdFlags)))
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	bizOnly := pkgmid.BusinessOnly(config.C.JWTSecret)

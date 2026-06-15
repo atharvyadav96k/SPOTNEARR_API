@@ -1,7 +1,9 @@
 package applayer
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
@@ -12,7 +14,7 @@ import (
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
-	router.Use(pkgmid.RequestLogger)
+	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[user-svc] ", log.LstdFlags)))
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	captcha := pkgmid.CaptchaValidation(config.C.CaptchaURL, config.C.CaptchaSecretKey)

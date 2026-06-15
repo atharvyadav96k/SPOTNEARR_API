@@ -1,7 +1,9 @@
 package applayer
 
 import (
+	"log"
 	"net/http"
+	"os"
 
 	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
 	"github.com/gorilla/mux"
@@ -9,7 +11,7 @@ import (
 
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
-	router.Use(pkgmid.RequestLogger)
+	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[search-svc] ", log.LstdFlags)))
 
 	router.HandleFunc("/health", a.searchHandler.Health).Methods(http.MethodGet)
 
