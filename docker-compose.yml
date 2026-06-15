@@ -27,10 +27,11 @@ services:
     networks:
       - spotnearr-network
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 20s
     deploy:
       resources:
         limits:

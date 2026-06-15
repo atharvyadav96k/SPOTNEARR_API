@@ -2,6 +2,7 @@ package mq
 
 import (
 	"log"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -13,14 +14,22 @@ type Conn struct {
 	raw *amqp.Connection
 }
 
-// Connect dials the RabbitMQ broker and returns a Conn.
+// Connect dials the RabbitMQ broker, retrying up to 10 times before giving up.
 func Connect(url string) (*Conn, error) {
-	c, err := amqp.Dial(url)
-	if err != nil {
-		return nil, err
+	const maxAttempts = 10
+	const retryDelay = 3 * time.Second
+	var err error
+	for i := 1; i <= maxAttempts; i++ {
+		var c *amqp.Connection
+		c, err = amqp.Dial(url)
+		if err == nil {
+			log.Println("rabbitmq connection established")
+			return &Conn{raw: c}, nil
+		}
+		log.Printf("rabbitmq not ready (attempt %d/%d): %v — retrying in %s", i, maxAttempts, err, retryDelay)
+		time.Sleep(retryDelay)
 	}
-	log.Println("rabbitmq connection established")
-	return &Conn{raw: c}, nil
+	return nil, err
 }
 
 // Close closes the underlying AMQP connection.

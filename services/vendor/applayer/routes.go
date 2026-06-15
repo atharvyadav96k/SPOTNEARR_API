@@ -1,9 +1,7 @@
 package applayer
 
 import (
-	"log"
 	"net/http"
-	"os"
 	"time"
 
 	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
@@ -14,7 +12,7 @@ import (
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
-	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[vendor-svc] ", log.LstdFlags)))
+	// router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[vendor-svc] ", log.LstdFlags)))
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	bizOnly := pkgmid.BusinessOnly(config.C.JWTSecret)
@@ -114,9 +112,9 @@ func (a *application) inventoryRouter(router *mux.Router, auth, bizOnly mux.Midd
 }
 
 func (a *application) productRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
-	normalRL := pkgmid.RateLimit(rl, 30, time.Minute)
-	strictRL := pkgmid.RateLimit(rl, 50, time.Minute)
-	relaxedRL := pkgmid.RateLimit(rl, 60, time.Minute)
+	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
+	relaxedRL := pkgmid.RateLimit(rl, 6000, time.Minute)
 
 	products := router.PathPrefix("/products").Subrouter()
 	products.Use(auth)
