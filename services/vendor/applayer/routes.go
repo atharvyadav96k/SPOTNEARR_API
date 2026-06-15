@@ -114,9 +114,9 @@ func (a *application) inventoryRouter(router *mux.Router, auth, bizOnly mux.Midd
 }
 
 func (a *application) productRouter(router *mux.Router, auth, bizOnly mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
-	normalRL := pkgmid.RateLimit(rl, 3000, time.Minute)
-	strictRL := pkgmid.RateLimit(rl, 5000, time.Minute)
-	relaxedRL := pkgmid.RateLimit(rl, 60000, time.Minute)
+	normalRL := pkgmid.RateLimit(rl, 30, time.Minute)
+	strictRL := pkgmid.RateLimit(rl, 50, time.Minute)
+	relaxedRL := pkgmid.RateLimit(rl, 60, time.Minute)
 
 	products := router.PathPrefix("/products").Subrouter()
 	products.Use(auth)
