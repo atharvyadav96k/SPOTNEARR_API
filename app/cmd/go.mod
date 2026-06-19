@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/gorilla/mux v1.8.1
+	github.com/mmcloughlin/geohash v0.10.0
 	github.com/redis/go-redis/v9 v9.20.0
 	gorm.io/gorm v1.31.1
 )

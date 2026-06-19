@@ -59,3 +59,11 @@ type ISpotlightEngagementRepository interface {
 	GetLikedByUser(ctx context.Context, userID uint) ([]uint, error)
 	GetSavedByUser(ctx context.Context, userID uint) ([]uint, error)
 }
+
+type IDealRepository interface {
+	Upsert(ctx context.Context, entry DealEntry) error
+	DeleteByDealID(ctx context.Context, dealID uint) error
+	GetByIDs(ctx context.Context, dealIDs []uint) ([]DealEntry, error)
+	GetByGeoHash5(ctx context.Context, geohash5 string) ([]DealEntry, error)
+	GetGeoHash5ForDeal(ctx context.Context, dealID uint) ([]string, error)
+}

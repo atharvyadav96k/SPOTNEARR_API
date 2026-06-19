@@ -74,7 +74,7 @@ func Init() application {
 	invSvc := services.NewInventoryService(db, c)
 	productSvc := services.NewProductService(db, c)
 	categorySvc := services.NewCategoryService(db, c)
-	offerSvc := services.NewOfferService(db, c)
+	offerSvc := services.NewOfferService(db, c, mqPub)
 	spotlightSvc := services.NewSpotlightService(db, c)
 	claimSvc := services.NewClaimService(db, c)
 

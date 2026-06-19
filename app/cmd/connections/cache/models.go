@@ -11,6 +11,7 @@ type Cache struct {
 	passwordSession       *passwordSession
 	refresh_token_session *refresh_token_session
 	rateLimiter           *pkgrl.RateLimiter
+	dealGeoCache          *dealGeoCache
 }
 
 func newCache(client *redis.Client) *Cache {
@@ -22,5 +23,6 @@ func newCache(client *redis.Client) *Cache {
 		passwordSession:       newPasswordSession(client),
 		refresh_token_session: newRefreshTokenSession(client),
 		rateLimiter:           pkgrl.New(client, env+":"),
+		dealGeoCache:          newDealGeoCache(client),
 	}
 }

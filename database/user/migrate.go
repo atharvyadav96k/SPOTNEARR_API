@@ -12,5 +12,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&ProductSave{},
 		&SpotlightLike{},
 		&SpotlightSave{},
+		&DealEntry{},
 	)
 }

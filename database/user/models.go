@@ -150,3 +150,23 @@ type SpotlightSave struct {
 	SpotlightID uint      `gorm:"primaryKey;not null" json:"spotlightId"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
+
+// ---------------------------------------------------------------------------
+
+// DealEntry is a denormalised snapshot of a vendor Offer stored in the user
+// service for fast nearby-deal lookups. One row per (deal_id, geohash5 cell).
+type DealEntry struct {
+	ID           uint           `gorm:"primaryKey;autoIncrement" json:"id"`
+	DealID       uint           `gorm:"uniqueIndex:idx_deal_entry_uniq;not null" json:"dealId"`
+	GeoHash5     string         `gorm:"type:varchar(5);uniqueIndex:idx_deal_entry_uniq;index;not null" json:"geoHash5"`
+	BusinessID   uint           `gorm:"index;not null" json:"businessId"`
+	Name         string         `gorm:"type:varchar(255);not null" json:"name"`
+	Price        *float64       `gorm:"type:decimal(12,2)" json:"price,omitempty"`
+	DealPrice    float64        `gorm:"type:decimal(12,2);not null" json:"dealPrice"`
+	DiscountType string         `gorm:"type:varchar(20);not null" json:"discountType"`
+	Active       bool           `gorm:"default:true;not null" json:"active"`
+	ExpiresAt    *time.Time     `gorm:"index" json:"expiresAt,omitempty"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}

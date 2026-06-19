@@ -11,6 +11,7 @@ type Services struct {
 	ClaimService  *ClaimService
 	ReviewService *ReviewService
 	SocialService *SocialService
+	DealService   *DealService
 }
 
 func Init(db *gorm.DB, cache *cache.Cache, publisher *mq.Publisher) *Services {
@@ -20,5 +21,6 @@ func Init(db *gorm.DB, cache *cache.Cache, publisher *mq.Publisher) *Services {
 		ClaimService:  NewClaimService(base),
 		ReviewService: NewReviewService(base),
 		SocialService: NewSocialService(base, publisher),
+		DealService:   NewDealService(base),
 	}
 }

@@ -30,6 +30,7 @@ func (a *application) NewMux() *mux.Router {
 	a.claimRouter(apiV1, auth, rl)
 	a.reviewRouter(apiV1, auth, rl)
 	a.socialRouter(apiV1, auth, rl)
+	a.dealRouter(apiV1, auth, rl)
 
 	// Internal routes — network-isolated, no auth middleware.
 	internal := router.PathPrefix("/internal").Subrouter()
@@ -172,6 +173,14 @@ func (a *application) socialRouter(router *mux.Router, auth mux.MiddlewareFunc, 
 	).Methods(http.MethodGet)
 	s.Handle("/spotlights/saved",
 		normalRateLimit(http.HandlerFunc(a.socialHandler.GetSavedSpotlights)),
+	).Methods(http.MethodGet)
+}
+
+func (a *application) dealRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	d := router.PathPrefix("/deals").Subrouter()
+	d.Use(auth)
+	d.Handle("/nearby",
+		pkgmid.RateLimit(rl, 3000, time.Minute)(http.HandlerFunc(a.dealHandler.NearbyDeals)),
 	).Methods(http.MethodGet)
 }
 

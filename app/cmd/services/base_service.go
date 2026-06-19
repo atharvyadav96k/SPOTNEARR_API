@@ -11,12 +11,13 @@ import (
 )
 
 type repo struct {
-	userRepo              usermodel.IUserRepository
-	claimRepo             usermodel.IClaimRepository
-	reviewRepo            usermodel.IReviewRepository
-	followRepo            usermodel.IBusinessFollowRepository
-	productEngageRepo     usermodel.IProductEngagementRepository
-	spotlightEngageRepo   usermodel.ISpotlightEngagementRepository
+	userRepo            usermodel.IUserRepository
+	claimRepo           usermodel.IClaimRepository
+	reviewRepo          usermodel.IReviewRepository
+	followRepo          usermodel.IBusinessFollowRepository
+	productEngageRepo   usermodel.IProductEngagementRepository
+	spotlightEngageRepo usermodel.ISpotlightEngagementRepository
+	dealRepo            usermodel.IDealRepository
 }
 
 type base_service struct {
@@ -36,6 +37,7 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 			followRepo:          userpostgres.NewBusinessFollowRepository(db),
 			productEngageRepo:   userpostgres.NewProductEngagementRepository(db),
 			spotlightEngageRepo: userpostgres.NewSpotlightEngagementRepository(db),
+			dealRepo:            userpostgres.NewDealRepository(db),
 		},
 	}
 }
@@ -66,6 +68,10 @@ func (b *base_service) RepoProductEngage() usermodel.IProductEngagementRepositor
 
 func (b *base_service) RepoSpotlightEngage() usermodel.ISpotlightEngagementRepository {
 	return b.repo.spotlightEngageRepo
+}
+
+func (b *base_service) RepoDeal() usermodel.IDealRepository {
+	return b.repo.dealRepo
 }
 
 func res(message string, statusCode int, data interface{}) response.Res {
