@@ -12,6 +12,8 @@ type IBusinessesRepository interface {
 	GetByPhone(ctx context.Context, phone string) (*Business, error)
 	VerifyBusiness(ctx context.Context, id uint) error
 	ToggleActiveStatus(ctx context.Context, id uint, isActive bool) error
+	IncrementFollowerCount(ctx context.Context, id uint) error
+	DecrementFollowerCount(ctx context.Context, id uint) error
 }
 
 type IStoreRepository interface {
@@ -47,6 +49,8 @@ type IInventoryProduct interface {
 	UpdateProduct(ctx context.Context, invProduct InventoryProduct, bizID uint) (InventoryProduct, error)
 	RemoveProduct(ctx context.Context, invProdID uint, bizID uint) error
 	GetByID(ctx context.Context, id uint) (*InvProductDetail, error)
+	WriteUpsertOutboxesForProduct(ctx context.Context, productID uint) error
+	WriteDeleteOutboxesForProduct(ctx context.Context, productID uint) error
 }
 
 type IAccessRepository interface {
@@ -64,4 +68,24 @@ type ICategoryRepository interface {
 
 type IProductTokenRepository interface {
 	GetTokenCategoryFreqs(ctx context.Context, tokens []string) (map[uint]int, error)
+}
+
+type IOfferRepository interface {
+	Create(ctx context.Context, offer Offer) (Offer, error)
+	GetByID(ctx context.Context, id uint, bizID uint) (Offer, error)
+	GetByBusiness(ctx context.Context, bizID uint) ([]Offer, error)
+	Update(ctx context.Context, offer Offer, bizID uint) (Offer, error)
+	Delete(ctx context.Context, id uint, bizID uint) error
+}
+
+type ISpotlightRepository interface {
+	Create(ctx context.Context, spotlight Spotlight) (Spotlight, error)
+	GetByID(ctx context.Context, id uint, bizID uint) (Spotlight, error)
+	GetByBusiness(ctx context.Context, bizID uint) ([]Spotlight, error)
+	Delete(ctx context.Context, id uint, bizID uint) error
+	GetFeed(ctx context.Context, lat, long, rangeKm float64) ([]Spotlight, error)
+}
+
+type IInvProductExtRepository interface {
+	GetIDsByBusiness(ctx context.Context, bizID uint) ([]uint, error)
 }

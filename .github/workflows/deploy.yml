@@ -4,90 +4,30 @@ on:
   push:
     branches: [main, staging]
 
+# One deploy per branch at a time; a newer push cancels the in-progress one.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
-  detect:
-    runs-on: ubuntu-latest
-    outputs:
-      app:         ${{ steps.changes.outputs.app }}
-      vendor:      ${{ steps.changes.outputs.vendor }}
-      search:      ${{ steps.changes.outputs.search }}
-      environment: ${{ steps.env.outputs.environment }}
+  deploy:
+    runs-on: self-hosted
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set environment
-        id: env
+      - name: Build and start services
+        env:
+          JWT_SECRET:         ${{ secrets.JWT_SECRET }}
+          CAPTCHA_SECRET_KEY: ${{ secrets.CAPTCHA_SECRET_KEY }}
+          GRAFANA_PASSWORD:   ${{ secrets.GRAFANA_PASSWORD }}
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
-            echo "environment=staging" >> $GITHUB_OUTPUT
-          else
-            echo "environment=prod" >> $GITHUB_OUTPUT
-          fi
+          docker compose up --build -d --remove-orphans --wait --timeout 120
 
-      - uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            app:
-              - 'app/cmd/**'
-              - 'app/*.tf'
-              - 'pkg/**'
-              - 'database/**'
-              - 'Dockerfile.app'
-            vendor:
-              - 'services/vendor/**'
-              - 'pkg/**'
-              - 'database/**'
-              - 'Dockerfile.vendor'
-            search:
-              - 'services/search/**'
-              - 'pkg/**'
-              - 'database/**'
-              - 'Dockerfile.search'
+      - name: Prune old images
+        run: docker image prune -f
 
-  app:
-    needs: detect
-    if: needs.detect.outputs.app == 'true'
-    uses: ./.github/workflows/service.yml
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      service_name:  app
-      dockerfile:    Dockerfile.app
-      terraform_dir: app
-      gcp_region:    ${{ vars.GCP_REGION }}
-      environment:   ${{ needs.detect.outputs.environment }}
-      captcha_url:   https://challenges.cloudflare.com/turnstile/v0/siteverify
-    secrets: inherit
-
-  vendor:
-    needs: detect
-    if: needs.detect.outputs.vendor == 'true'
-    uses: ./.github/workflows/service.yml
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      service_name:  vendor
-      dockerfile:    Dockerfile.vendor
-      terraform_dir: services/vendor
-      gcp_region:    ${{ vars.GCP_REGION }}
-      environment:   ${{ needs.detect.outputs.environment }}
-      captcha_url:   https://challenges.cloudflare.com/turnstile/v0/siteverify
-    secrets: inherit
-
-  search:
-    needs: detect
-    if: needs.detect.outputs.search == 'true'
-    uses: ./.github/workflows/service.yml
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      service_name:  search
-      dockerfile:    Dockerfile.search
-      terraform_dir: services/search
-      gcp_region:    ${{ vars.GCP_REGION }}
-      environment:   ${{ needs.detect.outputs.environment }}
-    secrets: inherit
+      - name: Service status
+        if: always()
+        run: docker compose ps

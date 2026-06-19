@@ -16,6 +16,7 @@ type Config struct {
 	CaptchaSecretKey string
 	Port             string
 	VendorServiceURL string
+	RabbitMQURL      string
 }
 
 var C *Config
@@ -47,6 +48,7 @@ func Load() error {
 		CachePassword:    optional("CACHE_PASSWORD", ""),
 		Port:             optional("PORT", "8080"),
 		VendorServiceURL: optional("VENDOR_SERVICE_URL", "http://localhost:8081"),
+		RabbitMQURL:      optional("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672/"),
 	}
 
 	log.Default().Println(*C)

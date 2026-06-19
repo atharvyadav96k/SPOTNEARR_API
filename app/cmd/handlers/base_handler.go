@@ -34,6 +34,10 @@ func (b *BaseHandler) GetReviewService() *services.ReviewService {
 	return b.services.ReviewService
 }
 
+func (b *BaseHandler) GetSocialService() *services.SocialService {
+	return b.services.SocialService
+}
+
 // ParseBody decodes the JSON request body into T.
 func ParseBody[T any](r *http.Request) (*T, error) {
 	var data T
@@ -140,4 +144,8 @@ func (h *BaseHandler) GetOfferId(r *http.Request) (uint, error) {
 
 func (h *BaseHandler) GetSpotlightId(r *http.Request) (uint, error) {
 	return extractKeyFromPath(r, "spotlightId")
+}
+
+func (h *BaseHandler) GetBizId(r *http.Request) (uint, error) {
+	return extractKeyFromPath(r, "bizId")
 }

@@ -17,6 +17,7 @@ type Config struct {
 	Port             string
 	UserServiceURL   string
 	SearchServiceURL string
+	RabbitMQURL      string
 }
 
 var C *Config
@@ -42,6 +43,7 @@ func Load() error {
 		Port:             optional("PORT", "8080"),
 		UserServiceURL:   optional("USER_SERVICE_URL", "http://localhost:8080"),
 		SearchServiceURL: optional("SEARCH_SERVICE_URL", "http://localhost:8082"),
+		RabbitMQURL:      optional("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672/"),
 	}
 
 	log.Default().Println(*C)

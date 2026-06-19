@@ -10,10 +10,10 @@ import (
 type Config struct {
 	JWTSecret     string
 	DatabaseURL   string
-	VendorDBURL   string
 	CacheURL      string
 	CachePassword string
 	Port          string
+	RabbitMQURL   string
 }
 
 var C *Config
@@ -30,10 +30,10 @@ func Load() error {
 	C = &Config{
 		JWTSecret:     optional("JWT_SECRET", "motherfather"),
 		DatabaseURL:   optional("DATABASE_URL", "postgresql://admin:admin123@localhost:5432/spotnearr_search"),
-		VendorDBURL:   optional("VENDOR_DB_URL", "postgresql://admin:admin123@localhost:5432/spotnearr"),
 		CacheURL:      optional("CACHE_URL", "redis://localhost:6379"),
 		CachePassword: optional("CACHE_PASSWORD", ""),
 		Port:          optional("PORT", "8080"),
+		RabbitMQURL:   optional("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672/"),
 	}
 
 	log.Default().Println(*C)

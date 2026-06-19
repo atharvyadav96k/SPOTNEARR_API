@@ -40,6 +40,32 @@ func (c *ClaimRepository) GetByUserAndInvProduct(ctx context.Context, userID uin
 	return claim, err
 }
 
+func (c *ClaimRepository) GetByProductIDs(ctx context.Context, invProductIDs []uint) ([]user.Claim, error) {
+	if len(invProductIDs) == 0 {
+		return nil, nil
+	}
+	var claims []user.Claim
+	err := c.db.WithContext(ctx).
+		Where("inventory_product_id IN ? AND deleted_at IS NULL", invProductIDs).
+		Order("created_at DESC").
+		Find(&claims).Error
+	return claims, err
+}
+
+func (c *ClaimRepository) UpdateStatus(ctx context.Context, claimID uint, status user.ClaimStatus) error {
+	db := c.db.WithContext(ctx).
+		Model(&user.Claim{}).
+		Where("id = ? AND deleted_at IS NULL", claimID).
+		Update("status", status)
+	if db.Error != nil {
+		return db.Error
+	}
+	if db.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (c *ClaimRepository) Delete(ctx context.Context, claimID uint, userID uint) error {
 	db := c.db.WithContext(ctx).
 		Where("id = ? AND user_id = ?", claimID, userID).

@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
-	"github.com/Developer-Aadesh/spotnearr-database/search"
+	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
 	"gorm.io/gorm"
 )
 
@@ -17,8 +18,8 @@ func NewSearchRepository(db *gorm.DB) *SearchRepository {
 	return &SearchRepository{db: db}
 }
 
-// buildTokenFilter returns a SQL fragment using @> so the GIN index fires for
-// each token. Tokens are lowercased alphanumeric only (safe to embed directly).
+// buildTokenFilter returns a SQL fragment using @> so the GIN index fires for each token.
+// Tokens are lowercase alphanumeric only (safe to embed directly).
 func buildTokenFilter(tokens []string) string {
 	parts := make([]string, len(tokens))
 	for i, tok := range tokens {
@@ -27,20 +28,51 @@ func buildTokenFilter(tokens []string) string {
 	return "(" + strings.Join(parts, " OR ") + ")"
 }
 
-func (r *SearchRepository) Search(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64) ([]search.SearchRow, error) {
+func (r *SearchRepository) Search(ctx context.Context, tokens []string, lat, long *float64, rangeKm float64, filters searchdb.SearchFilters) ([]searchdb.SearchRow, error) {
 	if len(tokens) == 0 {
 		return nil, nil
 	}
 	if lat == nil || long == nil {
-		return r.searchNoGeo(ctx, tokens)
+		return r.searchNoGeo(ctx, tokens, filters)
 	}
-	return r.searchWithGeo(ctx, tokens, *lat, *long, rangeKm)
+	return r.searchWithGeo(ctx, tokens, *lat, *long, rangeKm, filters)
 }
 
-func (r *SearchRepository) searchNoGeo(ctx context.Context, tokens []string) ([]search.SearchRow, error) {
+// buildFilterClauses returns extra WHERE fragments and args for optional filters.
+func buildFilterClauses(filters searchdb.SearchFilters) (string, []interface{}) {
+	var clauses []string
+	var args []interface{}
+
+	if len(filters.CategoryIDs) > 0 {
+		b, _ := json.Marshal(filters.CategoryIDs)
+		clauses = append(clauses, "se.category_ids && ?::jsonb")
+		args = append(args, string(b))
+	}
+	if filters.MinPrice != nil {
+		clauses = append(clauses, "se.price >= ?")
+		args = append(args, *filters.MinPrice)
+	}
+	if filters.MaxPrice != nil {
+		clauses = append(clauses, "se.price <= ?")
+		args = append(args, *filters.MaxPrice)
+	}
+
+	clause := ""
+	for _, c := range clauses {
+		clause += " AND " + c
+	}
+	return clause, args
+}
+
+func (r *SearchRepository) searchNoGeo(ctx context.Context, tokens []string, filters searchdb.SearchFilters) ([]searchdb.SearchRow, error) {
 	tokenArray := "{" + strings.Join(tokens, ",") + "}"
 	tokenFilter := buildTokenFilter(tokens)
-	var rows []search.SearchRow
+	filterClause, filterArgs := buildFilterClauses(filters)
+
+	args := []interface{}{tokenArray}
+	args = append(args, filterArgs...)
+
+	var rows []searchdb.SearchRow
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT se.*,
 		       mc.cnt AS token_match_cnt
@@ -52,14 +84,14 @@ func (r *SearchRepository) searchNoGeo(ctx context.Context, tokens []string) ([]
 		) mc
 		WHERE se.deleted_at IS NULL
 		  AND se.available = true
-		  AND `+tokenFilter+`
+		  AND `+tokenFilter+filterClause+`
 		ORDER BY mc.cnt DESC
 		LIMIT 200
-	`, tokenArray).Scan(&rows).Error
+	`, args...).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, lat, long, rangeKm float64) ([]search.SearchRow, error) {
+func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, lat, long, rangeKm float64, filters searchdb.SearchFilters) ([]searchdb.SearchRow, error) {
 	latDelta := rangeKm / 111.32
 	lonDelta := rangeKm / (111.32 * math.Cos(lat*math.Pi/180))
 	minLat, maxLat := lat-latDelta, lat+latDelta
@@ -67,7 +99,12 @@ func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, l
 
 	tokenArray := "{" + strings.Join(tokens, ",") + "}"
 	tokenFilter := buildTokenFilter(tokens)
-	var rows []search.SearchRow
+	filterClause, filterArgs := buildFilterClauses(filters)
+
+	args := []interface{}{tokenArray, minLat, maxLat, minLon, maxLon}
+	args = append(args, filterArgs...)
+
+	var rows []searchdb.SearchRow
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT se.*,
 		       mc.cnt AS token_match_cnt
@@ -81,61 +118,59 @@ func (r *SearchRepository) searchWithGeo(ctx context.Context, tokens []string, l
 		  AND se.available = true
 		  AND se.lat  BETWEEN ? AND ?
 		  AND se.long BETWEEN ? AND ?
-		  AND `+tokenFilter+`
+		  AND `+tokenFilter+filterClause+`
 		ORDER BY mc.cnt DESC
 		LIMIT 200
-	`, tokenArray, minLat, maxLat, minLon, maxLon).Scan(&rows).Error
+	`, args...).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *SearchRepository) Upsert(ctx context.Context, entry search.SearchEntry) error {
+func (r *SearchRepository) GetByID(ctx context.Context, id uint) (*searchdb.SearchEntry, error) {
+	var entry searchdb.SearchEntry
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND deleted_at IS NULL", id).
+		First(&entry).Error
+	if err != nil {
+		return nil, err
+	}
+	return &entry, nil
+}
+
+func (r *SearchRepository) Upsert(ctx context.Context, entry searchdb.SearchEntry) error {
 	tokensJSON, err := json.Marshal(entry.SearchTokens)
 	if err != nil {
 		return fmt.Errorf("marshal search_tokens: %w", err)
 	}
-	catArr := intArrayLiteral(entry.CategoryIDs)
-
+	catsJSON, err := json.Marshal(entry.CategoryIDs)
+	if err != nil {
+		return fmt.Errorf("marshal category_ids: %w", err)
+	}
 	return r.db.WithContext(ctx).Exec(`
 		INSERT INTO search_entries (
-			id, product_id, business_id, product_name,
-			price, price_unit, quantity, quantity_unit, description,
+			id, product_id, name, price, price_unit,
 			search_tokens, category_ids,
-			store_id, store_name, street_address, lat, long, geo_hash,
-			available, updated_at, deleted_at
+			lat, long, geo_hash, available, updated_at, deleted_at
 		) VALUES (
-			?, ?, ?, ?,
 			?, ?, ?, ?, ?,
-			?::jsonb, ?::integer[],
-			?, ?, ?, ?, ?, ?,
-			?, NOW(), NULL
+			?::jsonb, ?::jsonb,
+			?, ?, ?, ?, NOW(), NULL
 		)
 		ON CONFLICT (id) DO UPDATE SET
-			product_id     = EXCLUDED.product_id,
-			business_id    = EXCLUDED.business_id,
-			product_name   = EXCLUDED.product_name,
-			price          = EXCLUDED.price,
-			price_unit     = EXCLUDED.price_unit,
-			quantity       = EXCLUDED.quantity,
-			quantity_unit  = EXCLUDED.quantity_unit,
-			description    = EXCLUDED.description,
-			search_tokens  = EXCLUDED.search_tokens,
-			category_ids   = EXCLUDED.category_ids,
-			store_id       = EXCLUDED.store_id,
-			store_name     = EXCLUDED.store_name,
-			street_address = EXCLUDED.street_address,
-			lat            = EXCLUDED.lat,
-			long           = EXCLUDED.long,
-			geo_hash       = EXCLUDED.geo_hash,
-			available      = EXCLUDED.available,
-			updated_at     = NOW(),
-			deleted_at     = NULL
-	`,
-		entry.ID, entry.ProductID, entry.BusinessID, entry.ProductName,
-		entry.Price, entry.PriceUnit, entry.Quantity, entry.QuantityUnit, entry.Description,
-		string(tokensJSON), catArr,
-		entry.StoreID, entry.StoreName, entry.StreetAddress, entry.Lat, entry.Long, entry.GeoHash,
-		entry.Available,
-	).Error
+			product_id    = EXCLUDED.product_id,
+			name          = EXCLUDED.name,
+			price         = EXCLUDED.price,
+			price_unit    = EXCLUDED.price_unit,
+			search_tokens = EXCLUDED.search_tokens,
+			category_ids  = EXCLUDED.category_ids,
+			lat           = EXCLUDED.lat,
+			long          = EXCLUDED.long,
+			geo_hash      = EXCLUDED.geo_hash,
+			available     = EXCLUDED.available,
+			updated_at    = NOW(),
+			deleted_at    = NULL
+	`, entry.ID, entry.ProductID, entry.Name, entry.Price, entry.PriceUnit,
+		string(tokensJSON), string(catsJSON),
+		entry.Lat, entry.Long, entry.GeoHash, entry.Available).Error
 }
 
 func (r *SearchRepository) SoftDelete(ctx context.Context, id uint) error {
@@ -146,13 +181,31 @@ func (r *SearchRepository) SoftDelete(ctx context.Context, id uint) error {
 	`, id).Error
 }
 
-func intArrayLiteral(ids []uint) string {
-	if len(ids) == 0 {
-		return "{}"
+func (r *SearchRepository) GetTokenCategoryFreqs(ctx context.Context, tokens []string) ([]searchdb.TokenCategoryFreq, error) {
+	if len(tokens) == 0 {
+		return nil, nil
 	}
-	parts := make([]string, len(ids))
-	for i, id := range ids {
-		parts[i] = fmt.Sprintf("%d", id)
+	var freqs []searchdb.TokenCategoryFreq
+	err := r.db.WithContext(ctx).Where("token IN ?", tokens).Find(&freqs).Error
+	return freqs, err
+}
+
+func (r *SearchRepository) FlushFreqDeltas(ctx context.Context, deltas []searchdb.FreqDelta) error {
+	now := time.Now()
+	for _, d := range deltas {
+		if d.Delta == 0 {
+			continue
+		}
+		err := r.db.WithContext(ctx).Exec(`
+			INSERT INTO token_category_freqs (token, category_id, count, updated_at)
+			VALUES (?, ?, ?, ?)
+			ON CONFLICT (token, category_id) DO UPDATE
+			SET count      = GREATEST(0, token_category_freqs.count + EXCLUDED.count),
+			    updated_at = EXCLUDED.updated_at
+		`, d.Token, d.CategoryID, d.Delta, now).Error
+		if err != nil {
+			return err
+		}
 	}
-	return "{" + strings.Join(parts, ",") + "}"
+	return nil
 }

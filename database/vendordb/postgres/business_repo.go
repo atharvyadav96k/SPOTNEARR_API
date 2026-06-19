@@ -113,3 +113,15 @@ func (r *BusinessRepository) ToggleActiveStatus(ctx context.Context, id uint, is
 	}
 	return nil
 }
+
+func (r *BusinessRepository) IncrementFollowerCount(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Model(&vendordb.Business{}).
+		Where("id = ?", id).
+		UpdateColumn("follower_count", gorm.Expr("follower_count + 1")).Error
+}
+
+func (r *BusinessRepository) DecrementFollowerCount(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Model(&vendordb.Business{}).
+		Where("id = ? AND follower_count > 0", id).
+		UpdateColumn("follower_count", gorm.Expr("follower_count - 1")).Error
+}

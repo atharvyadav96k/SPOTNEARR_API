@@ -241,6 +241,75 @@ func (i *InvProductRepository) RemoveProduct(ctx context.Context, invProdID uint
 	})
 }
 
+// WriteUpsertOutboxesForProduct writes a search sync upsert entry for every
+// active inventory_product that belongs to productID. Call this after a
+// product's name, price, or description is updated so the search index stays current.
+func (i *InvProductRepository) WriteUpsertOutboxesForProduct(ctx context.Context, productID uint) error {
+	var ids []uint
+	if err := i.db.WithContext(ctx).Raw(`
+		SELECT ip.id FROM inventory_products ip
+		WHERE ip.product_id = ? AND ip.deleted_at IS NULL
+	`, productID).Scan(&ids).Error; err != nil {
+		return fmt.Errorf("list inv_products for product %d: %w", productID, err)
+	}
+	for _, invID := range ids {
+		if err := i.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			row, cats, err := fetchOutboxData(ctx, tx, invID)
+			if err != nil {
+				return err
+			}
+			payload, err := buildUpsertPayload(row, cats)
+			if err != nil {
+				return err
+			}
+			return tx.Create(&vendordb.SearchSyncOutbox{EventType: "upsert", Payload: payload}).Error
+		}); err != nil {
+			return fmt.Errorf("upsert outbox for inv_product %d: %w", invID, err)
+		}
+	}
+	return nil
+}
+
+// WriteDeleteOutboxesForProduct writes a search sync delete entry for every
+// inventory_product (including soft-deleted) that belongs to productID.
+// Call this after a product is deleted so the search index removes the entries.
+func (i *InvProductRepository) WriteDeleteOutboxesForProduct(ctx context.Context, productID uint) error {
+	var ids []uint
+	if err := i.db.WithContext(ctx).Raw(`
+		SELECT id FROM inventory_products WHERE product_id = ?
+	`, productID).Scan(&ids).Error; err != nil {
+		return fmt.Errorf("list inv_products for delete %d: %w", productID, err)
+	}
+	for _, invID := range ids {
+		payload, err := json.Marshal(vendordb.OutboxPayload{
+			EventType:    "delete",
+			InvProductID: invID,
+		})
+		if err != nil {
+			return err
+		}
+		if err := i.db.WithContext(ctx).Create(&vendordb.SearchSyncOutbox{
+			EventType: "delete",
+			Payload:   payload,
+		}).Error; err != nil {
+			return fmt.Errorf("delete outbox for inv_product %d: %w", invID, err)
+		}
+	}
+	return nil
+}
+
+// GetIDsByBusiness returns all inventory_product IDs that belong to a business,
+// used by the vendor-side claim listing to scope claims to the right products.
+func (i *InvProductRepository) GetIDsByBusiness(ctx context.Context, bizID uint) ([]uint, error) {
+	var ids []uint
+	err := i.db.WithContext(ctx).Raw(`
+		SELECT ip.id FROM inventory_products ip
+		JOIN stores s ON s.id = ip.store_id AND s.deleted_at IS NULL
+		WHERE s.business_id = ? AND ip.deleted_at IS NULL
+	`, bizID).Scan(&ids).Error
+	return ids, err
+}
+
 func (i *InvProductRepository) GetByID(ctx context.Context, id uint) (*vendordb.InvProductDetail, error) {
 	var result vendordb.InvProductDetail
 	err := i.db.WithContext(ctx).Raw(`

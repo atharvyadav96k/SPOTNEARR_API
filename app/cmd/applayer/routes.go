@@ -1,17 +1,22 @@
 package applayer
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"time"
 
-	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
 	"github.com/atharvyadav96k/SPOTNEARR_API/config"
+	pkgmid "github.com/atharvyadav96k/spotnearr/pkg/middleware"
 	"github.com/gorilla/mux"
 )
 
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
+	router.Use(pkgmid.PrometheusMetrics("user-svc"))
+	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[user-svc] ", log.LstdFlags)))
+	router.Handle("/metrics", pkgmid.MetricsHandler())
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	captcha := pkgmid.CaptchaValidation(config.C.CaptchaURL, config.C.CaptchaSecretKey)
@@ -24,6 +29,8 @@ func (a *application) NewMux() *mux.Router {
 	a.userRouter(apiV1, auth, rl)
 	a.claimRouter(apiV1, auth, rl)
 	a.reviewRouter(apiV1, auth, rl)
+	a.socialRouter(apiV1, auth, rl)
+	a.dealRouter(apiV1, auth, rl)
 
 	// Internal routes — network-isolated, no auth middleware.
 	internal := router.PathPrefix("/internal").Subrouter()
@@ -35,6 +42,14 @@ func (a *application) NewMux() *mux.Router {
 func (a *application) internalRouter(router *mux.Router) {
 	router.HandleFunc("/users/{userId}/invalidate-refresh",
 		a.internalHandler.InvalidateRefresh).Methods(http.MethodPost)
+
+	// Claim management — called by the vendor service.
+	router.HandleFunc("/claims",
+		a.internalHandler.GetClaimsByProductIDs).Methods(http.MethodGet)
+	router.HandleFunc("/claims/{claimId}",
+		a.internalHandler.GetClaimByID).Methods(http.MethodGet)
+	router.HandleFunc("/claims/{claimId}/status",
+		a.internalHandler.UpdateClaimStatus).Methods(http.MethodPatch)
 }
 
 func (a *application) healthRouter(router *mux.Router) {
@@ -75,7 +90,11 @@ func (a *application) userRouter(router *mux.Router, auth mux.MiddlewareFunc, rl
 
 	protectedAuth.Handle("/{userId}/ban",
 		strictRateLimit(http.HandlerFunc(a.userHandler.BanUser)),
-	)
+	).Methods(http.MethodPost)
+
+	protectedAuth.Handle("/profile",
+		normalRateLimit(http.HandlerFunc(a.userHandler.UpdateProfile)),
+	).Methods(http.MethodPatch)
 }
 
 func (a *application) claimRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
@@ -95,6 +114,74 @@ func (a *application) claimRouter(router *mux.Router, auth mux.MiddlewareFunc, r
 	protectedAuth.Handle("/{claimId}",
 		normalRateLimit(http.HandlerFunc(a.claimHandler.ClaimRemove)),
 	).Methods(http.MethodDelete)
+}
+
+func (a *application) socialRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	normalRateLimit := pkgmid.RateLimit(rl, 3000, time.Minute)
+
+	s := router.PathPrefix("/social").Subrouter()
+	s.Use(auth)
+
+	// Follow / unfollow business
+	s.Handle("/businesses/{bizId}/follow",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.FollowBusiness)),
+	).Methods(http.MethodPost)
+	s.Handle("/businesses/{bizId}/follow",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnfollowBusiness)),
+	).Methods(http.MethodDelete)
+
+	// Like / save product
+	s.Handle("/products/{invProductId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.LikeProduct)),
+	).Methods(http.MethodPost)
+	s.Handle("/products/{invProductId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnlikeProduct)),
+	).Methods(http.MethodDelete)
+	s.Handle("/products/{invProductId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.SaveProduct)),
+	).Methods(http.MethodPost)
+	s.Handle("/products/{invProductId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnsaveProduct)),
+	).Methods(http.MethodDelete)
+
+	// Like / save spotlight
+	s.Handle("/spotlights/{spotlightId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.LikeSpotlight)),
+	).Methods(http.MethodPost)
+	s.Handle("/spotlights/{spotlightId}/like",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnlikeSpotlight)),
+	).Methods(http.MethodDelete)
+	s.Handle("/spotlights/{spotlightId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.SaveSpotlight)),
+	).Methods(http.MethodPost)
+	s.Handle("/spotlights/{spotlightId}/save",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.UnsaveSpotlight)),
+	).Methods(http.MethodDelete)
+
+	// Read-side: lists of what the user follows / likes / saves
+	s.Handle("/businesses/followed",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetFollowedBusinesses)),
+	).Methods(http.MethodGet)
+	s.Handle("/products/liked",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetLikedProducts)),
+	).Methods(http.MethodGet)
+	s.Handle("/products/saved",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetSavedProducts)),
+	).Methods(http.MethodGet)
+	s.Handle("/spotlights/liked",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetLikedSpotlights)),
+	).Methods(http.MethodGet)
+	s.Handle("/spotlights/saved",
+		normalRateLimit(http.HandlerFunc(a.socialHandler.GetSavedSpotlights)),
+	).Methods(http.MethodGet)
+}
+
+func (a *application) dealRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {
+	d := router.PathPrefix("/deals").Subrouter()
+	d.Use(auth)
+	d.Handle("/nearby",
+		pkgmid.RateLimit(rl, 3000, time.Minute)(http.HandlerFunc(a.dealHandler.NearbyDeals)),
+	).Methods(http.MethodGet)
 }
 
 func (a *application) reviewRouter(router *mux.Router, auth mux.MiddlewareFunc, rl pkgmid.RateLimiter) {

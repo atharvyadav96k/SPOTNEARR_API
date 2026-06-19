@@ -13,3 +13,7 @@ func (c *Cache) GetRefreshTokenSession() *refresh_token_session {
 func (c *Cache) GetRateLimit() *pkgrl.RateLimiter {
 	return c.rateLimiter
 }
+
+func (c *Cache) GetDealGeoCache() *dealGeoCache {
+	return c.dealGeoCache
+}

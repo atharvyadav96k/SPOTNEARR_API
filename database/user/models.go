@@ -108,3 +108,65 @@ type Review struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 }
+
+// ---------------------------------------------------------------------------
+
+// BusinessFollow records that a user follows a business.
+// Composite PK prevents duplicates. No soft-delete — a delete is a real unfollow.
+type BusinessFollow struct {
+	UserID     uint      `gorm:"primaryKey;not null" json:"userId"`
+	BusinessID uint      `gorm:"primaryKey;not null" json:"businessId"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// ProductLike records that a user liked an inventory product.
+type ProductLike struct {
+	UserID       uint      `gorm:"primaryKey;not null" json:"userId"`
+	InvProductID uint      `gorm:"primaryKey;not null" json:"invProductId"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// ProductSave records that a user saved an inventory product.
+type ProductSave struct {
+	UserID       uint      `gorm:"primaryKey;not null" json:"userId"`
+	InvProductID uint      `gorm:"primaryKey;not null" json:"invProductId"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// SpotlightLike records that a user liked a spotlight post.
+type SpotlightLike struct {
+	UserID      uint      `gorm:"primaryKey;not null" json:"userId"`
+	SpotlightID uint      `gorm:"primaryKey;not null" json:"spotlightId"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+// SpotlightSave records that a user saved a spotlight post.
+type SpotlightSave struct {
+	UserID      uint      `gorm:"primaryKey;not null" json:"userId"`
+	SpotlightID uint      `gorm:"primaryKey;not null" json:"spotlightId"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// DealEntry is a denormalised snapshot of a vendor Offer stored in the user
+// service for fast nearby-deal lookups. One row per (deal_id, geohash5 cell).
+type DealEntry struct {
+	ID           uint           `gorm:"primaryKey;autoIncrement" json:"id"`
+	DealID       uint           `gorm:"uniqueIndex:idx_deal_entry_uniq;not null" json:"dealId"`
+	GeoHash5     string         `gorm:"type:varchar(5);uniqueIndex:idx_deal_entry_uniq;index;not null" json:"geoHash5"`
+	BusinessID   uint           `gorm:"index;not null" json:"businessId"`
+	Name         string         `gorm:"type:varchar(255);not null" json:"name"`
+	Price        *float64       `gorm:"type:decimal(12,2)" json:"price,omitempty"`
+	DealPrice    float64        `gorm:"type:decimal(12,2);not null" json:"dealPrice"`
+	DiscountType string         `gorm:"type:varchar(20);not null" json:"discountType"`
+	Active       bool           `gorm:"default:true;not null" json:"active"`
+	ExpiresAt    *time.Time     `gorm:"index" json:"expiresAt,omitempty"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}

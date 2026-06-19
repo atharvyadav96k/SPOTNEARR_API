@@ -11,9 +11,13 @@ import (
 )
 
 type repo struct {
-	userRepo   usermodel.IUserRepository
-	claimRepo  usermodel.IClaimRepository
-	reviewRepo usermodel.IReviewRepository
+	userRepo            usermodel.IUserRepository
+	claimRepo           usermodel.IClaimRepository
+	reviewRepo          usermodel.IReviewRepository
+	followRepo          usermodel.IBusinessFollowRepository
+	productEngageRepo   usermodel.IProductEngagementRepository
+	spotlightEngageRepo usermodel.ISpotlightEngagementRepository
+	dealRepo            usermodel.IDealRepository
 }
 
 type base_service struct {
@@ -27,9 +31,13 @@ func NewBaseService(db *gorm.DB, cache *cache.Cache) base_service {
 		db:    db,
 		cache: cache,
 		repo: repo{
-			userRepo:   userpostgres.NewUserRepository(db),
-			claimRepo:  userpostgres.NewClaimRepository(db),
-			reviewRepo: userpostgres.NewReviewRepository(db),
+			userRepo:            userpostgres.NewUserRepository(db),
+			claimRepo:           userpostgres.NewClaimRepository(db),
+			reviewRepo:          userpostgres.NewReviewRepository(db),
+			followRepo:          userpostgres.NewBusinessFollowRepository(db),
+			productEngageRepo:   userpostgres.NewProductEngagementRepository(db),
+			spotlightEngageRepo: userpostgres.NewSpotlightEngagementRepository(db),
+			dealRepo:            userpostgres.NewDealRepository(db),
 		},
 	}
 }
@@ -48,6 +56,22 @@ func (b *base_service) RepoClaim() usermodel.IClaimRepository {
 
 func (b *base_service) RepoReview() usermodel.IReviewRepository {
 	return b.repo.reviewRepo
+}
+
+func (b *base_service) RepoFollow() usermodel.IBusinessFollowRepository {
+	return b.repo.followRepo
+}
+
+func (b *base_service) RepoProductEngage() usermodel.IProductEngagementRepository {
+	return b.repo.productEngageRepo
+}
+
+func (b *base_service) RepoSpotlightEngage() usermodel.ISpotlightEngagementRepository {
+	return b.repo.spotlightEngageRepo
+}
+
+func (b *base_service) RepoDeal() usermodel.IDealRepository {
+	return b.repo.dealRepo
 }
 
 func res(message string, statusCode int, data interface{}) response.Res {

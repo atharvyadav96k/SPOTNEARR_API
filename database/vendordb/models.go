@@ -17,6 +17,7 @@ type Business struct {
 
 	IsActive         bool `gorm:"default:true;not null" json:"isActive"`
 	VerifiedBusiness bool `gorm:"default:false;not null" json:"verifiedBusiness"`
+	FollowerCount    uint `gorm:"default:0;not null" json:"followerCount"`
 
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
@@ -165,6 +166,93 @@ type ProductToken struct {
 	Category   *Category `gorm:"foreignKey:CategoryID;constraint:OnDelete:CASCADE" json:"category,omitempty"`
 	Count      int       `gorm:"not null;default:1" json:"count"`
 	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// BusinessAccount stores credentials for business owners who authenticate
+// directly with the vendor service, independent of the user service.
+type BusinessAccount struct {
+	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Email        string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
+	PasswordHash string    `gorm:"type:varchar(255);not null" json:"-"`
+	BusinessID   uint      `gorm:"uniqueIndex;not null" json:"businessId"`
+	Business     *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+
+type DiscountType string
+
+const (
+	DiscountTypeFlat    DiscountType = "flat"
+	DiscountTypePercent DiscountType = "percent"
+)
+
+type Offer struct {
+	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	BusinessID uint      `gorm:"index;not null" json:"businessId"`
+	Business   *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
+
+	Title       string `gorm:"type:varchar(255);not null" json:"title"`
+	Description string `gorm:"type:text" json:"description"`
+
+	DiscountType  DiscountType `gorm:"type:varchar(20);not null" json:"discountType"`
+	DiscountValue float64      `gorm:"type:decimal(12,2);not null" json:"discountValue"`
+	MinOrderValue *float64     `gorm:"type:decimal(12,2)" json:"minOrderValue,omitempty"`
+
+	Code      *string `gorm:"type:varchar(50);uniqueIndex" json:"code,omitempty"`
+	MaxUsage  *int    `json:"maxUsage,omitempty"`
+	UsedCount int     `gorm:"default:0;not null" json:"usedCount"`
+
+	Active    bool       `gorm:"default:true;not null" json:"active"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
+
+type SpotlightType string
+
+const (
+	SpotlightTypeProduct SpotlightType = "product"
+	SpotlightTypeOffer   SpotlightType = "offer"
+	SpotlightTypeGeneral SpotlightType = "general"
+)
+
+type SpotlightMediaType string
+
+const (
+	SpotlightMediaImage SpotlightMediaType = "image"
+	SpotlightMediaVideo SpotlightMediaType = "video"
+)
+
+type Spotlight struct {
+	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	BusinessID uint      `gorm:"index;not null" json:"businessId"`
+	Business   *Business `gorm:"foreignKey:BusinessID;constraint:OnDelete:CASCADE;" json:"business,omitempty"`
+
+	Type      SpotlightType      `gorm:"type:varchar(20);not null" json:"type"`
+	Title     string             `gorm:"type:varchar(255);not null" json:"title"`
+	Caption   string             `gorm:"type:text" json:"caption"`
+	MediaURL  string             `gorm:"type:text;not null" json:"mediaUrl"`
+	MediaType SpotlightMediaType `gorm:"type:varchar(10);not null" json:"mediaType"`
+
+	ProductID *uint `gorm:"index" json:"productId,omitempty"`
+	OfferID   *uint `gorm:"index" json:"offerId,omitempty"`
+
+	LikeCount int `gorm:"default:0;not null" json:"likeCount"`
+
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 }
 
 // ---------------------------------------------------------------------------
