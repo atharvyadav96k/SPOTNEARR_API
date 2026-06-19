@@ -11,7 +11,9 @@ import (
 
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
+	router.Use(pkgmid.PrometheusMetrics("search-svc"))
 	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[search-svc] ", log.LstdFlags)))
+	router.Handle("/metrics", pkgmid.MetricsHandler())
 
 	router.HandleFunc("/health", a.searchHandler.Health).Methods(http.MethodGet)
 

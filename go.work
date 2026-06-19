@@ -1,8 +1,8 @@
 go 1.25.5
 
 use (
-	./database
 	./app/cmd
+	./database
 	./pkg
 	./services/search
 	./services/vendor

@@ -166,9 +166,78 @@ services:
         limits:
           cpus: '1.0'
 
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: spotnearr_loki
+    volumes:
+      - ./monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - "3100:3100"
+    networks:
+      - spotnearr-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: spotnearr_promtail
+    volumes:
+      - ./monitoring/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/promtail.yml
+    depends_on:
+      - loki
+    networks:
+      - spotnearr-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    container_name: spotnearr_prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    depends_on:
+      - user-service
+      - vendor-service
+      - search-service
+    networks:
+      - spotnearr-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.0.1
+    container_name: spotnearr_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - spotnearr-network
+    restart: unless-stopped
+
 networks:
   spotnearr-network:
     driver: bridge
 
 volumes:
   pgdata:
+  prometheus_data:
+  grafana_data:
+  loki_data:

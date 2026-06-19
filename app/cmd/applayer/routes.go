@@ -14,7 +14,9 @@ import (
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
+	router.Use(pkgmid.PrometheusMetrics("user-svc"))
 	router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[user-svc] ", log.LstdFlags)))
+	router.Handle("/metrics", pkgmid.MetricsHandler())
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	captcha := pkgmid.CaptchaValidation(config.C.CaptchaURL, config.C.CaptchaSecretKey)

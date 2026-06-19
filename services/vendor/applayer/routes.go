@@ -12,7 +12,8 @@ import (
 func (a *application) NewMux() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(pkgmid.CORS)
-	// router.Use(pkgmid.RequestLogger(log.New(os.Stdout, "[vendor-svc] ", log.LstdFlags)))
+	router.Use(pkgmid.PrometheusMetrics("vendor-svc"))
+	router.Handle("/metrics", pkgmid.MetricsHandler())
 
 	auth := pkgmid.Auth(config.C.JWTSecret)
 	bizOnly := pkgmid.BusinessOnly(config.C.JWTSecret)
