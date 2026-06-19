@@ -17,3 +17,18 @@ scrape_configs:
     static_configs:
       - targets: ['search-service:8080']
     metrics_path: '/metrics'
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+    metrics_path: '/metrics'
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+    metrics_path: '/metrics'

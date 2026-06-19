@@ -1,0 +1,431 @@
+{
+  "id": null,
+  "uid": "infra-redis-pg",
+  "title": "Infrastructure – Redis & PostgreSQL",
+  "tags": ["infra"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "row",
+      "title": "CPU & Memory",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Container CPU Usage (%)",
+      "description": "CPU % consumed by the Redis and PostgreSQL containers",
+      "gridPos": { "x": 0, "y": 1, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=\"spotnearr_redis\"}[2m])) * 100",
+          "legendFormat": "Redis"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=\"spotnearr_postgres\"}[2m])) * 100",
+          "legendFormat": "PostgreSQL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Redis" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#FF6B6B", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "PostgreSQL" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#4ECDC4", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Container Memory Usage",
+      "description": "RSS memory used by Redis and PostgreSQL containers",
+      "gridPos": { "x": 12, "y": 1, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "container_memory_rss{name=\"spotnearr_redis\"}",
+          "legendFormat": "Redis"
+        },
+        {
+          "refId": "B",
+          "expr": "container_memory_rss{name=\"spotnearr_postgres\"}",
+          "legendFormat": "PostgreSQL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Redis" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#FF6B6B", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "PostgreSQL" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#4ECDC4", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Redis",
+      "gridPos": { "x": 0, "y": 9, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Redis – Commands/sec",
+      "gridPos": { "x": 0, "y": 10, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(redis_commands_processed_total[1m])",
+          "legendFormat": "ops/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "fixedColor": "#FF6B6B", "mode": "fixed" }
+        }
+      },
+      "options": { "legend": { "displayMode": "hidden" } }
+    },
+
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Redis – Memory Used",
+      "gridPos": { "x": 8, "y": 10, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "redis_memory_used_bytes",
+          "legendFormat": "used"
+        },
+        {
+          "refId": "B",
+          "expr": "redis_memory_max_bytes",
+          "legendFormat": "max"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 5 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "max" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+              { "id": "color", "value": { "fixedColor": "#aaaaaa", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Redis – Cache Hit Rate (%)",
+      "description": "keyspace_hits / (hits + misses) — higher is better",
+      "gridPos": { "x": 16, "y": 10, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(redis_keyspace_hits_total[1m]) / (rate(redis_keyspace_hits_total[1m]) + rate(redis_keyspace_misses_total[1m]) + 0.0001) * 100",
+          "legendFormat": "hit rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "fixedColor": "#73BF69", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "green", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": { "legend": { "displayMode": "hidden" } }
+    },
+
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Redis – Connected Clients",
+      "gridPos": { "x": 0, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "redis_connected_clients", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 50 },
+            { "color": "red", "value": 100 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" }
+    },
+
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Redis – Keys Total",
+      "gridPos": { "x": 4, "y": 17, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(redis_db_keys)", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "fixedColor": "#FF6B6B", "mode": "fixed" } }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "value" }
+    },
+
+    {
+      "id": 20,
+      "type": "row",
+      "title": "PostgreSQL",
+      "gridPos": { "x": 0, "y": 21, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "PostgreSQL – Active Connections",
+      "gridPos": { "x": 0, "y": 22, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(pg_stat_activity_count) by (state)",
+          "legendFormat": "{{state}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "PostgreSQL – Transactions/sec",
+      "description": "Commits + rollbacks per second per database",
+      "gridPos": { "x": 8, "y": 22, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(pg_stat_database_xact_commit{datname=~\"spotnearr.*\"}[1m])",
+          "legendFormat": "{{datname}} commits/s"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(pg_stat_database_xact_rollback{datname=~\"spotnearr.*\"}[1m])",
+          "legendFormat": "{{datname}} rollbacks/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "PostgreSQL – Buffer Cache Hit Ratio (%)",
+      "description": "Blocks read from shared buffer cache vs disk — higher is better",
+      "gridPos": { "x": 16, "y": 22, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(pg_stat_database_blks_hit{datname=~\"spotnearr.*\"}[1m]) / (rate(pg_stat_database_blks_hit{datname=~\"spotnearr.*\"}[1m]) + rate(pg_stat_database_blks_read{datname=~\"spotnearr.*\"}[1m]) + 0.0001) * 100",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "PostgreSQL – Database Sizes",
+      "gridPos": { "x": 0, "y": 29, "w": 12, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_database_size_bytes{datname=~\"spotnearr.*\"}",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "fixedColor": "#4ECDC4", "mode": "fixed" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "textMode": "auto",
+        "colorMode": "value"
+      }
+    },
+
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "PostgreSQL – Rows Fetched/sec",
+      "gridPos": { "x": 12, "y": 29, "w": 12, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(pg_stat_database_tup_fetched{datname=~\"spotnearr.*\"}[1m])",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rows/s",
+          "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 5 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Logs",
+      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 31,
+      "type": "logs",
+      "title": "Redis Logs",
+      "gridPos": { "x": 0, "y": 35, "w": 12, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{container=\"spotnearr_redis\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+
+    {
+      "id": 32,
+      "type": "logs",
+      "title": "PostgreSQL Logs",
+      "gridPos": { "x": 12, "y": 35, "w": 12, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{container=\"spotnearr_postgres\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    }
+
+  ]
+}
