@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const searchTimeout = 5 * time.Second
+const searchTimeout = 3 * time.Second
 
 type SearchService struct {
 	repo  *searchpostgres.SearchRepository

@@ -14,6 +14,7 @@ type turnstileResponse struct {
 
 // CaptchaValidation verifies a Cloudflare Turnstile token from X-Captcha-Token.
 func CaptchaValidation(captchaURL, captchaSecret string) func(http.Handler) http.Handler {
+	client := &http.Client{Timeout: 3 * time.Second}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			captchaToken := r.Header.Get("X-Captcha-Token")
@@ -26,7 +27,6 @@ func CaptchaValidation(captchaURL, captchaSecret string) func(http.Handler) http
 			formData.Set("secret", captchaSecret)
 			formData.Set("response", captchaToken)
 
-			client := &http.Client{Timeout: 10 * time.Second}
 			resp, err := client.PostForm(captchaURL, formData)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
