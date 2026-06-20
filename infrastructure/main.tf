@@ -9,7 +9,7 @@ terraform {
       version = "~> 3.0"
     }
   }
-  backend "linux" {
+  backend "local" {
     path = var.state_path
   }
 }
