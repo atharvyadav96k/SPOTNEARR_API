@@ -34,24 +34,13 @@ variable "rabbitmq_password" {
   default   = "admin123"
 }
 
-resource "docker_image" "user_service" {
+data "docker_image" "user_service" {
   name = "spotnearr_user:latest"
-
-  build {
-    context    = path.module
-    dockerfile = "Dockerfile"
-  }
-
-  triggers = {
-    build_time = timestamp()
-  }
-
-  keep_locally = false
 }
 
 resource "docker_container" "user_service" {
   name    = "spotnearr_user_svc"
-  image   = docker_image.user_service.image_id
+  image   = data.docker_image.user_service.id
   restart = "unless-stopped"
 
   env = [

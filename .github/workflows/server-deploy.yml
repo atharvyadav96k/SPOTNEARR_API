@@ -41,6 +41,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build image
+        run: docker build -f app/Dockerfile -t spotnearr_user:latest ./app
+
       - name: Deploy user service
         working-directory: app
         env:

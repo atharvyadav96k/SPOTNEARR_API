@@ -53,9 +53,6 @@ resource "docker_image" "postgres" {
   name = "postgres:16-alpine"
 }
 
-resource "docker_image" "golang" {
-  name = "golang:1.25-alpine"
-}
 
 resource "docker_image" "alpine" {
   name = "alpine:3.21"
