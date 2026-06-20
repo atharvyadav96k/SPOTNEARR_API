@@ -3,21 +3,15 @@ package sync
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 
-	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
-	searchpostgres "github.com/Developer-Aadesh/spotnearr-database/search/postgres"
 	"github.com/atharvyadav96k/spotnearr/pkg/tokenizer"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
+	"github.com/atharvyadav96k/spotnearr/search-svc/cache"
+	tsclient "github.com/atharvyadav96k/spotnearr/search-svc/typesense"
 )
 
-const freqDeltaKey = "search:tf_delta"
-
-// SyncPayload is the JSON body pushed by the vendor service to POST /internal/sync.
-// Only the fields required by the search service are parsed; extra fields are silently ignored.
+// SyncPayload is the JSON body published by the vendor service on product changes.
 type SyncPayload struct {
 	EventType    string  `json:"event_type"`
 	InvProductID uint    `json:"inv_product_id"`
@@ -25,28 +19,23 @@ type SyncPayload struct {
 	ProductName  string  `json:"product_name"`
 	Price        float64 `json:"price"`
 	PriceUnit    string  `json:"price_unit"`
-	Desc         string  `json:"desc"`
 	Categories   []struct {
 		ID uint `json:"id"`
 	} `json:"categories"`
 	Lat       float64 `json:"lat"`
 	Long      float64 `json:"long"`
-	GeoHash   string  `json:"geo_hash"`
 	Available bool    `json:"available"`
 }
 
-// Applier applies vendor-pushed sync events to the search index and maintains
-// token-category frequency counters in Redis.
+// Applier applies vendor sync events to the Typesense index and maintains
+// token→category frequency counts in Redis for category-affinity boosting.
 type Applier struct {
-	repo *searchpostgres.SearchRepository
-	rdb  *redis.Client
+	indexer *tsclient.Indexer
+	tcCache *cache.TokenCategoryCache
 }
 
-func NewApplier(db *gorm.DB, rdb *redis.Client) *Applier {
-	return &Applier{
-		repo: searchpostgres.NewSearchRepository(db),
-		rdb:  rdb,
-	}
+func NewApplier(indexer *tsclient.Indexer, tcCache *cache.TokenCategoryCache) *Applier {
+	return &Applier{indexer: indexer, tcCache: tcCache}
 }
 
 func (a *Applier) Apply(ctx context.Context, data []byte) error {
@@ -66,87 +55,46 @@ func (a *Applier) Apply(ctx context.Context, data []byte) error {
 }
 
 func (a *Applier) applyUpsert(ctx context.Context, p SyncPayload) error {
-	tokens := tokenizer.TokenParser(p.ProductName)
-
-	catIDs := make([]uint, len(p.Categories))
+	catIDs := make([]int64, len(p.Categories))
 	for i, c := range p.Categories {
-		catIDs[i] = c.ID
+		catIDs[i] = int64(c.ID)
 	}
 
-	// Read the existing entry (if any) to compute the freq delta.
-	old, err := a.repo.GetByID(ctx, p.InvProductID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return fmt.Errorf("upsert: read old entry: %w", err)
-	}
-
-	if err := a.repo.Upsert(ctx, searchdb.SearchEntry{
-		ID:           p.InvProductID,
-		ProductID:    p.ProductID,
+	if err := a.indexer.Upsert(ctx, tsclient.ProductDoc{
+		ID:           fmt.Sprintf("%d", p.InvProductID),
+		InvProductID: int64(p.InvProductID),
+		ProductID:    int64(p.ProductID),
 		Name:         p.ProductName,
 		Price:        p.Price,
 		PriceUnit:    p.PriceUnit,
-		SearchTokens: tokens,
 		CategoryIDs:  catIDs,
-		Lat:          p.Lat,
-		Long:         p.Long,
-		GeoHash:      p.GeoHash,
 		Available:    p.Available,
+		Location:     []float64{p.Lat, p.Long},
 	}); err != nil {
-		return fmt.Errorf("upsert: write: %w", err)
+		return err
 	}
 
-	a.adjustFreqs(ctx, old, tokens, catIDs)
+	// Update token→category frequency counts and store reverse-lookup for future deletes.
+	tokens := tokenizer.TokenParser(p.ProductName)
+	if err := a.tcCache.IncrFreqs(ctx, tokens, catIDs); err != nil {
+		log.Printf("sync: IncrFreqs %d: %v", p.InvProductID, err)
+	}
+	if err := a.tcCache.SetDocMeta(ctx, p.InvProductID, tokens, catIDs); err != nil {
+		log.Printf("sync: SetDocMeta %d: %v", p.InvProductID, err)
+	}
+
 	return nil
 }
 
 func (a *Applier) applyDelete(ctx context.Context, id uint) error {
-	old, err := a.repo.GetByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil // already gone
-		}
-		return fmt.Errorf("delete: read entry: %w", err)
-	}
-
-	if err := a.repo.SoftDelete(ctx, id); err != nil {
-		return fmt.Errorf("delete: soft-delete: %w", err)
-	}
-
-	a.removeFreqs(ctx, old)
-	return nil
-}
-
-// adjustFreqs decrements the old entry's token×category pairs and increments the new ones.
-func (a *Applier) adjustFreqs(ctx context.Context, old *searchdb.SearchEntry, newTokens []string, newCatIDs []uint) {
-	pipe := a.rdb.Pipeline()
-	if old != nil {
-		for _, tok := range old.SearchTokens {
-			for _, catID := range old.CategoryIDs {
-				pipe.HIncrBy(ctx, freqDeltaKey, fmt.Sprintf("%s:%d", tok, catID), -1)
-			}
+	// Retrieve stored metadata before deleting so we can decrement frequencies.
+	tokens, catIDs := a.tcCache.GetDocMeta(ctx, id)
+	if len(tokens) > 0 {
+		if err := a.tcCache.DecrFreqs(ctx, tokens, catIDs); err != nil {
+			log.Printf("sync: DecrFreqs %d: %v", id, err)
 		}
 	}
-	for _, tok := range newTokens {
-		for _, catID := range newCatIDs {
-			pipe.HIncrBy(ctx, freqDeltaKey, fmt.Sprintf("%s:%d", tok, catID), 1)
-		}
-	}
-	if _, err := pipe.Exec(ctx); err != nil {
-		log.Printf("sync: freq adjust: %v", err)
-	}
-}
+	a.tcCache.DelDocMeta(ctx, id)
 
-func (a *Applier) removeFreqs(ctx context.Context, entry *searchdb.SearchEntry) {
-	if entry == nil || len(entry.SearchTokens) == 0 {
-		return
-	}
-	pipe := a.rdb.Pipeline()
-	for _, tok := range entry.SearchTokens {
-		for _, catID := range entry.CategoryIDs {
-			pipe.HIncrBy(ctx, freqDeltaKey, fmt.Sprintf("%s:%d", tok, catID), -1)
-		}
-	}
-	if _, err := pipe.Exec(ctx); err != nil {
-		log.Printf("sync: freq remove: %v", err)
-	}
+	return a.indexer.Delete(ctx, id)
 }

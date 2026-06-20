@@ -4,10 +4,10 @@ on:
   push:
     branches: [main, staging]
 
-# One deploy per branch at a time; a newer push cancels the in-progress one.
+# One deploy per branch at a time; never cancel mid-flight.
 concurrency:
   group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -22,6 +22,7 @@ jobs:
           JWT_SECRET:         ${{ secrets.JWT_SECRET }}
           CAPTCHA_SECRET_KEY: ${{ secrets.CAPTCHA_SECRET_KEY }}
           GRAFANA_PASSWORD:   ${{ secrets.GRAFANA_PASSWORD }}
+          TYPESENSE_API_KEY:  ${{ secrets.TYPESENSE_API_KEY }}
         run: |
           docker compose up --build -d --remove-orphans --wait --timeout 120
 
