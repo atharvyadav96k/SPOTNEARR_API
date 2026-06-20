@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux \
-    go build -ldflags="-w -s" -o /server ./services/vendor/cmd
+    go build -ldflags="-w -s" -o /server ./cmd
 
 FROM alpine:3.21
 
@@ -13,6 +13,6 @@ RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /server /server
 
-EXPOSE 8081
+EXPOSE 8080
 
 CMD ["/server"]
