@@ -3,21 +3,18 @@ package applayer
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/atharvyadav96k/spotnearr/pkg/mq"
+	"github.com/atharvyadav96k/spotnearr/search-svc/cache"
 	"github.com/atharvyadav96k/spotnearr/search-svc/config"
-	"github.com/atharvyadav96k/spotnearr/search-svc/connections/database"
-	freqpkg "github.com/atharvyadav96k/spotnearr/search-svc/freq"
 	"github.com/atharvyadav96k/spotnearr/search-svc/handlers"
 	"github.com/atharvyadav96k/spotnearr/search-svc/services"
 	syncsvc "github.com/atharvyadav96k/spotnearr/search-svc/sync"
+	tsclient "github.com/atharvyadav96k/spotnearr/search-svc/typesense"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
 type application struct {
-	searchDB      *gorm.DB
 	searchHandler *handlers.SearchHandler
 }
 
@@ -26,11 +23,8 @@ func Init() application {
 		panic(err)
 	}
 
-	searchDB, err := database.InitDB(config.C.DatabaseURL)
-	if err != nil {
-		panic(err)
-	}
-	if err := database.AutoMigrate(searchDB); err != nil {
+	tsClient := tsclient.New(config.C.TypesenseHost, config.C.TypesensePort, config.C.TypesenseAPIKey)
+	if err := tsclient.EnsureCollection(context.Background(), tsClient); err != nil {
 		panic(err)
 	}
 
@@ -42,11 +36,10 @@ func Init() application {
 		opts.Password = config.C.CachePassword
 	}
 	rdb := redis.NewClient(opts)
+	tcCache := cache.New(rdb)
 
-	flusher := freqpkg.NewFlusher(searchDB, rdb)
-	go flusher.Run(context.Background(), 30*time.Second)
-
-	applier := syncsvc.NewApplier(searchDB, rdb)
+	indexer := tsclient.NewIndexer(tsClient)
+	applier := syncsvc.NewApplier(indexer, tcCache)
 
 	mqConn, err := mq.Connect(config.C.RabbitMQURL)
 	if err != nil {
@@ -60,10 +53,9 @@ func Init() application {
 		panic(err)
 	}
 
-	searchSvc := services.NewSearchService(searchDB, rdb)
+	searchSvc := services.NewSearchService(tsClient, tcCache)
 
 	return application{
-		searchDB:      searchDB,
 		searchHandler: handlers.NewSearchHandler(searchSvc),
 	}
 }

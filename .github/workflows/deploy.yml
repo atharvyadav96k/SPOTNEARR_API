@@ -4,30 +4,38 @@ on:
   push:
     branches: [main, staging]
 
-# One deploy per branch at a time; a newer push cancels the in-progress one.
 concurrency:
   group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+env:
+  STATE_DIR: states
 
 jobs:
-  deploy:
+  infrastructure:
     runs-on: self-hosted
-    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and start services
-        env:
-          JWT_SECRET:         ${{ secrets.JWT_SECRET }}
-          CAPTCHA_SECRET_KEY: ${{ secrets.CAPTCHA_SECRET_KEY }}
-          GRAFANA_PASSWORD:   ${{ secrets.GRAFANA_PASSWORD }}
+      - name: Terraform States
         run: |
-          docker compose up --build -d --remove-orphans --wait --timeout 120
+          mkdir -p ../${{ env.STATE_DIR }}/infrastructure
+          mkdir -p ../${{ env.STATE_DIR }}/user
+          mkdir -p ../${{ env.STATE_DIR }}/search
+          mkdir -p ../${{ env.STATE_DIR }}/vendor
 
-      - name: Prune old images
-        run: docker image prune -f
+      - name: Infrastructure Creation
+        working-directory: infrastructure
+        run: |
+          terraform init \
+            -backend-config="state_path=../states/infrastructure/terraform.tfstate"
 
-      - name: Service status
-        if: always()
-        run: docker compose ps
+          terraform plan
+          terraform apply -auto-approve
+
+  deploy-servers:
+    needs: infrastructure
+    uses: ./.github/workflows/server-deploy.yml
+    with:
+        environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}

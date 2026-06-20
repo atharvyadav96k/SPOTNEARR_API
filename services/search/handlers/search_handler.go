@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	searchdb "github.com/Developer-Aadesh/spotnearr-database/search"
 	pkgdtos "github.com/atharvyadav96k/spotnearr/pkg/dtos"
 	"github.com/atharvyadav96k/spotnearr/pkg/httputil"
 	"github.com/atharvyadav96k/spotnearr/search-svc/services"
@@ -28,7 +27,7 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, httputil.Res{Message: err.Error()})
 		return
 	}
-	filters := searchdb.SearchFilters{
+	filters := services.SearchFilters{
 		CategoryIDs: dto.CategoryIDs,
 		MinPrice:    dto.MinPrice,
 		MaxPrice:    dto.MaxPrice,
