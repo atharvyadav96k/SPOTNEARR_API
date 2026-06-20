@@ -29,7 +29,7 @@ jobs:
         working-directory: infrastructure
         run: |
           terraform init \
-            -backend-config="state_path=../states/infrastructure/terraform.tfstate"
+            -backend-config="path=../states/infrastructure/terraform.tfstate"
 
           terraform plan
           terraform apply -auto-approve
