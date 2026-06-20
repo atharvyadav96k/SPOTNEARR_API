@@ -1,7 +1,3 @@
-variable "state_path" {
-  type = string
-}
-
 terraform {
   required_providers {
     docker = {
@@ -9,9 +5,7 @@ terraform {
       version = "~> 3.0"
     }
   }
-  backend "local" {
-    path = var.state_path
-  }
+  backend "local" {}
 }
 
 provider "docker" {}
