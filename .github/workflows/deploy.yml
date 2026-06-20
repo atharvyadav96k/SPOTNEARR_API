@@ -27,6 +27,10 @@ jobs:
 
       - name: Infrastructure Creation
         working-directory: infrastructure
+        env:
+          TF_VAR_postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
+          TF_VAR_rabbitmq_password: ${{ secrets.RABBITMQ_PASSWORD }}
+          TF_VAR_typesense_api_key: ${{ secrets.TYPESENSE_API_KEY }}
         run: |
           terraform init \
             -backend-config="path=../../states/infrastructure/terraform.tfstate"
