@@ -10,6 +10,7 @@ concurrency:
 
 env:
   STATE_DIR: states
+  TF_PLUGIN_CACHE_DIR: $HOME/.terraform.d/plugin-cache
 
 jobs:
   infrastructure:
@@ -20,6 +21,7 @@ jobs:
 
       - name: Terraform States
         run: |
+          mkdir -p $TF_PLUGIN_CACHE_DIR
           mkdir -p ../${{ env.STATE_DIR }}/infrastructure
           mkdir -p ../${{ env.STATE_DIR }}/user
           mkdir -p ../${{ env.STATE_DIR }}/search

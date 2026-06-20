@@ -2,13 +2,13 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /workspace
 
-COPY go.mod go.sum ./
+COPY cmd/go.mod cmd/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY cmd/ .
 
 RUN CGO_ENABLED=0 GOOS=linux \
-    go build -ldflags="-w -s" -o /server ./cmd
+    go build -ldflags="-w -s" -o /server .
 
 FROM alpine:3.21
 

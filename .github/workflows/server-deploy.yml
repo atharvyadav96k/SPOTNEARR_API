@@ -47,11 +47,13 @@ jobs:
       - name: Deploy user service
         working-directory: app
         env:
+          TF_PLUGIN_CACHE_DIR: $HOME/.terraform.d/plugin-cache
           TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
           TF_VAR_captcha_secret_key: ${{ secrets.CAPTCHA_SECRET_KEY }}
           TF_VAR_postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
           TF_VAR_rabbitmq_password: ${{ secrets.RABBITMQ_PASSWORD }}
         run: |
+          mkdir -p $TF_PLUGIN_CACHE_DIR
           terraform init \
             -backend-config="path=../../states/user/terraform.tfstate"
           terraform apply -auto-approve
