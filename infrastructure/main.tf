@@ -90,7 +90,7 @@ resource "docker_container" "postgres" {
   }
 
   volumes {
-    host_path      = "${path.module}/../docker/init-db.sql"
+    host_path      = abspath("${path.module}/../docker/init-db.sql")
     container_path = "/docker-entrypoint-initdb.d/init.sql"
     read_only      = true
   }
