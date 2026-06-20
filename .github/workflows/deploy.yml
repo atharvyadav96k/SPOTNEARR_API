@@ -41,5 +41,6 @@ jobs:
   deploy-servers:
     needs: infrastructure
     uses: ./.github/workflows/server-deploy.yml
+    secrets: inherit
     with:
         environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}

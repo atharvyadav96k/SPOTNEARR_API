@@ -53,6 +53,14 @@ resource "docker_image" "postgres" {
   name = "postgres:16-alpine"
 }
 
+resource "docker_image" "golang" {
+  name = "golang:1.25-alpine"
+}
+
+resource "docker_image" "alpine" {
+  name = "alpine:3.21"
+}
+
 resource "docker_image" "redis" {
   name = "redis:7-alpine"
 }
@@ -82,7 +90,7 @@ resource "docker_container" "postgres" {
   }
 
   volumes {
-    host_path      = abspath("${path.module}/../docker/init-db.sql")
+    host_path      = "${path.module}/../docker/init-db.sql"
     container_path = "/docker-entrypoint-initdb.d/init.sql"
     read_only      = true
   }

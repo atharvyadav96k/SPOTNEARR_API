@@ -25,51 +25,57 @@ jobs:
         with:
           filters: |
             user:
-              - 'user/**'
-
+              - 'app/**'
             search:
-              - 'search/**'
-
+              - 'services/search/**'
             vendor:
-              - 'vendor/**'
-
+              - 'services/vendor/**'
             gateway:
               - 'gateway/**'
 
-
-  deploy-gateway:
-        if: needs.changes.output.gateway == 'true'
-        needs: changes
-
-        runs-on: self-hosted
-        steps:
-        - uses: actions/checkout@v4
-        - run: echo "Deploy gateway"
-
-
   deploy-user:
-        if: needs.changes.outputs.user == 'true'
-        needs: changes
+    if: needs.changes.outputs.user == 'true'
+    needs: changes
+    runs-on: self-hosted
 
-        runs-on: self-hosted
-        steps:
-        - uses: actions/checkout@v4
-        - run: echo "Deploy user service"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy user service
+        working-directory: app
+        env:
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+          TF_VAR_captcha_secret_key: ${{ secrets.CAPTCHA_SECRET_KEY }}
+          TF_VAR_postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
+          TF_VAR_rabbitmq_password: ${{ secrets.RABBITMQ_PASSWORD }}
+        run: |
+          terraform init \
+            -backend-config="path=../../states/user/terraform.tfstate"
+          terraform apply -auto-approve
 
   deploy-vendor:
-        if: needs.changes.outputs.vendor == 'true'
-        needs: changes
+    if: needs.changes.outputs.vendor == 'true'
+    needs: changes
+    runs-on: self-hosted
 
-        runs-on: self-hosted
-        steps:
-        - uses: actions/checkout@v4
-        - run: echo "Deploy vendor service"
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deploy vendor service"
 
   deploy-search:
-        if: needs.changes.outputs.search == 'true'
-        needs: changes
+    if: needs.changes.outputs.search == 'true'
+    needs: changes
+    runs-on: self-hosted
 
-        runs-on: self-hosted
-        steps:
-        - uses: actions/checkout@v4
-        - run: echo "Deploy search service"
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deploy search service"
+
+  deploy-gateway:
+    if: needs.changes.outputs.gateway == 'true'
+    needs: changes
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deploy gateway"
