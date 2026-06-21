@@ -2,12 +2,21 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /workspace
 
-COPY cmd/go.mod cmd/go.sum ./
-RUN go mod download
+# Workspace files — must come first so Go can resolve local modules
+COPY go.work go.work.sum ./
 
-COPY cmd/ .
+# Local module dependencies (resolved via go.work)
+COPY pkg/ ./pkg/
+COPY database/ ./database/
 
-RUN CGO_ENABLED=0 GOOS=linux \
+# App go.mod/go.sum first for layer caching
+COPY app/cmd/go.mod app/cmd/go.sum ./app/cmd/
+RUN cd app/cmd && go mod download
+
+# Full app source
+COPY app/cmd/ ./app/cmd/
+
+RUN cd app/cmd && CGO_ENABLED=0 GOOS=linux \
     go build -ldflags="-w -s" -o /server .
 
 FROM alpine:3.21
