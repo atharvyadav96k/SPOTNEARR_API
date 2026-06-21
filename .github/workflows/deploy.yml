@@ -27,6 +27,15 @@ jobs:
           mkdir -p ../${{ env.STATE_DIR }}/search
           mkdir -p ../${{ env.STATE_DIR }}/vendor
 
+      - name: Pull images
+        run: |
+          docker pull postgres:16-alpine
+          docker pull redis:7-alpine
+          docker pull rabbitmq:3.13-management-alpine
+          docker pull typesense/typesense:26.0
+          docker pull golang:1.25-alpine
+          docker pull alpine:3.21
+
       - name: Infrastructure Creation
         working-directory: infrastructure
         env:

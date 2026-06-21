@@ -49,30 +49,29 @@ resource "docker_volume" "typesense_data" {
   name = "spotnearr_typesense_data"
 }
 
-resource "docker_image" "postgres" {
+data "docker_image" "postgres" {
   name = "postgres:16-alpine"
 }
 
-
-resource "docker_image" "alpine" {
+data "docker_image" "alpine" {
   name = "alpine:3.21"
 }
 
-resource "docker_image" "redis" {
+data "docker_image" "redis" {
   name = "redis:7-alpine"
 }
 
-resource "docker_image" "rabbitmq" {
+data "docker_image" "rabbitmq" {
   name = "rabbitmq:3.13-management-alpine"
 }
 
-resource "docker_image" "typesense" {
+data "docker_image" "typesense" {
   name = "typesense/typesense:26.0"
 }
 
 resource "docker_container" "postgres" {
   name    = "spotnearr_postgres"
-  image   = docker_image.postgres.image_id
+  image   = data.docker_image.postgres.id
   restart = "unless-stopped"
 
   env = [
@@ -106,7 +105,7 @@ resource "docker_container" "postgres" {
 
 resource "docker_container" "redis" {
   name    = "spotnearr_redis"
-  image   = docker_image.redis.image_id
+  image   = data.docker_image.redis.id
   restart = "unless-stopped"
 
   volumes {
@@ -129,7 +128,7 @@ resource "docker_container" "redis" {
 
 resource "docker_container" "rabbitmq" {
   name    = "spotnearr_rabbitmq"
-  image   = docker_image.rabbitmq.image_id
+  image   = data.docker_image.rabbitmq.id
   restart = "unless-stopped"
 
   env = [
@@ -157,7 +156,7 @@ resource "docker_container" "rabbitmq" {
 
 resource "docker_container" "typesense" {
   name    = "spotnearr_typesense"
-  image   = docker_image.typesense.image_id
+  image   = data.docker_image.typesense.id
   restart = "unless-stopped"
 
   command = [
