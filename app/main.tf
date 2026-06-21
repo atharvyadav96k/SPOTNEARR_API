@@ -34,7 +34,6 @@ variable "rabbitmq_password" {
   default   = "admin123"
 }
 
-
 data "docker_image" "user_service" {
   name = "spotnearr_user:latest"
 }
